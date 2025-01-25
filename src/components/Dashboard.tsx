@@ -20,6 +20,12 @@ export const Dashboard = () => {
           </Button>
         </div>
 
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold text-primary-700 animate-fade-in">
+            Post content at your leisure
+          </h2>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <h3 className="text-lg font-semibold mb-2">Scheduled Posts</h3>
