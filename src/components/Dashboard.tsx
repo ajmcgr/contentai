@@ -21,9 +21,12 @@ export const Dashboard = () => {
         </div>
 
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-primary-700 animate-fade-in">
+          <h2 className="text-4xl font-bold text-primary-700 animate-fade-in mb-4">
             Post content at your leisure
           </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Schedule or post content across several of your favorite social networks any-time, anywhere.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
