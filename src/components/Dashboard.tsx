@@ -11,7 +11,7 @@ export const Dashboard = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-primary-700">Content AI</h1>
+          <h1 className="text-3xl font-bold text-primary">Content AI</h1>
           <Button 
             onClick={() => setIsCreateDialogOpen(true)}
             className="bg-primary hover:bg-primary-600 text-white"
@@ -21,7 +21,7 @@ export const Dashboard = () => {
         </div>
 
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-primary-700 animate-fade-in mb-4">
+          <h2 className="text-4xl font-bold text-primary animate-fade-in mb-4">
             Post content at your leisure
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">

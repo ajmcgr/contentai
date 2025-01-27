@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 
 export const Header = () => {
   return (
-    <header className="border-b">
+    <header className="border-b bg-primary">
       <div className="container mx-auto px-4 py-4">
         <nav className="flex items-center justify-between">
           <Link to="/" className="flex items-center">
@@ -13,18 +13,23 @@ export const Header = () => {
               className="h-8 w-auto"
             />
           </Link>
-          <div className="flex items-center space-x-6">
-            <Link to="/about" className="text-gray-600 hover:text-primary">
+          <div className="flex-1 flex items-center justify-center space-x-6">
+            <Link to="/about" className="text-white hover:text-primary-100">
               About
             </Link>
-            <Link to="/pricing" className="text-gray-600 hover:text-primary">
+            <Link to="/pricing" className="text-white hover:text-primary-100">
               Pricing
             </Link>
-            <Link to="/blog" className="text-gray-600 hover:text-primary">
+            <Link to="/blog" className="text-white hover:text-primary-100">
               Blog
             </Link>
-            <Button asChild>
-              <Link to="/">Get Started</Link>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" className="text-white hover:text-primary-100" asChild>
+              <Link to="/signin">Sign In</Link>
+            </Button>
+            <Button variant="outline" className="bg-white text-primary hover:bg-primary-100" asChild>
+              <Link to="/signup">Sign Up</Link>
             </Button>
           </div>
         </nav>
