@@ -6,8 +6,12 @@ export const Header = () => {
     <header className="border-b">
       <div className="container mx-auto px-4 py-4">
         <nav className="flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-primary">
-            Content AI
+          <Link to="/" className="flex items-center">
+            <img
+              src="/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"
+              alt="Content AI"
+              className="h-8 w-auto"
+            />
           </Link>
           <div className="flex items-center space-x-6">
             <Link to="/about" className="text-gray-600 hover:text-primary">
