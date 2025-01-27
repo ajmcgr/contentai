@@ -11,6 +11,7 @@ import HelpCenter from "./pages/HelpCenter";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import { Footer } from "./components/Footer";
+import { Header } from "./components/Header";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <div className="flex flex-col min-h-screen">
+          <Header />
           <div className="flex-grow">
             <Routes>
               <Route path="/" element={<Index />} />
