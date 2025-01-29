@@ -1,4 +1,4 @@
-import { Calendar, Plus, ArrowRight, Check } from "lucide-react";
+import { Calendar, Plus, ArrowRight, Check, Twitter, Facebook, Instagram, Linkedin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContentCard } from "./ContentCard";
 import { CreateContentDialog } from "./CreateContentDialog";
@@ -44,6 +44,31 @@ export const Dashboard = () => {
               <Check className="text-white w-4 h-4" />
               <span>Cancel any-time</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Social Media Logos Section */}
+      <div className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-20">
+            <Twitter className="w-8 h-8 text-gray-400 hover:text-gray-600 transition-colors" />
+            <Facebook className="w-8 h-8 text-gray-400 hover:text-gray-600 transition-colors" />
+            <Instagram className="w-8 h-8 text-gray-400 hover:text-gray-600 transition-colors" />
+            <Linkedin className="w-8 h-8 text-gray-400 hover:text-gray-600 transition-colors" />
+            <svg 
+              viewBox="0 0 24 24" 
+              className="w-8 h-8 text-gray-400 hover:text-gray-600 transition-colors"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 8v8a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V8a5 5 0 0 1 5-5h8a5 5 0 0 1 5 5Z" />
+              <path d="m17 8-5 5v5" />
+              <path d="m12 13-5-5" />
+            </svg>
           </div>
         </div>
       </div>
