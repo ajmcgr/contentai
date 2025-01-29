@@ -11,7 +11,7 @@ export const Dashboard = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <div className="bg-primary py-20 text-white">
+      <div className="bg-primary py-28 text-white">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-6xl font-merriweather text-center mb-4">
             Post content at your leisure
