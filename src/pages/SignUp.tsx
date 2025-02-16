@@ -28,7 +28,7 @@ export const SignUp = () => {
       if (error) throw error;
 
       // Send verification email using our edge function
-      if (data?.user?.confirmationSentAt) {
+      if (data?.user?.confirmation_sent_at) {
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-verification`,
           {
