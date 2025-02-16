@@ -4,7 +4,6 @@ import { ContentCard } from "./ContentCard";
 import { CreateContentDialog } from "./CreateContentDialog";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Card } from "@/components/ui/card";
 
 export const Dashboard = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -70,59 +69,6 @@ export const Dashboard = () => {
               <path d="m17 8-5 5v5" />
               <path d="m12 13-5-5" />
             </svg>
-          </div>
-        </div>
-      </div>
-
-      {/* Testimonials Section */}
-      <div className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Users Say</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Discover why content creators and social media managers choose Content AI for their content management needs.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start mb-4">
-                <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-primary-600 text-lg font-semibold">SB</span>
-                </div>
-                <div className="ml-4">
-                  <h3 className="font-semibold text-gray-900">Sarah Brown</h3>
-                  <p className="text-sm text-gray-600">Social Media Manager</p>
-                </div>
-              </div>
-              <p className="text-gray-600">"Content AI has transformed how I manage social media for my clients. The AI-powered suggestions save me hours of work every week."</p>
-            </Card>
-
-            <Card className="p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start mb-4">
-                <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-primary-600 text-lg font-semibold">JM</span>
-                </div>
-                <div className="ml-4">
-                  <h3 className="font-semibold text-gray-900">James Miller</h3>
-                  <p className="text-sm text-gray-600">Content Creator</p>
-                </div>
-              </div>
-              <p className="text-gray-600">"The scheduling features are incredibly intuitive, and the analytics help me understand what content resonates with my audience."</p>
-            </Card>
-
-            <Card className="p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start mb-4">
-                <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-primary-600 text-lg font-semibold">EL</span>
-                </div>
-                <div className="ml-4">
-                  <h3 className="font-semibold text-gray-900">Emma Lee</h3>
-                  <p className="text-sm text-gray-600">Digital Marketing Director</p>
-                </div>
-              </div>
-              <p className="text-gray-600">"Managing multiple social media accounts used to be a nightmare. Content AI makes it seamless and actually enjoyable!"</p>
-            </Card>
           </div>
         </div>
       </div>
