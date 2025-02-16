@@ -20,16 +20,38 @@ export const SignUp = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (error) throw error;
 
+      // Send verification email using our edge function
+      if (data?.user?.confirmationSentAt) {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-verification`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              email,
+              confirmationUrl: data.user.confirmation_sent_at,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to send verification email");
+        }
+      }
+
       toast({
         title: "Success!",
-        description: "Please check your email to confirm your account.",
+        description: "Please check your email to verify your account.",
       });
       navigate("/signin");
     } catch (error: any) {
