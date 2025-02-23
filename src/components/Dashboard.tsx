@@ -1,8 +1,8 @@
-
 import { Calendar, Plus, ArrowRight, Check, Twitter, Facebook, Instagram, Linkedin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ContentCard } from "./ContentCard";
 import { CreateContentDialog } from "./CreateContentDialog";
+import { Reviews } from "./Reviews";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -88,6 +88,9 @@ export const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Reviews Section */}
+      <Reviews />
 
       {/* Features Section */}
       <div className="py-20 bg-white">
