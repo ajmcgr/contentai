@@ -21,9 +21,14 @@ export const Header = () => {
             <Link to="/pricing" className="text-white hover:text-primary-100">
               Pricing
             </Link>
-            <Link to="/blog" className="text-white hover:text-primary-100">
+            <a
+              href="https://blog.works.xyz/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white hover:text-primary-100"
+            >
               Blog
-            </Link>
+            </a>
           </div>
           <div className="flex items-center space-x-4">
             <Button variant="ghost" className="text-white hover:text-primary-100" asChild>
