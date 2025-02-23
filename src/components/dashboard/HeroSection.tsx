@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 
 export const HeroSection = () => {
   return (
-    <div className="bg-primary py-28 text-white">
+    <div className="bg-[#F1F0FB] py-28 text-primary">
       <div className="max-w-7xl mx-auto px-6">
         <h2 className="text-6xl font-merriweather text-center mb-4">
           Meet your AI social media scheduling assistant
@@ -17,7 +17,7 @@ export const HeroSection = () => {
           <Button 
             asChild
             size="lg" 
-            className="bg-white text-primary hover:bg-white/90 text-lg px-8"
+            className="bg-primary text-white hover:bg-primary/90 text-lg px-8"
           >
             <Link to="/signup">
               Sign Up <ArrowRight className="ml-2" />
@@ -27,15 +27,15 @@ export const HeroSection = () => {
         </div>
         <div className="flex flex-wrap justify-center gap-6 text-sm">
           <div className="flex items-center gap-2">
-            <Check className="text-white w-4 h-4" />
+            <Check className="text-primary w-4 h-4" />
             <span>7 days free trial</span>
           </div>
           <div className="flex items-center gap-2">
-            <Check className="text-white w-4 h-4" />
+            <Check className="text-primary w-4 h-4" />
             <span>No credit card required</span>
           </div>
           <div className="flex items-center gap-2">
-            <Check className="text-white w-4 h-4" />
+            <Check className="text-primary w-4 h-4" />
             <span>Cancel any-time</span>
           </div>
         </div>
