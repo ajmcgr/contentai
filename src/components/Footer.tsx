@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -25,8 +26,8 @@ export const Footer = () => {
           <div>
             <h3 className="font-semibold text-primary-700 mb-4">Connect</h3>
             <ul className="space-y-2">
-              <li><a href="https://twitter.com/worksapp" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-primary-700">Follow on X</a></li>
-              <li><a href="mailto:support@worksapp.com" className="text-gray-600 hover:text-primary-700">Email Support</a></li>
+              <li><a href="https://x.com/trycontentai" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-primary-700">Follow on X</a></li>
+              <li><a href="mailto:support@trycontent.ai" className="text-gray-600 hover:text-primary-700">Email Support</a></li>
             </ul>
           </div>
         </div>
