@@ -81,15 +81,17 @@ export const AuthenticatedLayout = () => {
               </nav>
             </SidebarContent>
           </Sidebar>
-          <main className="flex-1 min-h-screen bg-gray-50">
-            <div className="p-6">
-              <SidebarTrigger />
-              <Outlet />
-            </div>
-          </main>
+          <div className="flex-1 flex flex-col min-h-screen">
+            <main className="flex-1 bg-gray-50">
+              <div className="p-6">
+                <SidebarTrigger />
+                <Outlet />
+              </div>
+            </main>
+            <Footer />
+          </div>
         </SidebarProvider>
       </div>
-      <Footer />
     </div>
   );
 };
