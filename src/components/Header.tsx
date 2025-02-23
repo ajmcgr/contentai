@@ -15,26 +15,40 @@ export const Header = () => {
             />
           </Link>
           <div className="flex-1 flex items-center justify-center space-x-6">
-            <Link to="/about" className="text-white hover:text-primary-100">
+            <Link 
+              to="/about" 
+              className="text-white opacity-90 hover:opacity-100 transition-opacity"
+            >
               About
             </Link>
-            <Link to="/pricing" className="text-white hover:text-primary-100">
+            <Link 
+              to="/pricing" 
+              className="text-white opacity-90 hover:opacity-100 transition-opacity"
+            >
               Pricing
             </Link>
             <a
               href="https://blog.works.xyz/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white hover:text-primary-100"
+              className="text-white opacity-90 hover:opacity-100 transition-opacity"
             >
               Blog
             </a>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" className="text-white hover:text-primary-100" asChild>
+            <Button 
+              variant="ghost" 
+              className="text-white hover:bg-white/10 transition-colors" 
+              asChild
+            >
               <Link to="/signin">Sign In</Link>
             </Button>
-            <Button variant="outline" className="bg-white text-primary hover:bg-primary-100" asChild>
+            <Button 
+              variant="outline" 
+              className="bg-white text-primary hover:bg-white/90 hover:text-primary transition-colors" 
+              asChild
+            >
               <Link to="/signup">Sign Up</Link>
             </Button>
           </div>
