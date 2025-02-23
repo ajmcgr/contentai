@@ -1,7 +1,8 @@
 
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { User } from "lucide-react";
+import { User, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -9,6 +10,11 @@ interface HeaderProps {
 
 export const Header = ({ isAuthenticated }: HeaderProps) => {
   const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/signin');
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-primary">
@@ -72,14 +78,24 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
           </div>
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
-              <Button 
-                variant="ghost" 
-                className="text-white hover:bg-white/10 transition-colors gap-2"
-                onClick={() => navigate('/dashboard/account')}
-              >
-                <User size={18} />
-                Account
-              </Button>
+              <>
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-white/10 transition-colors gap-2"
+                  onClick={() => navigate('/dashboard/account')}
+                >
+                  <User size={18} />
+                  Account
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="text-white hover:bg-white/10 transition-colors gap-2"
+                  onClick={handleSignOut}
+                >
+                  <LogOut size={18} />
+                  Sign Out
+                </Button>
+              </>
             ) : (
               <>
                 <Button 
