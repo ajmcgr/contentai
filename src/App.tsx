@@ -27,27 +27,25 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route element={<AuthenticatedLayout />}>
-            <Route path="/dashboard" element={<DashboardIndex />} />
-            <Route path="/dashboard/new" element={<div>Create New Post</div>} />
-            <Route path="/dashboard/scheduled" element={<div>Scheduled Posts</div>} />
-            <Route path="/dashboard/posts" element={<div>Previous Posts</div>} />
+          <Route path="/dashboard/*" element={<AuthenticatedLayout />}>
+            <Route index element={<DashboardIndex />} />
+            <Route path="new" element={<div>Create New Post</div>} />
+            <Route path="scheduled" element={<div>Scheduled Posts</div>} />
+            <Route path="posts" element={<div>Previous Posts</div>} />
           </Route>
-          <Route element={
+          <Route path="/*" element={
             <div className="flex flex-col min-h-screen pt-16">
               <Header />
               <div className="flex-grow">
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/pricing" element={<Pricing />} />
-                  <Route path="/blog" element={<Blog />} />
-                  <Route path="/help-center" element={<HelpCenter />} />
-                  <Route path="/terms" element={<Terms />} />
-                  <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/signin" element={<SignIn />} />
-                  <Route path="/signup" element={<SignUp />} />
-                </Routes>
+                <Route index element={<Index />} />
+                <Route path="about" element={<About />} />
+                <Route path="pricing" element={<Pricing />} />
+                <Route path="blog" element={<Blog />} />
+                <Route path="help-center" element={<HelpCenter />} />
+                <Route path="terms" element={<Terms />} />
+                <Route path="privacy" element={<Privacy />} />
+                <Route path="signin" element={<SignIn />} />
+                <Route path="signup" element={<SignUp />} />
               </div>
               <Footer />
             </div>
