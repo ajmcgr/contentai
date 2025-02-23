@@ -14,7 +14,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
     <header className="fixed top-0 left-0 right-0 z-50 bg-primary">
       <div className="container mx-auto px-4 py-4">
         <nav className="flex items-center justify-between">
-          <Link to="/" className="flex items-center">
+          <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center">
             <img
               src="/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"
               alt="Content AI"
@@ -48,7 +48,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
               <Button 
                 variant="ghost" 
                 className="text-white hover:bg-white/10 transition-colors gap-2"
-                onClick={() => navigate('/account')}
+                onClick={() => navigate('/dashboard/account')}
               >
                 <User size={18} />
                 Account

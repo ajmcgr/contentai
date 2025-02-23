@@ -17,6 +17,7 @@ import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { AuthenticatedLayout } from "./components/layouts/AuthenticatedLayout";
 import DashboardIndex from "./pages/dashboard/Index";
+import Account from "./pages/Account";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="new" element={<div>Create New Post</div>} />
             <Route path="scheduled" element={<div>Scheduled Posts</div>} />
             <Route path="posts" element={<div>Previous Posts</div>} />
+            <Route path="account" element={<Account />} />
           </Route>
           <Route element={
             <div className="flex flex-col min-h-screen pt-16">

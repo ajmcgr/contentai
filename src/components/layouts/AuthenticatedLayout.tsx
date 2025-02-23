@@ -50,7 +50,7 @@ export const AuthenticatedLayout = () => {
         <SidebarProvider>
           <Sidebar>
             <SidebarHeader className="p-4">
-              <Link to="/">
+              <Link to="/dashboard">
                 <img
                   src="/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"
                   alt="Content AI"
