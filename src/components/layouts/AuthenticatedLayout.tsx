@@ -49,7 +49,7 @@ export const AuthenticatedLayout = () => {
       <div className="flex-1 flex pt-16">
         <SidebarProvider>
           <Sidebar>
-            <SidebarHeader className="p-4">
+            <SidebarHeader className="p-4 pb-2">
               <Link to="/dashboard">
                 <img
                   src="/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"
@@ -58,7 +58,7 @@ export const AuthenticatedLayout = () => {
                 />
               </Link>
             </SidebarHeader>
-            <SidebarContent>
+            <SidebarContent className="pt-2">
               <nav className="space-y-2 px-2">
                 <Button variant="ghost" className="w-full justify-start" asChild>
                   <Link to="/dashboard/new">
