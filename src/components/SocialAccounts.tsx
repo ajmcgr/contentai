@@ -34,7 +34,9 @@ export const SocialAccounts = () => {
           <Card key={account.id}>
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
-                <account.icon className="h-6 w-6" />
+                <span className="h-6 w-6">
+                  <account.icon />
+                </span>
                 {account.name}
               </CardTitle>
               <CardDescription>
