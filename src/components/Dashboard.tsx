@@ -26,7 +26,7 @@ export const Dashboard = () => {
               size="lg" 
               className="bg-white text-primary hover:bg-white/90 text-lg px-8"
             >
-              <Link to="/auth">
+              <Link to="/signup">
                 Sign Up <ArrowRight className="ml-2" />
               </Link>
             </Button>
