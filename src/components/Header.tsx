@@ -22,26 +22,53 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
             />
           </Link>
           <div className="flex-1 flex items-center justify-center space-x-6">
-            <Link 
-              to="/about" 
-              className="text-white opacity-90 hover:opacity-100 transition-opacity"
-            >
-              About
-            </Link>
-            <Link 
-              to="/pricing" 
-              className="text-white opacity-90 hover:opacity-100 transition-opacity"
-            >
-              Pricing
-            </Link>
-            <a
-              href="https://blog.works.xyz/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white opacity-90 hover:opacity-100 transition-opacity"
-            >
-              Blog
-            </a>
+            {isAuthenticated ? (
+              <>
+                <Link 
+                  to="/dashboard/about" 
+                  className="text-white opacity-90 hover:opacity-100 transition-opacity"
+                >
+                  About
+                </Link>
+                <Link 
+                  to="/dashboard/pricing" 
+                  className="text-white opacity-90 hover:opacity-100 transition-opacity"
+                >
+                  Pricing
+                </Link>
+                <a
+                  href="https://blog.works.xyz/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white opacity-90 hover:opacity-100 transition-opacity"
+                >
+                  Blog
+                </a>
+              </>
+            ) : (
+              <>
+                <Link 
+                  to="/about" 
+                  className="text-white opacity-90 hover:opacity-100 transition-opacity"
+                >
+                  About
+                </Link>
+                <Link 
+                  to="/pricing" 
+                  className="text-white opacity-90 hover:opacity-100 transition-opacity"
+                >
+                  Pricing
+                </Link>
+                <a
+                  href="https://blog.works.xyz/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white opacity-90 hover:opacity-100 transition-opacity"
+                >
+                  Blog
+                </a>
+              </>
+            )}
           </div>
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
