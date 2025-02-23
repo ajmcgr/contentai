@@ -1,8 +1,10 @@
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 
 export const Header = () => {
+  const navigate = useNavigate();
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-primary">
       <div className="container mx-auto px-4 py-4">
@@ -39,17 +41,17 @@ export const Header = () => {
           <div className="flex items-center space-x-4">
             <Button 
               variant="ghost" 
-              className="text-white hover:bg-white/10 transition-colors" 
-              asChild
+              className="text-white hover:bg-white/10 transition-colors"
+              onClick={() => navigate('/signin')}
             >
-              <Link to="/signin">Sign In</Link>
+              Sign In
             </Button>
             <Button 
               variant="outline" 
-              className="bg-white text-primary hover:bg-white/90 hover:text-primary transition-colors" 
-              asChild
+              className="bg-white text-primary hover:bg-white/90 hover:text-primary transition-colors"
+              onClick={() => navigate('/signup')}
             >
-              <Link to="/signup">Sign Up</Link>
+              Sign Up
             </Button>
           </div>
         </nav>
