@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -19,6 +20,7 @@ export default {
     },
     extend: {
       fontFamily: {
+        reckless: ["Reckless", "serif"],
         merriweather: ["Merriweather", "serif"],
       },
       colors: {
