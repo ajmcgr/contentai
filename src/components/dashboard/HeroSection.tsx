@@ -7,7 +7,7 @@ export const HeroSection = () => {
   return (
     <div className="py-28">
       <div className="max-w-7xl mx-auto px-6">
-        <h2 className="text-6xl font-reckless font-bold text-center mb-4 text-black">
+        <h2 className="text-6xl font-reckless font-medium text-center mb-4 text-black">
           Meet your AI social media scheduling assistant
         </h2>
         <p className="text-xl text-center max-w-2xl mx-auto mb-8 text-black">

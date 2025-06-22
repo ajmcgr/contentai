@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -22,6 +21,9 @@ export default {
       fontFamily: {
         reckless: ['"Reckless"', 'serif'],
         merriweather: ["Merriweather", "serif"],
+      },
+      fontWeight: {
+        'reckless-medium': '500',
       },
       colors: {
         border: "hsl(var(--border))",
