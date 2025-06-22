@@ -44,7 +44,6 @@ export const SocialAccounts = () => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        responseType: 'json',
         body: { action: 'status' }
       });
       
@@ -92,7 +91,6 @@ export const SocialAccounts = () => {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
-          responseType: 'json',
           body: { 
             platform: accountId,
             action: action
