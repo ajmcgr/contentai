@@ -137,6 +137,6 @@
 
 @layer components {
   .no-hover:hover {
-    color: inherit !important;
+    color: white !important;
   }
 }
