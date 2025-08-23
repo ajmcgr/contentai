@@ -33,7 +33,7 @@ export const PlatformsSection = () => {
           {platforms.map((platform, index) => (
             <div 
               key={index}
-              className="bg-card border border-border rounded-xl p-8 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              className="bg-card border border-border rounded-xl p-8 text-center"
             >
               <div className="mb-6 flex justify-center">
                 <img 
@@ -42,9 +42,6 @@ export const PlatformsSection = () => {
                   className="h-16 w-auto object-contain"
                 />
               </div>
-              <p className="text-muted-foreground">
-                {platform.description}
-              </p>
             </div>
           ))}
         </div>
