@@ -12,7 +12,7 @@ const About = () => {
           </p>
         </div>
 
-        <div className="prose prose-lg max-w-none">
+        <div className="prose prose-lg max-w-none border-[1px] border-[#e2e8f0] rounded-[7.5px] p-8">
           <p className="text-lg mb-8">
             <strong>Hello there!</strong>
           </p>
@@ -47,9 +47,21 @@ const About = () => {
         </div>
 
         <div className="mt-16 text-center">
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-8">
             Questions? We're always happy to chat about content strategy, AI, or anything else.
           </p>
+          
+          <div className="flex flex-col items-center">
+            <img 
+              src="/lovable-uploads/800a1059-73b1-46b2-b518-fd9a71bf73bb.png" 
+              alt="Alex MacGregor, Founder of Content AI"
+              className="w-24 h-24 rounded-full mb-4 object-cover"
+            />
+            <div className="text-gray-600">
+              <p className="mb-1">— Alex MacGregor</p>
+              <p className="text-sm">Founder, Content AI</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
