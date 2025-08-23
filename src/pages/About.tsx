@@ -4,7 +4,7 @@ import React from 'react';
 const About = () => {
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-4xl mx-auto px-6 py-20">
+      <div className="max-w-3xl mx-auto px-6 py-20">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-reckless font-medium mb-6">Our story</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -49,12 +49,11 @@ const About = () => {
             <img 
               src="/lovable-uploads/800a1059-73b1-46b2-b518-fd9a71bf73bb.png" 
               alt="Alex MacGregor, Founder of Content AI"
-              className="w-24 h-24 rounded object-cover flex-shrink-0"
+              className="w-24 h-24 object-cover flex-shrink-0"
             />
             <div className="text-gray-700">
-              <p className="mb-1 text-lg">Alex MacGregor, Founder of Content AI</p>
-              <p className="mb-1 text-lg">— Alex MacGregor</p>
-              <p className="text-base mb-2">Founder, Content AI</p>
+              <p className="mb-1 text-lg font-bold">Alex MacGregor, Founder of Content AI</p>
+              <p className="mb-2 text-lg font-bold">— Alex MacGregor</p>
               <a 
                 href="https://www.linkedin.com/in/alexmacgregor2/" 
                 target="_blank" 
