@@ -17,7 +17,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-primary w-full">
+    <header className="bg-primary w-full">
       <div className="max-w-5xl mx-auto px-4 py-4">
         <nav className="flex items-center justify-between">
           <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center">

@@ -44,7 +44,7 @@ export const AuthenticatedLayout = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-1 flex pt-16">
+      <div className="flex-1 flex">
         <SidebarProvider>
           <Sidebar>
             <SidebarHeader className="p-4 pb-2">
