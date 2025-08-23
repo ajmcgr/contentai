@@ -19,9 +19,9 @@ export const HeroSection = () => {
             size="lg" 
             className="bg-white text-primary text-lg px-8 hover:bg-white/90 hover:text-primary"
           >
-            <a href="https://buy.stripe.com/14AaEZ2Bd06k6KXbCYeAg00" target="_blank" rel="noopener noreferrer">
+            <Link to="/signup">
               Get Started for Free <ArrowRight className="ml-2" />
-            </a>
+            </Link>
           </Button>
           <div className="senja-embed" data-id="77285219-9d5a-4b35-bd39-6e413a1e81e4" data-mode="shadow" data-lazyload="false"></div>
         </div>
