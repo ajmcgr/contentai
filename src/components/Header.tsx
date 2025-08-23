@@ -40,7 +40,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
             {!isAuthenticated && (
               <Link 
                 to="/pricing" 
-                className="text-white text-sm font-medium"
+                className="text-white text-sm font-medium hover:text-white"
               >
                 Pricing
               </Link>
@@ -49,7 +49,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
               <>
                 <Button 
                   variant="ghost" 
-                  className="text-white gap-2"
+                  className="text-white gap-2 hover:text-white hover:bg-transparent"
                   onClick={() => navigate('/dashboard/account')}
                 >
                   <User size={18} />
@@ -57,7 +57,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
                 </Button>
                 <Button
                   variant="ghost"
-                  className="text-white gap-2"
+                  className="text-white gap-2 hover:text-white hover:bg-transparent"
                   onClick={handleSignOut}
                 >
                   <LogOut size={18} />
@@ -67,7 +67,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
             ) : (
               <>
                 <span 
-                  className="text-white text-sm font-medium cursor-pointer"
+                  className="text-white text-sm font-medium cursor-pointer hover:text-white"
                   onClick={() => navigate('/signin')}
                 >
                   Login
