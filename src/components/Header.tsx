@@ -34,7 +34,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
 
   return (
     <header className={authed ? "bg-white border-b w-full" : "bg-primary w-full"}>
-      <div className="max-w-5xl mx-auto px-4 py-4">
+      <div className={authed ? "w-full px-4 py-4" : "max-w-5xl mx-auto px-4 py-4"}>
         <nav className="flex items-center justify-between">
           <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
             <img
