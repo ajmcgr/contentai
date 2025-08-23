@@ -1,20 +1,13 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Link, Search, Image, ArrowRight } from "lucide-react";
+import { FileText, Link, Search, Image, ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const DashboardIndex = () => {
   const navigate = useNavigate();
 
-  const features = [
-    {
-      title: "Content Generation System",
-      description: "AI-powered article creation using Claude",
-      icon: FileText,
-      path: "/content-generator",
-      color: "text-blue-600"
-    },
+  const otherFeatures = [
     {
       title: "CMS Integrations", 
       description: "Connection to WordPress, Shopify, Webflow and API",
@@ -45,26 +38,60 @@ const DashboardIndex = () => {
         <p className="text-muted-foreground">Manage your AI-powered content creation workflow</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {features.map((feature, index) => {
+      {/* Main Feature - Content Generation */}
+      <div className="mb-8">
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/5 hover:shadow-xl transition-all duration-300 cursor-pointer" 
+              onClick={() => navigate("/content-generator")}>
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-primary/10 text-primary">
+                <FileText size={32} />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <CardTitle className="text-2xl">Content Generation System</CardTitle>
+                  <Sparkles className="text-primary" size={20} />
+                </div>
+                <CardDescription className="text-base">
+                  AI-powered article creation using Claude - Create high-quality, SEO-optimized content in minutes
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Button size="lg" className="w-full md:w-auto group">
+              Start Creating Content
+              <ArrowRight size={18} className="ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Other Features */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-foreground mb-4">Additional Tools</h2>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {otherFeatures.map((feature, index) => {
           const Icon = feature.icon;
           return (
             <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(feature.path)}>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-lg bg-muted ${feature.color}`}>
-                    <Icon size={24} />
+                    <Icon size={20} />
                   </div>
                   <div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
-                    <CardDescription>{feature.description}</CardDescription>
+                    <CardTitle className="text-lg">{feature.title}</CardTitle>
                   </div>
                 </div>
+                <CardDescription className="text-sm">{feature.description}</CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full group">
-                  Get Started
-                  <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+              <CardContent className="pt-0">
+                <Button variant="outline" size="sm" className="w-full group">
+                  Access Tool
+                  <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </CardContent>
             </Card>

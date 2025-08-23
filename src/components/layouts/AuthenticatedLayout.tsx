@@ -1,17 +1,9 @@
 
 import { useState, useEffect } from "react";
-import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import { Navigate, Outlet, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Clock, History } from "lucide-react";
-import { Link } from "react-router-dom";
+import { LogOut, User } from "lucide-react";
 import { Footer } from "../Footer";
 
 export const AuthenticatedLayout = () => {
@@ -34,6 +26,11 @@ export const AuthenticatedLayout = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
   if (loading) {
     return null;
   }
@@ -44,52 +41,33 @@ export const AuthenticatedLayout = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-1 flex">
-        <SidebarProvider>
-          <Sidebar>
-            <SidebarHeader className="p-4 pb-2">
-              <Link to="/dashboard">
-                <img
-                  src="/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"
-                  alt="Content AI"
-                  className="h-8 w-auto"
-                />
+      <header className="bg-background border-b border-border">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link to="/dashboard">
+            <img
+              src="/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"
+              alt="Content AI"
+              className="h-8 w-auto"
+            />
+          </Link>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/account">
+                <User className="mr-2 h-4 w-4" />
+                Account
               </Link>
-            </SidebarHeader>
-            <SidebarContent className="pt-2">
-              <nav className="space-y-2 px-2">
-                <Button variant="ghost" className="w-full justify-start" asChild>
-                  <Link to="/dashboard/new">
-                    <Plus className="mr-2" />
-                    Create New Post
-                  </Link>
-                </Button>
-                <Button variant="ghost" className="w-full justify-start" asChild>
-                  <Link to="/dashboard/scheduled">
-                    <Calendar className="mr-2" />
-                    Scheduled
-                  </Link>
-                </Button>
-                <Button variant="ghost" className="w-full justify-start" asChild>
-                  <Link to="/dashboard/posts">
-                    <History className="mr-2" />
-                    Posts
-                  </Link>
-                </Button>
-              </nav>
-            </SidebarContent>
-          </Sidebar>
-          <div className="flex-1 flex flex-col min-h-screen">
-            <main className="flex-1 bg-gray-50">
-              <div className="p-6">
-                <SidebarTrigger />
-                <Outlet />
-              </div>
-            </main>
-            <Footer />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
           </div>
-        </SidebarProvider>
-      </div>
+        </div>
+      </header>
+      <main className="flex-1 bg-background">
+        <Outlet />
+      </main>
+      <Footer />
     </div>
   );
 };
