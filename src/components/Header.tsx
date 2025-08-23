@@ -36,23 +36,27 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
     <header className={authed ? "bg-white border-b w-full" : "bg-primary w-full"}>
       <div className={authed ? "w-full px-4 py-4" : "max-w-5xl mx-auto px-4 py-4"}>
         <nav className="flex items-center justify-between">
-          <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
-            <img
-              src={authed ? "/lovable-uploads/4affed32-8b02-45a4-98c8-6a9921198210.png" : "/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"}
-              alt="Content AI"
-              className="h-8 w-auto"
-            />
-          </Link>
+          <div className="flex items-center space-x-4">
+            <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
+              <img
+                src={authed ? "/lovable-uploads/4affed32-8b02-45a4-98c8-6a9921198210.png" : "/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"}
+                alt="Content AI"
+                className="h-8 w-auto"
+              />
+            </Link>
+            {authed && (
+              <img
+                src="/lovable-uploads/6bd66de2-8feb-4fc6-b6ca-f620465944a5.png"
+                alt="Content"
+                className="h-10 w-auto"
+              />
+            )}
+          </div>
           <div className="flex-1 flex items-center justify-center space-x-6">
           </div>
           <div className="flex items-center space-x-4">
             {authed ? (
               <>
-                <img
-                  src="/lovable-uploads/6bd66de2-8feb-4fc6-b6ca-f620465944a5.png"
-                  alt="Content"
-                  className="h-6 w-auto"
-                />
                 <Button 
                   variant="ghost" 
                   className="text-gray-700 gap-2 hover:text-gray-900 hover:bg-gray-100"
