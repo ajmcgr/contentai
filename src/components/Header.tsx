@@ -48,6 +48,11 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
           <div className="flex items-center space-x-4">
             {authed ? (
               <>
+                <img
+                  src="/lovable-uploads/6bd66de2-8feb-4fc6-b6ca-f620465944a5.png"
+                  alt="Content"
+                  className="h-6 w-auto"
+                />
                 <Button 
                   variant="ghost" 
                   className="text-gray-700 gap-2 hover:text-gray-900 hover:bg-gray-100"
