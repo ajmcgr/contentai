@@ -49,7 +49,7 @@ const About = () => {
             <img 
               src="/lovable-uploads/800a1059-73b1-46b2-b518-fd9a71bf73bb.png" 
               alt="Alex MacGregor, Founder of Content AI"
-              className="w-24 h-24 object-cover flex-shrink-0"
+              className="w-32 h-32 object-cover flex-shrink-0"
             />
             <div className="text-gray-700">
               <p className="mb-1 text-lg font-bold">Alex MacGregor, Founder of Content AI</p>
