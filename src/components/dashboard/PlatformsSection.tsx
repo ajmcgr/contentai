@@ -33,7 +33,7 @@ export const PlatformsSection = () => {
           {platforms.map((platform, index) => (
             <div 
               key={index}
-              className="bg-card border border-border rounded-xl p-8 text-center"
+              className="bg-card rounded-xl p-8 text-center"
             >
               <div className="mb-6 flex justify-center">
                 <img 
