@@ -44,6 +44,8 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
             />
           </Link>
           <div className="flex-1 flex items-center justify-center space-x-6">
+          </div>
+          <div className="flex items-center space-x-4">
             {authed ? (
               <>
                 <Button 
@@ -64,12 +66,6 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
                 </Button>
               </>
             ) : (
-              <>
-              </>
-            )}
-          </div>
-          <div className="flex items-center space-x-4">
-            {!authed && (
               <>
                 <Link 
                   to="/pricing" 
