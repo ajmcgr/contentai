@@ -16,6 +16,14 @@ export const Footer = () => {
             </ul>
           </div>
           <div>
+            <h3 className="font-semibold text-foreground mb-4 text-sm">Support</h3>
+            <ul className="space-y-2">
+              <li><a href="mailto:support@trycontent.ai" className="text-gray-600 hover:text-primary-700 text-sm">Support</a></li>
+              <li><Link to="/terms" className="text-gray-600 hover:text-primary-700 text-sm">Terms</Link></li>
+              <li><Link to="/privacy" className="text-gray-600 hover:text-primary-700 text-sm">Privacy</Link></li>
+            </ul>
+          </div>
+          <div>
             <h3 className="font-semibold text-foreground mb-4 text-sm">Free Tools</h3>
             <ul className="space-y-2">
               <li><Link to="/tools/headline-generator" className="text-gray-600 hover:text-primary-700 text-sm">Headline Generator</Link></li>
@@ -27,14 +35,6 @@ export const Footer = () => {
               <li><Link to="/tools/social-media-caption-generator" className="text-gray-600 hover:text-primary-700 text-sm">Social Media Captions</Link></li>
               <li><Link to="/tools/content-outline-generator" className="text-gray-600 hover:text-primary-700 text-sm">Content Outline Generator</Link></li>
               <li><Link to="/tools/readability-checker" className="text-gray-600 hover:text-primary-700 text-sm">Readability Checker</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground mb-4 text-sm">Support</h3>
-            <ul className="space-y-2">
-              <li><a href="mailto:support@trycontent.ai" className="text-gray-600 hover:text-primary-700 text-sm">Support</a></li>
-              <li><Link to="/terms" className="text-gray-600 hover:text-primary-700 text-sm">Terms</Link></li>
-              <li><Link to="/privacy" className="text-gray-600 hover:text-primary-700 text-sm">Privacy</Link></li>
             </ul>
           </div>
           <div>
