@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Check } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Pricing = () => {
   return (
@@ -58,7 +59,9 @@ const Pricing = () => {
               </div>
             </div>
             
-            <Button className="w-full text-lg py-3">Get Started for Free</Button>
+            <Button asChild className="w-full text-lg py-3">
+              <Link to="/signup">Get Started for Free</Link>
+            </Button>
           </div>
         </div>
       </div>
