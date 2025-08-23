@@ -1,8 +1,8 @@
 
 import { HeroSection } from "@/components/dashboard/HeroSection";
-import { SocialMediaLogos } from "@/components/dashboard/SocialMediaLogos";
 import { Reviews } from "@/components/Reviews";
 import { FeaturesSection } from "@/components/dashboard/FeaturesSection";
+import { AdditionalFeaturesSection } from "@/components/dashboard/AdditionalFeaturesSection";
 import { PricingSection } from "@/components/dashboard/PricingSection";
 import { FAQSection } from "@/components/dashboard/FAQSection";
 import { EnterpriseSection } from "@/components/dashboard/EnterpriseSection";
@@ -11,9 +11,9 @@ const Index = () => {
   return (
     <>
       <HeroSection />
-      <SocialMediaLogos />
-      <Reviews />
       <FeaturesSection />
+      <Reviews />
+      <AdditionalFeaturesSection />
       <PricingSection />
       <FAQSection />
       <EnterpriseSection />
