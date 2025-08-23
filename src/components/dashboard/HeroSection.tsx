@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 export const HeroSection = () => {
   return (
     <div className="py-28 bg-primary">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-4xl mx-auto px-6">
         <h2 className="text-6xl font-reckless font-medium text-center mb-4 text-white" style={{ fontFamily: 'Reckless, Georgia, serif' }}>
           All-in-One AI Blog Writer<br />to Grow Your Traffic
         </h2>
@@ -17,7 +17,7 @@ export const HeroSection = () => {
           <Button 
             asChild
             size="lg" 
-            className="bg-white text-primary hover:bg-white/90 text-lg px-8"
+            className="bg-white text-primary text-lg px-8"
           >
             <Link to="/signup">
               Get Started for Free <ArrowRight className="ml-2" />

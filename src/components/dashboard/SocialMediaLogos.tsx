@@ -4,7 +4,7 @@ import { Twitter, Facebook, Instagram, Linkedin } from "lucide-react";
 export const SocialMediaLogos = () => {
   return (
     <div className="py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-4xl mx-auto px-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-12 items-center justify-items-center">
           <div className="text-center">
             <Twitter className="w-8 h-8 text-gray-400 hover:text-gray-600 transition-colors mx-auto mb-3" />

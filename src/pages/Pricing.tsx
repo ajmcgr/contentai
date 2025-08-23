@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 const Pricing = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-20">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-4xl mx-auto px-6">
         <h1 className="text-4xl font-reckless font-medium text-center mb-12">Simple, Transparent Pricing</h1>
         <div className="max-w-2xl mx-auto">
           <div className="bg-white p-10 rounded-xl shadow-lg border-2 border-primary">

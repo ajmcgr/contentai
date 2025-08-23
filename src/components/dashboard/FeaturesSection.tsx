@@ -3,7 +3,7 @@ import { Search, FileText, Zap } from "lucide-react";
 export const FeaturesSection = () => {
   return (
     <div className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-4xl mx-auto px-6">
         <h2 className="text-4xl font-reckless font-medium text-center mb-16">How It Works</h2>
         <div className="grid md:grid-cols-3 gap-12">
           <div className="text-center">
