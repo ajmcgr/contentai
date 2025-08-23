@@ -17,6 +17,7 @@ import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { AuthenticatedLayout } from "./components/layouts/AuthenticatedLayout";
 import DashboardIndex from "./pages/dashboard/Index";
+import ArticlesDashboard from "./pages/dashboard/ArticlesDashboard";
 import Account from "./pages/Account";
 import ContentGenerator from "./pages/ContentGenerator";
 import HeadlineGenerator from "./pages/tools/HeadlineGenerator";
@@ -40,11 +41,15 @@ const App = () => (
         <Header />
         <Routes>
           <Route path="/dashboard/*" element={<AuthenticatedLayout />}>
-            <Route index element={<DashboardIndex />} />
+            <Route index element={<ArticlesDashboard />} />
+            <Route path="articles" element={<div>Articles Dashboard</div>} />
+            <Route path="write" element={<div>Write Article</div>} />
+            <Route path="topics" element={<div>Topics</div>} />
+            <Route path="scheduler" element={<div>Scheduler</div>} />
+            <Route path="backlinks" element={<div>Backlinks</div>} />
+            <Route path="settings" element={<div>Settings</div>} />
+            <Route path="upgrade" element={<div>Upgrade Plan</div>} />
             <Route path="generator" element={<ContentGenerator />} />
-            <Route path="new" element={<div>Create New Post</div>} />
-            <Route path="scheduled" element={<div>Scheduled Posts</div>} />
-            <Route path="posts" element={<div>Previous Posts</div>} />
             <Route path="account" element={<Account />} />
           </Route>
           <Route element={
