@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { ArticleManagement } from "@/components/dashboard/ArticleManagement";
+import { TrialBanner } from "@/components/TrialBanner";
 
 export default function ArticlesDashboard() {
   return (
@@ -20,7 +21,10 @@ export default function ArticlesDashboard() {
           </header>
 
           {/* Main Content */}
-          <ArticleManagement />
+          <div className="flex-1 p-6">
+            <TrialBanner />
+            <ArticleManagement />
+          </div>
         </div>
       </div>
     </SidebarProvider>
