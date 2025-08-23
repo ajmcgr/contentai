@@ -45,11 +45,11 @@ const About = () => {
             Thanks for being part of this journey. We're building something we genuinely wish existed when we were struggling with content creation ourselves.
           </p>
 
-          <div className="mt-12 flex items-center gap-6">
+          <div className="mt-12">
             <img 
               src="/lovable-uploads/800a1059-73b1-46b2-b518-fd9a71bf73bb.png" 
               alt="Alex MacGregor, Founder of Content AI"
-              className="w-32 h-32 object-cover flex-shrink-0"
+              className="w-32 h-32 object-cover mb-4"
             />
             <div className="text-gray-700">
               <p className="mb-1 text-lg font-bold">Alex MacGregor, Founder of Content AI</p>
