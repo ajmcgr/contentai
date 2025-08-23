@@ -18,6 +18,7 @@ import { Header } from "./components/Header";
 import { AuthenticatedLayout } from "./components/layouts/AuthenticatedLayout";
 import DashboardIndex from "./pages/dashboard/Index";
 import Account from "./pages/Account";
+import ContentGenerator from "./pages/ContentGenerator";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
         <Routes>
           <Route path="/dashboard/*" element={<AuthenticatedLayout />}>
             <Route index element={<DashboardIndex />} />
+            <Route path="generator" element={<ContentGenerator />} />
             <Route path="new" element={<div>Create New Post</div>} />
             <Route path="scheduled" element={<div>Scheduled Posts</div>} />
             <Route path="posts" element={<div>Previous Posts</div>} />

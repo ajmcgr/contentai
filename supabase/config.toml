@@ -1,1 +1,33 @@
 project_id = "hmrzmafwvhifjhsoizil"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54324
+external_url = "http://localhost:54324"
+anon_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtcnptYWZ3dmhpZmpoc29pemlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc3OTg0NDgsImV4cCI6MjA1MzM3NDQ0OH0.GxaTSbm_f0R85dRMshUboGQioj5wgzA2h06FDbAzvh8"
+service_role_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtcnptYWZ3dmhpZmpoc29pemlsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNzc5ODQ0OCwiZXhwIjoyMDUzMzc0NDQ4fQ.TJUlOUz0sXV_EMQp7JOF0-2S8mB3V8xDFnFAJMHYPyI"
+
+[functions.generate-content]
+verify_jwt = true
+
+[functions.keyword-research]
+verify_jwt = true
+
+[functions.cms-integration]
+verify_jwt = true
+
+[functions.generate-images]
+verify_jwt = true
+
+[functions.send-verification]
+verify_jwt = false
+
+[functions.twitter-connect]
+verify_jwt = true
