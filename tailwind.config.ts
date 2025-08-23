@@ -20,7 +20,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        reckless: ['Reckless', 'Georgia', 'Times New Roman', 'serif'],
+        reckless: ['Playfair Display', 'Georgia', 'Times New Roman', 'serif'],
         merriweather: ["Merriweather", "serif"],
       },
       fontWeight: {
