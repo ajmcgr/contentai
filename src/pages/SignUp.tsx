@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ArrowRight } from "lucide-react";
 
 export const SignUp = () => {
   const [email, setEmail] = useState("");
@@ -112,7 +113,7 @@ export const SignUp = () => {
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Creating account..." : "Sign Up"}
+            {loading ? "Creating account..." : "Sign Up"} <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
         </form>
         <div className="mt-6">
@@ -148,7 +149,7 @@ export const SignUp = () => {
                 fill="#EA4335"
               />
             </svg>
-            Sign up with Google
+            Sign up with Google <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
         </div>
       </Card>

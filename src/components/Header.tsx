@@ -1,7 +1,7 @@
 
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface HeaderProps {
@@ -75,10 +75,10 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="bg-white text-primary transition-colors text-base font-normal"
+                  className="bg-white text-primary text-base font-normal"
                   onClick={() => navigate('/signup')}
                 >
-                  Sign Up
+                  Sign Up <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </>
             )}
