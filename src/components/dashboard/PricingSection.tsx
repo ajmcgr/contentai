@@ -6,11 +6,11 @@ export const PricingSection = () => {
   return (
     <div className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-6">
-        <h2 className="text-4xl font-bold text-center mb-12">Simple, Transparent Pricing</h2>
+        <h2 className="text-4xl font-reckless font-medium text-center mb-12">Simple, Transparent Pricing</h2>
         <div className="max-w-2xl mx-auto">
           <div className="bg-white p-10 rounded-xl shadow-lg border-2 border-primary">
             <div className="text-center mb-8">
-              <h3 className="text-3xl font-bold mb-4">AI Blog Writer Pro</h3>
+              <h3 className="text-3xl font-reckless font-medium mb-4">AI Blog Writer Pro</h3>
               <p className="text-5xl font-bold mb-2">$99<span className="text-xl text-gray-500">/month</span></p>
               <p className="text-gray-600">30 SEO-optimized articles per month, published automatically</p>
             </div>
