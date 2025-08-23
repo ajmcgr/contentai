@@ -1,5 +1,6 @@
 
 import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { User, LogOut, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,21 @@ interface HeaderProps {
 
 export const Header = ({ isAuthenticated }: HeaderProps) => {
   const navigate = useNavigate();
+  const [authed, setAuthed] = useState<boolean>(!!isAuthenticated);
+
+  useEffect(() => {
+    let isMounted = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (isMounted) setAuthed(!!session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isMounted) setAuthed(!!session);
+    });
+    return () => {
+      subscription.unsubscribe();
+      isMounted = false;
+    };
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -17,18 +33,18 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
   };
 
   return (
-    <header className={isAuthenticated ? "bg-white border-b w-full" : "bg-primary w-full"}>
+    <header className={authed ? "bg-white border-b w-full" : "bg-primary w-full"}>
       <div className="max-w-5xl mx-auto px-4 py-4">
         <nav className="flex items-center justify-between">
-          <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center">
+          <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
             <img
-              src={isAuthenticated ? "/lovable-uploads/1d735d91-3727-4142-b011-ec4dce9aa294.png" : "/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"}
+              src={authed ? "/lovable-uploads/1d735d91-3727-4142-b011-ec4dce9aa294.png" : "/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"}
               alt="Content AI"
               className="h-8 w-auto"
             />
           </Link>
           <div className="flex-1 flex items-center justify-center space-x-6">
-            {isAuthenticated ? (
+            {authed ? (
               <>
                 <Button 
                   variant="ghost" 
@@ -53,7 +69,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
             )}
           </div>
           <div className="flex items-center space-x-4">
-            {!isAuthenticated && (
+            {!authed && (
               <>
                 <Link 
                   to="/pricing" 
