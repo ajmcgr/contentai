@@ -28,6 +28,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <Header />
         <Routes>
           <Route path="/dashboard/*" element={<AuthenticatedLayout />}>
             <Route index element={<DashboardIndex />} />
@@ -39,7 +40,6 @@ const App = () => (
           </Route>
           <Route element={
             <>
-              <Header />
               <div className="flex flex-col min-h-screen pt-16">
                 <div className="flex-grow">
                   <Routes>
