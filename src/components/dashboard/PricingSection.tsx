@@ -60,7 +60,7 @@ export const PricingSection = () => {
             </div>
             
             <Button asChild className="w-full text-lg py-3">
-              <Link to="/signup">Get Started for Free</Link>
+              <Link to="/signup">Start Free Trial</Link>
             </Button>
           </div>
         </div>

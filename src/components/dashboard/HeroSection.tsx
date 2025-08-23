@@ -21,7 +21,7 @@ export const HeroSection = () => {
             style={{ color: '#222529' }}
           >
             <Link to="/signup">
-              Get Started for Free <ArrowRight className="ml-2" />
+              Start Free Trial <ArrowRight className="ml-2" />
             </Link>
           </Button>
           <div className="senja-embed" data-id="77285219-9d5a-4b35-bd39-6e413a1e81e4" data-mode="shadow" data-lazyload="false"></div>
