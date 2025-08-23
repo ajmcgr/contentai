@@ -45,19 +45,14 @@ const About = () => {
             Thanks for being part of this journey. We're building something we genuinely wish existed when we were struggling with content creation ourselves.
           </p>
 
-          <p className="text-gray-700 leading-relaxed text-lg">
-            Alex MacGregor, Founder of Content AI
-          </p>
-        </div>
-
-        <div className="mt-16">
-          <div className="flex items-center gap-6">
+          <div className="mt-12 flex items-center gap-6">
             <img 
               src="/lovable-uploads/800a1059-73b1-46b2-b518-fd9a71bf73bb.png" 
               alt="Alex MacGregor, Founder of Content AI"
-              className="w-24 h-24 rounded-full object-cover flex-shrink-0"
+              className="w-24 h-24 rounded object-cover flex-shrink-0"
             />
-            <div className="text-gray-600">
+            <div className="text-gray-700">
+              <p className="mb-1 text-lg">Alex MacGregor, Founder of Content AI</p>
               <p className="mb-1 text-lg">— Alex MacGregor</p>
               <p className="text-base mb-2">Founder, Content AI</p>
               <a 
