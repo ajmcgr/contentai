@@ -39,18 +39,11 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
           <div className="flex items-center space-x-4">
             <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
               <img
-                src={authed ? "/lovable-uploads/4affed32-8b02-45a4-98c8-6a9921198210.png" : "/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"}
+                src={authed ? "/lovable-uploads/6bd66de2-8feb-4fc6-b6ca-f620465944a5.png" : "/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"}
                 alt="Content AI"
-                className="h-8 w-auto"
-              />
-            </Link>
-            {authed && (
-              <img
-                src="/lovable-uploads/6bd66de2-8feb-4fc6-b6ca-f620465944a5.png"
-                alt="Content"
                 className="h-10 w-auto"
               />
-            )}
+            </Link>
           </div>
           <div className="flex-1 flex items-center justify-center space-x-6">
           </div>
