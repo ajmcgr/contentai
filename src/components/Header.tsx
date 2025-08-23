@@ -40,7 +40,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
             {!isAuthenticated && (
               <Link 
                 to="/pricing" 
-                className="text-white opacity-90 hover:opacity-100 transition-opacity text-base"
+                className="text-white transition-opacity text-base"
               >
                 Pricing
               </Link>
@@ -68,14 +68,14 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
               <>
                 <Button 
                   variant="ghost" 
-                  className="text-white hover:bg-white/10 transition-colors text-base font-normal"
+                  className="text-white transition-colors text-base font-normal"
                   onClick={() => navigate('/signin')}
                 >
                   Login
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="bg-white text-primary hover:bg-white/90 hover:text-primary transition-colors text-base font-normal"
+                  className="bg-white text-primary transition-colors text-base font-normal"
                   onClick={() => navigate('/signup')}
                 >
                   Sign Up

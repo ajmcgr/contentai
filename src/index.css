@@ -134,21 +134,3 @@
     color: #000000 !important;
   }
 }
-
-@layer utilities {
-  .hover\:bg-primary\/90:hover {
-    background-color: #000000 !important;
-  }
-  
-  .hover\:bg-primary:hover {
-    background-color: #000000 !important;
-  }
-  
-  .hover\:text-primary:hover {
-    color: #000000 !important;
-  }
-  
-  .bg-primary:hover {
-    background-color: #000000 !important;
-  }
-}
