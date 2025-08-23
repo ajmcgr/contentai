@@ -10,15 +10,11 @@ export default function ArticlesDashboard() {
         <DashboardSidebar />
         
         <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="h-16 flex items-center justify-between border-b border-border px-6">
-            <SidebarTrigger className="lg:hidden" />
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
-                Dashboard / Articles
-              </span>
-            </div>
-          </header>
+          <div className="flex items-center gap-4 p-6">
+            <span className="text-sm text-muted-foreground">
+              Dashboard / Articles
+            </span>
+          </div>
 
           {/* Main Content */}
           <div className="flex-1 p-6">
