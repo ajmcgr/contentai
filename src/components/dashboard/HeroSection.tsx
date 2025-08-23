@@ -17,7 +17,7 @@ export const HeroSection = () => {
           <Button 
             asChild
             size="lg" 
-            className="bg-white text-primary text-lg px-8"
+            className="bg-white text-primary text-lg px-8 hover:bg-white hover:text-primary"
           >
             <Link to="/signup">
               Get Started for Free <ArrowRight className="ml-2" />
