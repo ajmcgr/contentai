@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar, Clock, History } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Header } from "../Header";
 import { Footer } from "../Footer";
 
 export const AuthenticatedLayout = () => {
@@ -45,7 +44,6 @@ export const AuthenticatedLayout = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header isAuthenticated={true} />
       <div className="flex-1 flex pt-16">
         <SidebarProvider>
           <Sidebar>
