@@ -40,7 +40,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
             {!isAuthenticated && (
               <Link 
                 to="/pricing" 
-                className="text-white text-sm font-medium hover:text-white"
+                className="text-white text-sm font-medium no-hover"
               >
                 Pricing
               </Link>

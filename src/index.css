@@ -134,3 +134,9 @@
     color: #000000 !important;
   }
 }
+
+@layer components {
+  .no-hover:hover {
+    color: inherit !important;
+  }
+}
