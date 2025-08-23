@@ -25,7 +25,7 @@ export const HeroSection = () => {
           </Button>
           <div className="senja-embed" data-id="77285219-9d5a-4b35-bd39-6e413a1e81e4" data-mode="shadow" data-lazyload="false"></div>
         </div>
-        <p className="text-center text-white text-sm mb-4">✓ 7 days free trial ✓ Secure payment ✓ Cancel any-time</p>
+        <p className="text-center text-white text-base mb-4">✓ 7 days free trial ✓ Secure payment ✓ Cancel any-time</p>
       </div>
     </div>
   );
