@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 export const HeroSection = () => {
   return (
     <div className="py-28 bg-primary">
-      <div className="max-w-4xl mx-auto px-6">
+      <div className="max-w-5xl mx-auto px-6">
         <h2 className="text-6xl font-reckless font-medium text-center mb-4 text-white" style={{ fontFamily: 'Reckless, Georgia, serif' }}>
           All-in-One AI Blog Writer<br />to Grow Your Traffic
         </h2>
@@ -17,7 +17,7 @@ export const HeroSection = () => {
           <Button 
             asChild
             size="lg" 
-            className="bg-white text-primary text-lg px-8 hover:bg-white hover:text-primary"
+            className="bg-white text-primary text-lg px-8 hover:bg-white/90 hover:text-primary"
           >
             <Link to="/signup">
               Get Started for Free <ArrowRight className="ml-2" />
@@ -25,7 +25,7 @@ export const HeroSection = () => {
           </Button>
           <div className="senja-embed" data-id="77285219-9d5a-4b35-bd39-6e413a1e81e4" data-mode="shadow" data-lazyload="false"></div>
         </div>
-        <p className="text-center text-white text-sm mb-4">Cancel anytime. No questions asked.</p>
+        <p className="text-center text-white text-sm mb-4">✓ 7 days free trial ✓ Secure payment ✓ Cancel any-time</p>
       </div>
     </div>
   );
