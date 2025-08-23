@@ -40,7 +40,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
             {!isAuthenticated && (
               <Link 
                 to="/pricing" 
-                className="text-white text-sm"
+                className="text-white text-sm font-medium"
               >
                 Pricing
               </Link>
@@ -67,13 +67,13 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
             ) : (
               <>
                 <span 
-                  className="text-white text-sm font-normal cursor-pointer"
+                  className="text-white text-sm font-medium cursor-pointer"
                   onClick={() => navigate('/signin')}
                 >
                   Login
                 </span>
                 <span 
-                  className="bg-white text-sm font-normal px-4 py-2 rounded cursor-pointer inline-flex items-center"
+                  className="bg-white text-sm font-medium px-4 py-2 rounded cursor-pointer inline-flex items-center"
                   style={{ color: '#222529' }}
                   onClick={() => navigate('/signup')}
                 >
