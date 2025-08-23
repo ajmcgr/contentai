@@ -215,12 +215,58 @@ export type Database = {
         }
         Relationships: []
       }
+      user_trials: {
+        Row: {
+          articles_created: number
+          created_at: string
+          has_upgraded: boolean
+          id: string
+          is_trial_active: boolean
+          max_trial_articles: number
+          trial_end_date: string
+          trial_start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          articles_created?: number
+          created_at?: string
+          has_upgraded?: boolean
+          id?: string
+          is_trial_active?: boolean
+          max_trial_articles?: number
+          trial_end_date?: string
+          trial_start_date?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          articles_created?: number
+          created_at?: string
+          has_upgraded?: boolean
+          id?: string
+          is_trial_active?: boolean
+          max_trial_articles?: number
+          trial_end_date?: string
+          trial_start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_trial_articles: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
+      is_trial_active: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
