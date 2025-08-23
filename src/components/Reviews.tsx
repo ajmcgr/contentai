@@ -2,6 +2,9 @@
 import { Avatar } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star } from "lucide-react";
+import sarahAvatar from "@/assets/sarah-thompson-avatar.jpg";
+import michaelAvatar from "@/assets/michael-chen-avatar.jpg";
+import emilyAvatar from "@/assets/emily-rodriguez-avatar.jpg";
 
 interface Review {
   id: number;
@@ -17,7 +20,7 @@ const reviews: Review[] = [
     id: 1,
     name: "Sarah Thompson",
     role: "Marketing Director",
-    avatar: "/placeholder.svg",
+    avatar: sarahAvatar,
     content: "This AI scheduling assistant has completely transformed how we manage our social media. The time savings are incredible!",
     rating: 5
   },
@@ -25,7 +28,7 @@ const reviews: Review[] = [
     id: 2,
     name: "Michael Chen",
     role: "Content Creator",
-    avatar: "/placeholder.svg",
+    avatar: michaelAvatar,
     content: "The AI suggestions are spot-on and have helped me maintain consistency across all my social platforms. Highly recommended!",
     rating: 5
   },
@@ -33,7 +36,7 @@ const reviews: Review[] = [
     id: 3,
     name: "Emily Rodriguez",
     role: "Social Media Manager",
-    avatar: "/placeholder.svg",
+    avatar: emilyAvatar,
     content: "Finally, a tool that understands the nuances of different social platforms. It's like having an expert team member.",
     rating: 5
   }
