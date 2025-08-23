@@ -17,12 +17,12 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
   };
 
   return (
-    <header className="bg-primary w-full">
+    <header className={isAuthenticated ? "bg-white border-b w-full" : "bg-primary w-full"}>
       <div className="max-w-5xl mx-auto px-4 py-4">
         <nav className="flex items-center justify-between">
           <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center">
             <img
-              src="/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"
+              src={isAuthenticated ? "/lovable-uploads/1d735d91-3727-4142-b011-ec4dce9aa294.png" : "/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"}
               alt="Content AI"
               className="h-8 w-auto"
             />
@@ -30,26 +30,9 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
           <div className="flex-1 flex items-center justify-center space-x-6">
             {isAuthenticated ? (
               <>
-              </>
-            ) : (
-              <>
-              </>
-            )}
-          </div>
-          <div className="flex items-center space-x-4">
-            {!isAuthenticated && (
-              <Link 
-                to="/pricing" 
-                className="text-white text-sm font-medium no-hover"
-              >
-                Pricing
-              </Link>
-            )}
-            {isAuthenticated ? (
-              <>
                 <Button 
                   variant="ghost" 
-                  className="text-white gap-2 hover:text-white hover:bg-transparent"
+                  className="text-gray-700 gap-2 hover:text-gray-900 hover:bg-gray-100"
                   onClick={() => navigate('/dashboard/account')}
                 >
                   <User size={18} />
@@ -57,7 +40,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
                 </Button>
                 <Button
                   variant="ghost"
-                  className="text-white gap-2 hover:text-white hover:bg-transparent"
+                  className="text-gray-700 gap-2 hover:text-gray-900 hover:bg-gray-100"
                   onClick={handleSignOut}
                 >
                   <LogOut size={18} />
@@ -66,6 +49,18 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
               </>
             ) : (
               <>
+              </>
+            )}
+          </div>
+          <div className="flex items-center space-x-4">
+            {!isAuthenticated && (
+              <>
+                <Link 
+                  to="/pricing" 
+                  className="text-white text-sm font-medium no-hover"
+                >
+                  Pricing
+                </Link>
                 <span 
                   className="text-white text-sm font-medium cursor-pointer hover:text-white"
                   onClick={() => navigate('/signin')}
