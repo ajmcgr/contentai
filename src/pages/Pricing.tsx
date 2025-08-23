@@ -58,7 +58,11 @@ const Pricing = () => {
               </div>
             </div>
             
-            <Button className="w-full text-lg py-3">Get Started for Free</Button>
+            <Button asChild className="w-full text-lg py-3">
+              <a href="https://buy.stripe.com/14AaEZ2Bd06k6KXbCYeAg00" target="_blank" rel="noopener noreferrer">
+                Get Started for Free
+              </a>
+            </Button>
           </div>
         </div>
       </div>
