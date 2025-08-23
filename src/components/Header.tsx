@@ -17,7 +17,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-primary backdrop-blur-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-primary w-full">
       <div className="max-w-5xl mx-auto px-4 py-4">
         <nav className="flex items-center justify-between">
           <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center">
@@ -40,7 +40,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
             {!isAuthenticated && (
               <Link 
                 to="/pricing" 
-                className="text-white transition-opacity text-sm"
+                className="text-white text-sm"
               >
                 Pricing
               </Link>
@@ -49,7 +49,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
               <>
                 <Button 
                   variant="ghost" 
-                  className="text-white hover:bg-white/10 transition-colors gap-2"
+                  className="text-white gap-2"
                   onClick={() => navigate('/dashboard/account')}
                 >
                   <User size={18} />
@@ -57,7 +57,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
                 </Button>
                 <Button
                   variant="ghost"
-                  className="text-white hover:bg-white/10 transition-colors gap-2"
+                  className="text-white gap-2"
                   onClick={handleSignOut}
                 >
                   <LogOut size={18} />
@@ -66,20 +66,18 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
               </>
             ) : (
               <>
-                <Button 
-                  variant="ghost" 
-                  className="text-white transition-colors text-sm font-normal"
+                <span 
+                  className="text-white text-sm font-normal cursor-pointer"
                   onClick={() => navigate('/signin')}
                 >
                   Login
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="bg-white text-primary text-sm font-normal"
+                </span>
+                <span 
+                  className="bg-white text-primary text-sm font-normal px-4 py-2 rounded cursor-pointer inline-flex items-center"
                   onClick={() => navigate('/signup')}
                 >
                   Sign Up <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
+                </span>
               </>
             )}
           </div>
