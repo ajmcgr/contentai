@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Footer } from "../Footer";
-import { Header } from "../Header";
 
 export const AuthenticatedLayout = () => {
   const [session, setSession] = useState<any>(null);
@@ -36,7 +35,7 @@ export const AuthenticatedLayout = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header isAuthenticated />
+      
       <main className="flex-1 bg-background">
         <Outlet />
       </main>
