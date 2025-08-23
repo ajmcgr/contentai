@@ -19,6 +19,15 @@ import { AuthenticatedLayout } from "./components/layouts/AuthenticatedLayout";
 import DashboardIndex from "./pages/dashboard/Index";
 import Account from "./pages/Account";
 import ContentGenerator from "./pages/ContentGenerator";
+import HeadlineGenerator from "./pages/tools/HeadlineGenerator";
+import MetaDescriptionGenerator from "./pages/tools/MetaDescriptionGenerator";
+import KeywordResearch from "./pages/tools/KeywordResearch";
+import ContentIdeaGenerator from "./pages/tools/ContentIdeaGenerator";
+import BlogTitleGenerator from "./pages/tools/BlogTitleGenerator";
+import SEOTitleGenerator from "./pages/tools/SEOTitleGenerator";
+import SocialMediaCaptionGenerator from "./pages/tools/SocialMediaCaptionGenerator";
+import ContentOutlineGenerator from "./pages/tools/ContentOutlineGenerator";
+import ReadabilityChecker from "./pages/tools/ReadabilityChecker";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +65,15 @@ const App = () => (
             <Route path="privacy" element={<Privacy />} />
             <Route path="signin" element={<SignIn />} />
             <Route path="signup" element={<SignUp />} />
+            <Route path="tools/headline-generator" element={<HeadlineGenerator />} />
+            <Route path="tools/meta-description-generator" element={<MetaDescriptionGenerator />} />
+            <Route path="tools/keyword-research" element={<KeywordResearch />} />
+            <Route path="tools/content-idea-generator" element={<ContentIdeaGenerator />} />
+            <Route path="tools/blog-title-generator" element={<BlogTitleGenerator />} />
+            <Route path="tools/seo-title-generator" element={<SEOTitleGenerator />} />
+            <Route path="tools/social-media-caption-generator" element={<SocialMediaCaptionGenerator />} />
+            <Route path="tools/content-outline-generator" element={<ContentOutlineGenerator />} />
+            <Route path="tools/readability-checker" element={<ReadabilityChecker />} />
           </Route>
         </Routes>
       </BrowserRouter>

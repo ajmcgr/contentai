@@ -5,14 +5,28 @@ import { Link } from 'react-router-dom';
 export const Footer = () => {
   return (
     <footer className="bg-white border-t">
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div>
             <h3 className="font-semibold text-foreground mb-4 text-sm">Company</h3>
             <ul className="space-y-2">
               <li><Link to="/about" className="text-gray-600 hover:text-primary-700 text-sm">About</Link></li>
               <li><a href="https://discord.gg/whXSXeVJC2" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-primary-700 text-sm">Community</a></li>
               <li><a href="https://blog.works.xyz/" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-primary-700 text-sm">Blog</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground mb-4 text-sm">Free Tools</h3>
+            <ul className="space-y-2">
+              <li><Link to="/tools/headline-generator" className="text-gray-600 hover:text-primary-700 text-sm">Headline Generator</Link></li>
+              <li><Link to="/tools/meta-description-generator" className="text-gray-600 hover:text-primary-700 text-sm">Meta Description Generator</Link></li>
+              <li><Link to="/tools/keyword-research" className="text-gray-600 hover:text-primary-700 text-sm">Keyword Research</Link></li>
+              <li><Link to="/tools/content-idea-generator" className="text-gray-600 hover:text-primary-700 text-sm">Content Idea Generator</Link></li>
+              <li><Link to="/tools/blog-title-generator" className="text-gray-600 hover:text-primary-700 text-sm">Blog Title Generator</Link></li>
+              <li><Link to="/tools/seo-title-generator" className="text-gray-600 hover:text-primary-700 text-sm">SEO Title Generator</Link></li>
+              <li><Link to="/tools/social-media-caption-generator" className="text-gray-600 hover:text-primary-700 text-sm">Social Media Captions</Link></li>
+              <li><Link to="/tools/content-outline-generator" className="text-gray-600 hover:text-primary-700 text-sm">Content Outline Generator</Link></li>
+              <li><Link to="/tools/readability-checker" className="text-gray-600 hover:text-primary-700 text-sm">Readability Checker</Link></li>
             </ul>
           </div>
           <div>
