@@ -12,37 +12,41 @@ const About = () => {
           </p>
         </div>
 
-        <div className="prose prose-lg max-w-none border-[1px] border-[#e2e8f0] rounded-[7.5px] p-8">
-          <p className="text-lg mb-8">
+        <div className="prose prose-xl max-w-none border-[1px] border-[#e2e8f0] rounded-[7.5px] p-8">
+          <p className="text-xl mb-8">
             <strong>Hello there!</strong>
           </p>
           
-          <p className="mb-8 text-gray-700 leading-relaxed">
+          <p className="mb-8 text-gray-700 leading-relaxed text-lg">
             I'm a content strategist who has spent the last decade helping businesses scale their content marketing through various platforms and tools. Those platforms were revolutionary once, but somewhere along the way they traded focus for feature bloat. Pricing climbed, dashboards grew dense, and the content still missed too many key optimization opportunities.
           </p>
 
-          <p className="mb-8 text-gray-700 leading-relaxed">
+          <p className="mb-8 text-gray-700 leading-relaxed text-lg">
             I found myself wrestling with complex content management systems while the industry around us moved to natural-language prompts and AI-assisted workflows. That frustration became the spark for our AI Blog Writer platform.
           </p>
 
-          <p className="mb-8 text-gray-700 leading-relaxed">
+          <p className="mb-8 text-gray-700 leading-relaxed text-lg">
             We're building a lean, AI-first content generation platform that prizes speed, accuracy, and SEO optimization over shiny add-ons. Imagine describing your content needs the way you'd brief a colleague—"Tech articles for SaaS startups focusing on growth strategies"—and seeing optimized, publish-ready articles in minutes, not hours.
           </p>
 
-          <p className="mb-8 text-gray-700 leading-relaxed">
+          <p className="mb-8 text-gray-700 leading-relaxed text-lg">
             Then imagine paying a fair, cancel-anytime rate for that clarity instead of an annual contract padded with modules you'll never use.
           </p>
 
-          <p className="mb-8 text-gray-700 leading-relaxed">
+          <p className="mb-8 text-gray-700 leading-relaxed text-lg">
             Our small team writes code during the day and optimizes algorithms at night, propelled by a simple goal: help you create great content without the busywork. We'd rather invest in product improvements than flashy marketing; rather answer a customer email than craft another upsell deck.
           </p>
 
-          <p className="mb-8 text-gray-700 leading-relaxed">
+          <p className="mb-8 text-gray-700 leading-relaxed text-lg">
             Every feature we build serves content creators who need results, not complexity. We believe exceptional content should be accessible to ambitious entrepreneurs, not just enterprise teams with unlimited budgets.
           </p>
 
-          <p className="text-gray-700 leading-relaxed">
+          <p className="mb-8 text-gray-700 leading-relaxed text-lg">
             Thanks for being part of this journey. We're building something we genuinely wish existed when we were struggling with content creation ourselves.
+          </p>
+
+          <p className="text-gray-700 leading-relaxed text-lg">
+            Alex MacGregor, Founder of Content AI
           </p>
         </div>
 
@@ -54,13 +58,14 @@ const About = () => {
               className="w-24 h-24 rounded-full object-cover flex-shrink-0"
             />
             <div className="text-gray-600">
-              <p className="mb-1">— Alex MacGregor</p>
-              <p className="text-sm mb-2">Founder, Content AI</p>
+              <p className="mb-1 text-lg">— Alex MacGregor</p>
+              <p className="text-base mb-2">Founder, Content AI</p>
               <a 
                 href="https://www.linkedin.com/in/alexmacgregor2/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-primary hover:text-black transition-colors text-sm"
+                className="text-base"
+                style={{ color: '#2563eb' }}
               >
                 Connect with me on LinkedIn
               </a>
