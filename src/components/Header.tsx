@@ -38,7 +38,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
         <nav className="flex items-center justify-between">
           <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
             <img
-              src={authed ? "/lovable-uploads/1d735d91-3727-4142-b011-ec4dce9aa294.png" : "/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"}
+              src={authed ? "/lovable-uploads/4affed32-8b02-45a4-98c8-6a9921198210.png" : "/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"}
               alt="Content AI"
               className="h-8 w-auto"
             />
