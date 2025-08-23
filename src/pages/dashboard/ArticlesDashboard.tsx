@@ -6,7 +6,7 @@ import { TrialBanner } from "@/components/TrialBanner";
 export default function ArticlesDashboard() {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-background pt-20">
         <DashboardSidebar />
         
         <div className="flex-1 flex flex-col">
