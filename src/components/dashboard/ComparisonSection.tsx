@@ -12,12 +12,6 @@ export const ComparisonSection = () => {
     { feature: "Formats blogs for readability", us: true, chatgpt: false },
     { feature: "SEO high-ranking keywords", us: true, chatgpt: false },
     { feature: "Auto-link relevant pages", us: true, chatgpt: false },
-    { feature: "Short form text content, not specialized for blogging", us: false, chatgpt: true },
-    { feature: "Requires manual effort to make content SEO-friendly", us: false, chatgpt: true },
-    { feature: "No linking relevant links from your own website", us: false, chatgpt: true },
-    { feature: "Ultra generic AI wording and article", us: false, chatgpt: true },
-    { feature: "No visuals included in sections", us: false, chatgpt: true },
-    { feature: "No one click publishing", us: false, chatgpt: true },
   ];
 
   return (
