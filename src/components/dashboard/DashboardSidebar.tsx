@@ -49,9 +49,11 @@ export function DashboardSidebar() {
         {/* Logo */}
         <div className="p-4 border-b border-border">
           {!isCollapsed && (
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">C</span>
-            </div>
+            <img
+              src="/lovable-uploads/1d735d91-3727-4142-b011-ec4dce9aa294.png"
+              alt="Content AI"
+              className="h-8 w-auto"
+            />
           )}
           {isCollapsed && (
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">

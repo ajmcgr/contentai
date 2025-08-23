@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { FileText, Link, Search, Image, ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { TrialBanner } from "@/components/TrialBanner";
 
 const DashboardIndex = () => {
   const navigate = useNavigate();
@@ -37,6 +38,8 @@ const DashboardIndex = () => {
         <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
         <p className="text-muted-foreground">Manage your AI-powered content creation workflow</p>
       </div>
+      
+      <TrialBanner />
       
       {/* Main Feature - Content Generation */}
       <div className="mb-8">
