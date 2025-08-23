@@ -18,7 +18,7 @@ export const PricingSection = () => {
             <div className="space-y-4 mb-8">
               <div className="flex items-start gap-3">
                 <Check className="text-primary w-5 h-5 mt-0.5 flex-shrink-0" />
-                <span>30 Articles a month generated and published on autopilot (Claude Pro)</span>
+                <span>30 Articles a month generated and published on autopilot</span>
               </div>
               <div className="flex items-start gap-3">
                 <Check className="text-primary w-5 h-5 mt-0.5 flex-shrink-0" />
