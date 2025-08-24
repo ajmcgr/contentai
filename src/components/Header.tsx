@@ -22,8 +22,8 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
   return (
     <header className="bg-white w-full h-16">
       <div className="max-w-5xl mx-auto px-4 h-full">
-        <nav className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+        <nav className="flex items-center justify-between py-4">
+          <div className="flex items-center space-x-8">
             <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
               <img
                 src="/lovable-uploads/3178870e-8a32-4f12-803b-900aae260b5c.png"
@@ -34,7 +34,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
           </div>
           <div className="flex-1 flex items-center justify-center space-x-6">
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-6">
             {authed ? (
               <>
                 <Button 
