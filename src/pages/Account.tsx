@@ -92,8 +92,8 @@ const Account = () => {
     try {
       console.log('Starting sign out process from account page...');
       
-      // Force sign out with scope: 'local' to ensure it works
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      // Sign out globally to revoke refresh tokens
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       
       if (error) {
         console.error('Sign out error:', error);
