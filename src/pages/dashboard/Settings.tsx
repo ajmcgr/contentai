@@ -118,6 +118,18 @@ export default function Settings() {
     setConnectionDialog(prev => ({ ...prev, loading: true }));
 
     try {
+      // Basic client-side validation
+      if (!connectionDialog.platform) throw new Error('Please choose a platform.');
+      if (!connectionDialog.siteUrl) throw new Error('Please enter your site URL.');
+      if ((connectionDialog.platform === 'wordpress' || connectionDialog.platform === 'webhook') && !connectionDialog.apiKey) {
+        throw new Error(connectionDialog.platform === 'wordpress'
+          ? 'Enter WordPress credentials: username:application_password'
+          : 'Enter your webhook secret/key');
+      }
+      if (!(connectionDialog.platform === 'wordpress' || connectionDialog.platform === 'webhook') && !connectionDialog.accessToken) {
+        throw new Error('Please enter an access token.');
+      }
+
       const { data, error } = await supabase.functions.invoke('cms-integration/connect', {
         body: {
           platform: connectionDialog.platform,
@@ -129,9 +141,33 @@ export default function Settings() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        const status = (error as any)?.context?.response?.status;
+        // Try to extract error details from function response
+        let details = (error as any)?.message || 'Failed to connect to the platform.';
+        try {
+          const text = await (error as any)?.context?.response?.text();
+          const json = text ? JSON.parse(text) : null;
+          if (json?.error) details = json.error;
+        } catch {}
 
-      if (data.success) {
+        if (status === 401) {
+          toast({
+            title: 'Please sign in',
+            description: 'Your session expired. Sign in and try connecting again.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Connection failed',
+            description: details,
+            variant: 'destructive',
+          });
+        }
+        return;
+      }
+
+      if (data?.success) {
         setIntegrations(prev => ({
           ...prev,
           [connectionDialog.platform]: {
@@ -146,20 +182,24 @@ export default function Settings() {
         }));
 
         toast({
-          title: "Connection successful!",
+          title: 'Connection successful!',
           description: `Successfully connected to your ${connectionDialog.platform} site.`,
         });
 
         closeConnectionDialog();
       } else {
-        throw new Error(data.message || 'Connection failed');
+        toast({
+          title: 'Connection failed',
+          description: data?.error || 'Failed to connect to the platform. Please check your credentials.',
+          variant: 'destructive',
+        });
       }
     } catch (error: any) {
       console.error('Connection error:', error);
       toast({
-        title: "Connection failed",
-        description: error.message || "Failed to connect to the platform. Please check your credentials.",
-        variant: "destructive",
+        title: 'Connection failed',
+        description: error.message || 'Failed to connect to the platform. Please check your credentials.',
+        variant: 'destructive',
       });
     } finally {
       setConnectionDialog(prev => ({ ...prev, loading: false }));
