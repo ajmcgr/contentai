@@ -36,8 +36,10 @@ serve(async (req) => {
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicApiKey) {
+      console.error('Anthropic API key not found');
       throw new Error('Anthropic API key not found');
     }
+    console.log('Anthropic API key found');
 
     // Fetch user's brand settings
     const { data: brandSettings, error: brandError } = await supabaseClient
@@ -101,6 +103,7 @@ Keywords: [keyword1, keyword2, keyword3]
 Introduction:
 [Write a compelling introduction paragraph here]`;
 
+    console.log('Making request to Anthropic API...');
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -109,7 +112,7 @@ Introduction:
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1000,
         messages: [
           {
@@ -120,9 +123,10 @@ Introduction:
       }),
     });
 
+    console.log('Anthropic API response status:', response.status);
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Anthropic API error:', errorText);
+      console.error('Anthropic API error response:', errorText);
       throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
     }
 
