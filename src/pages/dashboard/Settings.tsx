@@ -37,6 +37,7 @@ export default function Settings() {
         if (settings) {
           setBrandSettings({
             logo: null,
+            logoUrl: settings.logo_url,
             brandName: settings.brand_name || '',
             description: settings.description || '',
             targetAudience: settings.target_audience || '',
@@ -62,6 +63,23 @@ export default function Settings() {
           setContentSettings(prev => ({
             ...prev,
             ...s,
+          }));
+        }
+
+        // Load existing profile with avatar
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url, full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (profile) {
+          const nameParts = (profile.full_name || '').split(' ');
+          setAccountSettings(prev => ({
+            ...prev,
+            avatarUrl: profile.avatar_url,
+            firstName: nameParts[0] || '',
+            lastName: nameParts.slice(1).join(' ') || '',
           }));
         }
       } catch (error) {
@@ -314,6 +332,7 @@ export default function Settings() {
   
   const [brandSettings, setBrandSettings] = useState({
     logo: null as File | null,
+    logoUrl: null as string | null,
     brandName: "",
     description: "",
     targetAudience: "",
@@ -339,6 +358,7 @@ export default function Settings() {
 
   const [accountSettings, setAccountSettings] = useState({
     profilePicture: null as File | null,
+    avatarUrl: null as string | null,
     email: "alex@alexmacgregor.com",
     firstName: "Alexander",
     lastName: "MacGregor",
@@ -375,17 +395,133 @@ export default function Settings() {
   });
 
 
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setBrandSettings(prev => ({ ...prev, logo: file }));
+    if (!file) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to upload logo.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create file path with user ID
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/logo.${fileExt}`;
+
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('brand-logos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('brand-logos')
+        .getPublicUrl(fileName);
+
+      // Update brand settings with logo URL
+      const { error: updateError } = await supabase
+        .from('brand_settings')
+        .upsert({
+          user_id: user.id,
+          logo_url: publicUrl,
+          updated_at: new Date().toISOString()
+        });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setBrandSettings(prev => ({ ...prev, logo: file, logoUrl: publicUrl }));
+
+      toast({
+        title: "Logo uploaded successfully!",
+        description: "Your brand logo has been saved.",
+      });
+    } catch (error: any) {
+      console.error('Error uploading logo:', error);
+      toast({
+        title: "Error uploading logo",
+        description: error.message || "Failed to upload logo. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setAccountSettings(prev => ({ ...prev, profilePicture: file }));
+    if (!file) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to upload profile picture.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create file path with user ID
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profiles with avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString()
+        });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setAccountSettings(prev => ({ ...prev, profilePicture: file, avatarUrl: publicUrl }));
+
+      toast({
+        title: "Profile picture uploaded successfully!",
+        description: "Your profile picture has been saved.",
+      });
+    } catch (error: any) {
+      console.error('Error uploading profile picture:', error);
+      toast({
+        title: "Error uploading profile picture",
+        description: error.message || "Failed to upload profile picture. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -650,17 +786,17 @@ export default function Settings() {
                       <div className="space-y-2">
                         <Label htmlFor="logo">Upload Logo</Label>
                         <div className="flex items-center gap-4">
-                          <div className="w-20 h-20 border-2 border-dashed border-muted-foreground rounded-lg flex items-center justify-center">
-                            {brandSettings.logo ? (
-                              <img 
-                                src={URL.createObjectURL(brandSettings.logo)} 
-                                alt="Logo" 
-                                className="w-full h-full object-cover rounded-lg"
-                              />
-                            ) : (
-                              <Upload className="w-8 h-8 text-muted-foreground" />
-                            )}
-                          </div>
+                           <div className="w-20 h-20 border-2 border-dashed border-muted-foreground rounded-lg flex items-center justify-center">
+                             {brandSettings.logo || brandSettings.logoUrl ? (
+                               <img 
+                                 src={brandSettings.logo ? URL.createObjectURL(brandSettings.logo) : brandSettings.logoUrl!} 
+                                 alt="Logo" 
+                                 className="w-full h-full object-cover rounded-lg"
+                               />
+                             ) : (
+                               <Upload className="w-8 h-8 text-muted-foreground" />
+                             )}
+                           </div>
                           <Input
                             id="logo"
                             type="file"
@@ -981,17 +1117,17 @@ export default function Settings() {
                       <div className="space-y-2">
                         <Label htmlFor="profilePicture">Profile Picture</Label>
                         <div className="flex items-center gap-4">
-                          <div className="w-20 h-20 border-2 border-dashed border-muted-foreground rounded-full flex items-center justify-center overflow-hidden">
-                            {accountSettings.profilePicture ? (
-                              <img 
-                                src={URL.createObjectURL(accountSettings.profilePicture)} 
-                                alt="Profile" 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Upload className="w-8 h-8 text-muted-foreground" />
-                            )}
-                          </div>
+                           <div className="w-20 h-20 border-2 border-dashed border-muted-foreground rounded-full flex items-center justify-center overflow-hidden">
+                             {accountSettings.profilePicture || accountSettings.avatarUrl ? (
+                               <img 
+                                 src={accountSettings.profilePicture ? URL.createObjectURL(accountSettings.profilePicture) : accountSettings.avatarUrl!} 
+                                 alt="Profile" 
+                                 className="w-full h-full object-cover"
+                               />
+                             ) : (
+                               <Upload className="w-8 h-8 text-muted-foreground" />
+                             )}
+                           </div>
                           <Input
                             id="profilePicture"
                             type="file"
