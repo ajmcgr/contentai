@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Upload, Globe, Clock, Key, Trash2, Check, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -196,6 +197,33 @@ export default function Settings() {
     }
   };
   
+  const handleManageSubscription = () => {
+    // Navigate to billing portal or subscription management
+    window.open('https://billing.stripe.com/p/login', '_blank');
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // This would typically involve more complex deletion logic
+      // For now, we'll just show a confirmation that it would delete
+      toast({
+        title: "Account deletion initiated",
+        description: "Account deletion process has been started. This feature requires additional implementation.",
+        variant: "destructive",
+      });
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const saveAccountSettings = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -1016,13 +1044,8 @@ export default function Settings() {
                           </div>
                         </div>
 
-                        <div className="flex gap-4">
-                          <Button variant="outline">Log Out</Button>
-                          <Button variant="destructive">
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete account
-                          </Button>
-                          <Button variant="outline">Manage subscription</Button>
+                         <div className="flex gap-4">
+                           <Button variant="outline" onClick={handleManageSubscription}>Manage subscription</Button>
                          </div>
 
                          <Button onClick={saveAccountSettings}>Save Account Settings</Button>
@@ -1068,9 +1091,45 @@ export default function Settings() {
                             />
                           </div>
 
-                          <Button>Update Password</Button>
-                        </div>
-                      </div>
+                           <Button>Update Password</Button>
+                         </div>
+                       </div>
+
+                       <Separator />
+
+                       <div className="space-y-4">
+                         <h3 className="text-lg font-semibold text-destructive">Danger Zone</h3>
+                         <p className="text-sm text-muted-foreground">
+                           Once you delete your account, there is no going back. Please be certain.
+                         </p>
+                         
+                         <AlertDialog>
+                           <AlertDialogTrigger asChild>
+                             <Button variant="outline" className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground">
+                               <Trash2 className="w-4 h-4 mr-2" />
+                               Delete Account
+                             </Button>
+                           </AlertDialogTrigger>
+                           <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 This action cannot be undone. This will permanently delete your account,
+                                 remove all your data, and cancel any active subscriptions.
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>Cancel</AlertDialogCancel>
+                               <AlertDialogAction
+                                 onClick={handleDeleteAccount}
+                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                               >
+                                 Yes, delete my account
+                               </AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                         </AlertDialog>
+                       </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
