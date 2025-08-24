@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { TrialBanner } from "@/components/TrialBanner";
@@ -8,12 +8,85 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Sparkles, RefreshCw } from "lucide-react";
 
 export default function Write() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Check for edit mode on load
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('edit');
+    if (editId) {
+      setEditingId(editId);
+      loadArticleForEditing(editId);
+    }
+  }, []);
+
+  const loadArticleForEditing = async (articleId: string) => {
+    try {
+      const { data: article, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('id', articleId)
+        .single();
+
+      if (error) throw error;
+
+      setTitle(article.title || "");
+      setContent(article.content || "");
+    } catch (error) {
+      console.error('Error loading article for editing:', error);
+      toast({
+        title: "Error loading article",
+        description: "Failed to load the article for editing.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generatePrompt = async () => {
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-content', {
+        body: {
+          topic: 'Generate a compelling article idea and outline',
+          keywords: 'trending topics, engaging content',
+          tone: 'professional',
+          wordCount: 100,
+          includeImages: false
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.title) {
+        setTitle(data.title);
+      }
+      if (data?.content) {
+        setContent(data.content);
+      }
+
+      toast({
+        title: "AI Prompt Generated!",
+        description: "Your article prompt has been generated using Claude Pro.",
+      });
+    } catch (error) {
+      console.error('Error generating prompt:', error);
+      toast({
+        title: "Error generating prompt",
+        description: "Failed to generate AI prompt. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const saveDraft = async () => {
     if (!title.trim()) {
@@ -38,27 +111,45 @@ export default function Write() {
         return;
       }
 
-      const { error } = await supabase
-        .from('articles')
-        .insert({
-          title: title.trim(),
-          content: content.trim(),
-          status: 'draft',
-          user_id: user.id,
+      if (editingId) {
+        // Update existing article
+        const { error } = await supabase
+          .from('articles')
+          .update({
+            title: title.trim(),
+            content: content.trim(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingId);
+
+        if (error) throw error;
+
+        toast({
+          title: "Article updated!",
+          description: "Your article has been updated successfully.",
+        });
+      } else {
+        // Create new article
+        const { error } = await supabase
+          .from('articles')
+          .insert({
+            title: title.trim(),
+            content: content.trim(),
+            status: 'draft',
+            user_id: user.id,
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Draft saved!",
+          description: "Your article has been saved as a draft.",
         });
 
-      if (error) {
-        throw error;
+        // Clear the form for new articles
+        setTitle("");
+        setContent("");
       }
-
-      toast({
-        title: "Draft saved!",
-        description: "Your article has been saved as a draft.",
-      });
-
-      // Clear the form
-      setTitle("");
-      setContent("");
     } catch (error) {
       console.error('Error saving draft:', error);
       toast({
@@ -88,9 +179,39 @@ export default function Write() {
             
             <Card>
               <CardHeader>
-                <CardTitle>Write New Article</CardTitle>
+                <CardTitle>{editingId ? "Edit Article" : "Write New Article"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {!editingId && !title && !content && (
+                  <div className="text-center py-8 border-2 border-dashed border-muted rounded-lg">
+                    <Sparkles className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Get AI-Powered Article Ideas</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Let Claude Pro generate compelling article prompts and outlines for you
+                    </p>
+                    <Button 
+                      onClick={generatePrompt}
+                      disabled={isGenerating}
+                      className="mb-4"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Generate AI Prompt
+                        </>
+                      )}
+                    </Button>
+                    <div className="border-t pt-4">
+                      <p className="text-sm text-muted-foreground">Or start writing manually below</p>
+                    </div>
+                  </div>
+                )}
+                
                 <div>
                   <label className="text-sm font-medium">Title</label>
                   <Input 
@@ -113,8 +234,27 @@ export default function Write() {
                     onClick={saveDraft}
                     disabled={isSaving}
                   >
-                    {isSaving ? "Saving..." : "Save Draft"}
+                    {isSaving ? "Saving..." : editingId ? "Update Article" : "Save Draft"}
                   </Button>
+                  {!isGenerating && (title || content) && (
+                    <Button 
+                      variant="outline" 
+                      onClick={generatePrompt}
+                      disabled={isGenerating}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Regenerating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Regenerate with AI
+                        </>
+                      )}
+                    </Button>
+                  )}
                   <Button variant="outline">Preview</Button>
                   <Button variant="secondary">Publish</Button>
                 </div>

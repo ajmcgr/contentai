@@ -937,7 +937,11 @@ export default function Settings() {
                             </div>
                             {integrations.webflow.connected ? (
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open(integrations.webflow.siteUrl, '_blank')}
+                                >
                                   <ExternalLink className="w-4 h-4 mr-2" />
                                   Manage
                                 </Button>
@@ -984,7 +988,11 @@ export default function Settings() {
                             </div>
                             {integrations.wix.connected ? (
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open(integrations.wix.siteUrl, '_blank')}
+                                >
                                   <ExternalLink className="w-4 h-4 mr-2" />
                                   Manage
                                 </Button>
@@ -1031,7 +1039,11 @@ export default function Settings() {
                             </div>
                             {integrations.notion.connected ? (
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open('https://notion.so', '_blank')}
+                                >
                                   <ExternalLink className="w-4 h-4 mr-2" />
                                   Manage
                                 </Button>
@@ -1078,7 +1090,11 @@ export default function Settings() {
                             </div>
                             {integrations.ghost?.connected ? (
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open(integrations.ghost.siteUrl, '_blank')}
+                                >
                                   <ExternalLink className="w-4 h-4 mr-2" />
                                   Manage
                                 </Button>
@@ -1125,7 +1141,11 @@ export default function Settings() {
                             </div>
                             {integrations.squarespace?.connected ? (
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open(integrations.squarespace.siteUrl, '_blank')}
+                                >
                                   <ExternalLink className="w-4 h-4 mr-2" />
                                   Manage
                                 </Button>
@@ -1172,7 +1192,11 @@ export default function Settings() {
                             </div>
                             {integrations.zapier?.connected ? (
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open('https://zapier.com/app/dashboard', '_blank')}
+                                >
                                   <ExternalLink className="w-4 h-4 mr-2" />
                                   Manage
                                 </Button>
@@ -1217,7 +1241,11 @@ export default function Settings() {
                             </div>
                             {integrations.webhook.connected ? (
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => window.open(integrations.webhook.siteUrl, '_blank')}
+                                >
                                   <ExternalLink className="w-4 h-4 mr-2" />
                                   Manage
                                 </Button>
