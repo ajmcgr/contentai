@@ -41,7 +41,7 @@ export const HeroSection = () => {
             {/* Image content */}
             <div className="relative overflow-hidden rounded-b-lg">
               <img 
-                src="/lovable-uploads/7594ded9-ce63-4c8a-b8fb-aa0ec9277526.png" 
+                src="/lovable-uploads/93eecacc-6d25-4081-aa2b-f474192de5dd.png" 
                 alt="Content AI Dashboard Preview"
                 className="w-full h-auto"
               />

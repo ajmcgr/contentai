@@ -58,7 +58,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
 
   return (
     <header className="bg-white w-full h-16">
-      <div className="max-w-5xl mx-auto px-4 h-full">
+      <div className={`${authed ? 'w-full' : 'max-w-5xl'} mx-auto px-4 h-full`}>
         <nav className="flex items-center justify-between py-4">
           <div className="flex items-center space-x-8">
             <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
