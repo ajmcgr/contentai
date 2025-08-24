@@ -37,11 +37,6 @@ export const HeroSection = () => {
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               </div>
-              <div className="flex-1 mx-4">
-                <div className="bg-white rounded px-3 py-1 text-sm text-gray-600 text-center">
-                  content.ai/dashboard
-                </div>
-              </div>
             </div>
             {/* Image content */}
             <div className="relative overflow-hidden rounded-b-lg">
