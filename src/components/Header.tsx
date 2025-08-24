@@ -20,8 +20,8 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
   };
 
   return (
-    <header className={authed ? "bg-white border-b w-full h-16" : "bg-primary w-full h-16"}>
-      <div className={authed ? "max-w-5xl mx-auto px-4 h-full" : "max-w-5xl mx-auto px-4 h-full"}>
+    <header className="bg-white border-b w-full h-16">
+      <div className="max-w-5xl mx-auto px-4 h-full">
         <nav className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
@@ -58,19 +58,19 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
               <>
                 <Link 
                   to="/pricing" 
-                  className="text-white text-sm font-medium no-hover"
+                  className="text-black text-sm font-medium no-hover"
                 >
                   Pricing
                 </Link>
                 <span 
-                  className="text-white text-sm font-medium cursor-pointer hover:text-white"
+                  className="text-black text-sm font-medium cursor-pointer hover:text-gray-600"
                   onClick={() => navigate('/signin')}
                 >
                   Login
                 </span>
                 <span 
-                  className="bg-white text-sm font-medium px-4 py-2 rounded cursor-pointer inline-flex items-center"
-                  style={{ color: '#222529' }}
+                  className="text-sm font-medium px-4 py-2 rounded cursor-pointer inline-flex items-center"
+                  style={{ backgroundColor: '#e84848', color: 'white' }}
                   onClick={() => navigate('/signup')}
                 >
                   Sign Up <ArrowRight className="ml-2 w-4 h-4" />
