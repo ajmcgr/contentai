@@ -53,34 +53,33 @@ export default function Write() {
   const generatePrompt = async () => {
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-content', {
-        body: {
-          topic: 'Generate a compelling article idea and outline',
-          keywords: 'trending topics, engaging content',
-          tone: 'professional',
-          wordCount: 100,
-          includeImages: false
-        }
-      });
+      const { data, error } = await supabase.functions.invoke('generate-prompt');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
-      if (data?.title) {
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to generate prompt');
+      }
+
+      if (data.title) {
         setTitle(data.title);
       }
-      if (data?.content) {
+      if (data.content) {
         setContent(data.content);
       }
 
       toast({
         title: "AI Prompt Generated!",
-        description: "Your article prompt has been generated using Claude Pro.",
+        description: "Your article prompt has been generated using Claude.",
       });
     } catch (error) {
       console.error('Error generating prompt:', error);
       toast({
         title: "Error generating prompt",
-        description: "Failed to generate AI prompt. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate AI prompt. Please try again.",
         variant: "destructive",
       });
     } finally {
