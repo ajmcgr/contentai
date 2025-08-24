@@ -46,8 +46,25 @@ export default function Settings() {
             internalLinks: settings.internal_links ? settings.internal_links.join(', ') : ''
           });
         }
+
+        // Load content settings from content_templates
+        const { data: contentTemplate } = await supabase
+          .from('content_templates')
+          .select('id, structure')
+          .eq('user_id', user.id)
+          .eq('template_type', 'content_settings')
+          .eq('name', 'default')
+          .maybeSingle();
+
+        if (contentTemplate && (contentTemplate as any).structure) {
+          const s = (contentTemplate as any).structure as any;
+          setContentSettings(prev => ({
+            ...prev,
+            ...s,
+          }));
+        }
       } catch (error) {
-        console.error('Error loading brand settings:', error);
+        console.error('Error loading brand/content settings:', error);
       }
     };
 
@@ -126,6 +143,55 @@ export default function Settings() {
         title: "Error saving settings",
         description: error.message || "Failed to save brand settings. Please try again.",
         variant: "destructive",
+      });
+    }
+  };
+  
+  const saveContentSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Authentication required',
+          description: 'Please sign in to save settings.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const structure = { ...contentSettings };
+
+      const { data: existing } = await supabase
+        .from('content_templates')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('template_type', 'content_settings')
+        .eq('name', 'default')
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('content_templates')
+          .update({ structure, updated_at: new Date().toISOString(), description: 'Content settings' })
+          .eq('id', (existing as any).id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('content_templates')
+          .insert({ user_id: user.id, structure, variables: [], is_public: false, name: 'default', description: 'Content settings', template_type: 'content_settings' });
+        if (error) throw error;
+      }
+
+      toast({
+        title: 'Content settings saved!',
+        description: 'Your content preferences have been updated.',
+      });
+    } catch (error: any) {
+      console.error('Error saving content settings:', error);
+      toast({
+        title: 'Error saving content settings',
+        description: error.message || 'Failed to save content settings. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -784,7 +850,7 @@ export default function Settings() {
                         />
                       </div>
 
-                      <Button>Save Content Settings</Button>
+                      <Button onClick={saveContentSettings}>Save Content Settings</Button>
                     </CardContent>
                   </Card>
                 </TabsContent>
