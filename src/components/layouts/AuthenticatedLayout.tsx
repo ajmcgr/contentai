@@ -26,7 +26,7 @@ export const AuthenticatedLayout = () => {
 
 
   if (loading) {
-    return null;
+    return null; // keep UI minimal during auth check
   }
 
   if (!session) {

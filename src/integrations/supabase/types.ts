@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: string
+          logout_version: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          logout_version?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          logout_version?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       articles: {
         Row: {
           content: string

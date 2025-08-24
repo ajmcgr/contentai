@@ -86,6 +86,32 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     }
   };
 
+  const checkGlobalLogout = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('logout_version')
+        .eq('id', 'global')
+        .single();
+
+      if (error) {
+        console.error('Error fetching app settings:', error);
+        return;
+      }
+
+      const version = data?.logout_version ?? 0;
+      const seen = parseInt(localStorage.getItem('logout_version_seen') || '0', 10);
+
+      if (user && version > seen) {
+        console.log('Global logout triggered (version', version, '), signing out user');
+        localStorage.setItem('logout_version_seen', String(version));
+        await supabase.auth.signOut({ scope: 'local' });
+      }
+    } catch (err) {
+      console.error('Error in checkGlobalLogout:', err);
+    }
+  };
+
   useEffect(() => {
     // Check subscription status on mount and auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -112,6 +138,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       console.log('Initial session check:', session?.user?.id);
       setUser(session?.user || null);
       if (session?.user) {
+        checkGlobalLogout();
         checkSubscriptionStatus();
       } else {
         setSubscriptionStatus({
@@ -130,6 +157,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   useEffect(() => {
     const handleFocus = () => {
       if (user) {
+        checkGlobalLogout();
         checkSubscriptionStatus();
       }
     };
