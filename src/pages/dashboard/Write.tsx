@@ -201,7 +201,7 @@ export default function Write() {
                     <Sparkles className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold mb-2">Get AI-Powered Article Ideas</h3>
                     <p className="text-muted-foreground mb-4">
-                      Let Claude Pro generate compelling article prompts and outlines for you
+                      Let Content AI generate compelling article prompts and outlines for you
                     </p>
                     <Button 
                       onClick={generatePrompt}

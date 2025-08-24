@@ -16,25 +16,45 @@ serve(async (req) => {
     console.log('Generate-prompt function invoked');
     
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('No authorization header found');
-      throw new Error('No authorization header');
+    let user = null;
+    let brandSettings = null;
+
+    // Try to get user if auth header exists
+    if (authHeader) {
+      console.log('Auth header found, attempting to authenticate user');
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+      
+      if (!userError && userData?.user) {
+        user = userData.user;
+        console.log('User authenticated successfully:', user.id);
+        
+        // Fetch user's brand settings if authenticated
+        const { data: settings, error: brandError } = await supabaseClient
+          .from('brand_settings')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (brandError) {
+          console.error('Error fetching brand settings:', brandError);
+        } else {
+          brandSettings = settings;
+          console.log('Brand settings loaded:', !!brandSettings);
+        }
+      } else {
+        console.log('Authentication failed, proceeding with generic prompt');
+      }
+    } else {
+      console.log('No auth header, proceeding with generic prompt');
     }
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    
-    if (userError || !user) {
-      console.error('Auth error:', userError);
-      throw new Error(`Authentication failed: ${userError?.message || 'No user found'}`);
-    }
-
-    console.log('Generating AI prompt for user:', user.id);
+    console.log('Generating AI prompt for user:', user?.id || 'anonymous');
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicApiKey) {
@@ -42,17 +62,6 @@ serve(async (req) => {
       throw new Error('Anthropic API key not found');
     }
     console.log('Anthropic API key found');
-
-    // Fetch user's brand settings
-    const { data: brandSettings, error: brandError } = await supabaseClient
-      .from('brand_settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (brandError) {
-      console.error('Error fetching brand settings:', brandError);
-    }
 
     // Generate a personalized prompt based on brand settings
     let contextPrompt = 'You are a professional content strategist. ';
