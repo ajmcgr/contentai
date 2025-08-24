@@ -77,6 +77,18 @@ async function handleConnect(req: Request, supabaseClient: any, user: any) {
       connectionValid = await validateWebflowConnection(siteUrl, accessToken);
       config = { endpoint: 'https://api.webflow.com/' };
       break;
+    case 'wix':
+      connectionValid = await validateWixConnection(siteUrl, accessToken);
+      config = { endpoint: 'https://www.wixapis.com/blog/v3/' };
+      break;
+    case 'notion':
+      connectionValid = await validateNotionConnection(accessToken);
+      config = { endpoint: 'https://api.notion.com/v1/' };
+      break;
+    case 'webhook':
+      connectionValid = await validateWebhookConnection(siteUrl);
+      config = { endpoint: siteUrl };
+      break;
   }
 
   if (!connectionValid) {
@@ -91,7 +103,7 @@ async function handleConnect(req: Request, supabaseClient: any, user: any) {
       platform,
       site_url: siteUrl,
       api_key: platform === 'wordpress' ? apiKey : null,
-      access_token: platform !== 'wordpress' ? accessToken : null,
+      access_token: ['shopify', 'webflow', 'wix', 'notion'].includes(platform) ? accessToken : null,
       config,
       is_active: true,
       last_sync: new Date().toISOString()
@@ -154,6 +166,15 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
       break;
     case 'webflow':
       publishResult = await publishToWebflow(article, connection, publishOptions);
+      break;
+    case 'wix':
+      publishResult = await publishToWix(article, connection, publishOptions);
+      break;
+    case 'notion':
+      publishResult = await publishToNotion(article, connection, publishOptions);
+      break;
+    case 'webhook':
+      publishResult = await publishToWebhook(article, connection, publishOptions);
       break;
     default:
       throw new Error('Unsupported platform');
@@ -231,6 +252,43 @@ async function validateWebflowConnection(siteUrl: string, accessToken: string): 
       }
     });
     return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function validateWixConnection(siteUrl: string, accessToken: string): Promise<boolean> {
+  try {
+    const response = await fetch('https://www.wixapis.com/blog/v3/sites', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function validateNotionConnection(accessToken: string): Promise<boolean> {
+  try {
+    const response = await fetch('https://api.notion.com/v1/users/me', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Notion-Version': '2022-06-28'
+      }
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function validateWebhookConnection(webhookUrl: string): Promise<boolean> {
+  try {
+    // Just validate that it's a valid URL
+    const url = new URL(webhookUrl);
+    return url.protocol === 'http:' || url.protocol === 'https:';
   } catch {
     return false;
   }
@@ -318,4 +376,117 @@ async function publishToWebflow(article: any, connection: any, options: any) {
   }
 
   return await response.json();
+}
+
+async function publishToWix(article: any, connection: any, options: any) {
+  const endpoint = `https://www.wixapis.com/blog/v3/posts`;
+  
+  const postData = {
+    title: article.title,
+    excerpt: article.meta_description,
+    content: {
+      type: 'RICH_TEXT',
+      nodes: [{
+        type: 'PARAGRAPH',
+        nodes: [{
+          type: 'TEXT',
+          textData: {
+            text: article.content
+          }
+        }]
+      }]
+    },
+    status: options.status || 'DRAFT'
+  };
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${connection.access_token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(postData)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Wix publish failed: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+async function publishToNotion(article: any, connection: any, options: any) {
+  const databaseId = options.databaseId;
+  if (!databaseId) {
+    throw new Error('Database ID is required for Notion integration');
+  }
+
+  const endpoint = `https://api.notion.com/v1/pages`;
+  
+  const pageData = {
+    parent: {
+      database_id: databaseId
+    },
+    properties: {
+      Name: {
+        title: [{
+          text: {
+            content: article.title
+          }
+        }]
+      }
+    },
+    children: [{
+      object: 'block',
+      type: 'paragraph',
+      paragraph: {
+        rich_text: [{
+          type: 'text',
+          text: {
+            content: article.content
+          }
+        }]
+      }
+    }]
+  };
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${connection.access_token}`,
+      'Content-Type': 'application/json',
+      'Notion-Version': '2022-06-28'
+    },
+    body: JSON.stringify(pageData)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Notion publish failed: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+async function publishToWebhook(article: any, connection: any, options: any) {
+  const webhookData = {
+    title: article.title,
+    content: article.content,
+    meta_description: article.meta_description,
+    published_at: new Date().toISOString(),
+    ...options
+  };
+
+  const response = await fetch(connection.site_url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(webhookData)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Webhook publish failed: ${response.statusText}`);
+  }
+
+  return { success: true, webhook_url: connection.site_url };
 }

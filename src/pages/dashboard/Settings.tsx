@@ -63,7 +63,10 @@ export default function Settings() {
   const [integrations, setIntegrations] = useState({
     wordpress: { connected: false, siteUrl: "", apiKey: "", name: "" },
     shopify: { connected: false, siteUrl: "", accessToken: "", name: "" },
-    webflow: { connected: false, siteUrl: "", accessToken: "", name: "" }
+    webflow: { connected: false, siteUrl: "", accessToken: "", name: "" },
+    wix: { connected: false, siteUrl: "", accessToken: "", name: "" },
+    notion: { connected: false, siteUrl: "", accessToken: "", name: "" },
+    webhook: { connected: false, siteUrl: "", apiKey: "", name: "" }
   });
 
   const [connectionDialog, setConnectionDialog] = useState({
@@ -119,7 +122,7 @@ export default function Settings() {
         body: {
           platform: connectionDialog.platform,
           siteUrl: connectionDialog.siteUrl,
-          ...(connectionDialog.platform === 'wordpress' 
+          ...(connectionDialog.platform === 'wordpress' || connectionDialog.platform === 'webhook'
             ? { apiKey: connectionDialog.apiKey }
             : { accessToken: connectionDialog.accessToken }
           )
@@ -134,7 +137,7 @@ export default function Settings() {
           [connectionDialog.platform]: {
             connected: true,
             siteUrl: connectionDialog.siteUrl,
-            ...(connectionDialog.platform === 'wordpress' 
+            ...(connectionDialog.platform === 'wordpress' || connectionDialog.platform === 'webhook'
               ? { apiKey: connectionDialog.apiKey }
               : { accessToken: connectionDialog.accessToken }
             ),
@@ -821,8 +824,143 @@ export default function Settings() {
                                 Connect
                               </Button>
                             )}
+                           </div>
+
+                          {/* Wix Integration */}
+                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-orange-600 rounded flex items-center justify-center text-white font-bold">
+                                W
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium flex items-center gap-2">
+                                  Wix
+                                  {integrations.wix.connected && <Check className="w-4 h-4 text-green-600" />}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Publish your blogs directly to your Wix site blog.
+                                </p>
+                                {integrations.wix.connected && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    Connected to: {integrations.wix.siteUrl}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {integrations.wix.connected ? (
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Manage
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDisconnect('wix')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline"
+                                onClick={() => openConnectionDialog('wix')}
+                              >
+                                Connect
+                              </Button>
+                            )}
                           </div>
-                        </div>
+
+                          {/* Notion Integration */}
+                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gray-900 rounded flex items-center justify-center text-white font-bold">
+                                N
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium flex items-center gap-2">
+                                  Notion
+                                  {integrations.notion.connected && <Check className="w-4 h-4 text-green-600" />}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Create pages in your Notion database from your articles.
+                                </p>
+                                {integrations.notion.connected && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    Connected to Notion workspace
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {integrations.notion.connected ? (
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Manage
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDisconnect('notion')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline"
+                                onClick={() => openConnectionDialog('notion')}
+                              >
+                                Connect
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Webhook Integration */}
+                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-indigo-600 rounded flex items-center justify-center text-white font-bold">
+                                🔗
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium flex items-center gap-2">
+                                  Webhook
+                                  {integrations.webhook.connected && <Check className="w-4 h-4 text-green-600" />}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Send article data to any webhook URL for custom integrations.
+                                </p>
+                                {integrations.webhook.connected && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    Connected to: {integrations.webhook.siteUrl}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {integrations.webhook.connected ? (
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Manage
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDisconnect('webhook')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline"
+                                onClick={() => openConnectionDialog('webhook')}
+                              >
+                                Connect
+                              </Button>
+                            )}
+                          </div>
+                         </div>
                       </div>
 
                       <Separator />
@@ -860,58 +998,89 @@ export default function Settings() {
                       </DialogHeader>
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="siteUrl">
-                            {connectionDialog.platform === 'wordpress' ? 'WordPress Site URL' : 
-                             connectionDialog.platform === 'shopify' ? 'Shopify Store URL' : 
-                             'Webflow Site URL'}
+                           <Label htmlFor="siteUrl">
+                             {connectionDialog.platform === 'wordpress' ? 'WordPress Site URL' : 
+                              connectionDialog.platform === 'shopify' ? 'Shopify Store URL' : 
+                              connectionDialog.platform === 'webflow' ? 'Webflow Site URL' :
+                              connectionDialog.platform === 'wix' ? 'Wix Site URL' :
+                              connectionDialog.platform === 'notion' ? 'Notion Database ID' :
+                              connectionDialog.platform === 'webhook' ? 'Webhook URL' : 'Site URL'}
                           </Label>
                           <Input
                             id="siteUrl"
                             value={connectionDialog.siteUrl}
                             onChange={(e) => setConnectionDialog(prev => ({ ...prev, siteUrl: e.target.value }))}
-                            placeholder={
-                              connectionDialog.platform === 'wordpress' ? 'https://yoursite.com' :
-                              connectionDialog.platform === 'shopify' ? 'https://your-shop.myshopify.com' :
-                              'https://yoursite.webflow.io'
-                            }
+                             placeholder={
+                               connectionDialog.platform === 'wordpress' ? 'https://yoursite.com' :
+                               connectionDialog.platform === 'shopify' ? 'https://your-shop.myshopify.com' :
+                               connectionDialog.platform === 'webflow' ? 'https://yoursite.webflow.io' :
+                               connectionDialog.platform === 'wix' ? 'https://yoursite.wixsite.com' :
+                               connectionDialog.platform === 'notion' ? 'database_id_here' :
+                               connectionDialog.platform === 'webhook' ? 'https://your-webhook-url.com/endpoint' :
+                               'https://yoursite.com'
+                             }
                           />
                         </div>
                         
-                        {connectionDialog.platform === 'wordpress' ? (
-                          <div className="space-y-2">
-                            <Label htmlFor="apiKey">Application Password</Label>
-                            <Input
-                              id="apiKey"
-                              type="password"
-                              value={connectionDialog.apiKey}
-                              onChange={(e) => setConnectionDialog(prev => ({ ...prev, apiKey: e.target.value }))}
-                              placeholder="Your WordPress application password"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Create an application password in your WordPress admin under Users → Profile
-                            </p>
-                          </div>
+                         {(connectionDialog.platform === 'wordpress' || connectionDialog.platform === 'webhook') ? (
+                           <div className="space-y-2">
+                             <Label htmlFor="apiKey">
+                               {connectionDialog.platform === 'wordpress' ? 'Application Password' : 'API Key (Optional)'}
+                             </Label>
+                             <Input
+                               id="apiKey"
+                               type="password"
+                               value={connectionDialog.apiKey}
+                               onChange={(e) => setConnectionDialog(prev => ({ ...prev, apiKey: e.target.value }))}
+                               placeholder={
+                                 connectionDialog.platform === 'wordpress' 
+                                   ? 'Your WordPress application password'
+                                   : 'Optional API key for webhook authentication'
+                               }
+                             />
+                             <p className="text-xs text-muted-foreground">
+                               {connectionDialog.platform === 'wordpress'
+                                 ? 'Create an application password in your WordPress admin under Users → Profile'
+                                 : 'Optional: Add an API key if your webhook requires authentication'
+                               }
+                             </p>
+                           </div>
                         ) : (
-                          <div className="space-y-2">
-                            <Label htmlFor="accessToken">
-                              {connectionDialog.platform === 'shopify' ? 'Private App Access Token' : 'API Token'}
+                           <div className="space-y-2">
+                             <Label htmlFor="accessToken">
+                               {connectionDialog.platform === 'shopify' ? 'Private App Access Token' : 
+                                connectionDialog.platform === 'webflow' ? 'API Token' :
+                                connectionDialog.platform === 'wix' ? 'API Key' :
+                                connectionDialog.platform === 'notion' ? 'Integration Token' : 'API Token'}
                             </Label>
                             <Input
                               id="accessToken"
                               type="password"
                               value={connectionDialog.accessToken}
                               onChange={(e) => setConnectionDialog(prev => ({ ...prev, accessToken: e.target.value }))}
-                              placeholder={
-                                connectionDialog.platform === 'shopify' 
-                                  ? 'Your Shopify private app access token'
-                                  : 'Your Webflow API token'
-                              }
+                               placeholder={
+                                 connectionDialog.platform === 'shopify' 
+                                   ? 'Your Shopify private app access token'
+                                   : connectionDialog.platform === 'webflow' 
+                                   ? 'Your Webflow API token'
+                                   : connectionDialog.platform === 'wix'
+                                   ? 'Your Wix API key'
+                                   : connectionDialog.platform === 'notion'
+                                   ? 'Your Notion integration token'
+                                   : 'Your API token'
+                               }
                             />
-                            <p className="text-xs text-muted-foreground">
-                              {connectionDialog.platform === 'shopify' 
-                                ? 'Create a private app in your Shopify admin to get an access token'
-                                : 'Generate an API token in your Webflow project settings'
-                              }
+                             <p className="text-xs text-muted-foreground">
+                               {connectionDialog.platform === 'shopify' 
+                                 ? 'Create a private app in your Shopify admin to get an access token'
+                                 : connectionDialog.platform === 'webflow'
+                                 ? 'Generate an API token in your Webflow project settings'
+                                 : connectionDialog.platform === 'wix'
+                                 ? 'Get your API key from the Wix Developers dashboard'
+                                 : connectionDialog.platform === 'notion'
+                                 ? 'Create an integration in your Notion workspace to get a token'
+                                 : 'Check your platform\'s API documentation for token generation'
+                               }
                             </p>
                           </div>
                         )}
@@ -919,8 +1088,9 @@ export default function Settings() {
                         <div className="flex gap-2 pt-4">
                           <Button 
                             onClick={handleConnect}
-                            disabled={connectionDialog.loading || !connectionDialog.siteUrl || 
-                              (connectionDialog.platform === 'wordpress' ? !connectionDialog.apiKey : !connectionDialog.accessToken)}
+                             disabled={connectionDialog.loading || !connectionDialog.siteUrl || 
+                               (connectionDialog.platform === 'wordpress' ? !connectionDialog.apiKey : 
+                                connectionDialog.platform === 'webhook' ? false : !connectionDialog.accessToken)}
                             className="flex-1"
                           >
                             {connectionDialog.loading ? 'Connecting...' : 'Connect'}
