@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight } from "lucide-react";
+import { BrandOnboardingDialog } from "@/components/BrandOnboardingDialog";
 
 export const SignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -54,7 +56,9 @@ export const SignUp = () => {
         title: "Success!",
         description: "Please check your email to verify your account.",
       });
-      navigate("/signin");
+      
+      // Show onboarding dialog for new users
+      setShowOnboarding(true);
     } catch (error: any) {
       toast({
         title: "Error signing up",
@@ -83,6 +87,11 @@ export const SignUp = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    navigate("/dashboard");
   };
 
   return (
@@ -153,6 +162,12 @@ export const SignUp = () => {
           </Button>
         </div>
       </Card>
+      
+      <BrandOnboardingDialog 
+        open={showOnboarding}
+        onOpenChange={setShowOnboarding}
+        onComplete={handleOnboardingComplete}
+      />
     </div>
   );
 };

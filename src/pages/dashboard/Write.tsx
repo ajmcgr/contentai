@@ -71,9 +71,13 @@ export default function Write() {
         setContent(data.content);
       }
 
+      const brandBasedMessage = data.brandBased 
+        ? "Your personalized article prompt has been generated based on your brand settings!"
+        : "Generic article prompt generated. Add your brand info in Settings for personalized prompts.";
+
       toast({
         title: "AI Prompt Generated!",
-        description: "Your article prompt has been generated using Claude.",
+        description: brandBasedMessage,
       });
     } catch (error) {
       console.error('Error generating prompt:', error);

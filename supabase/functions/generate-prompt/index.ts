@@ -36,15 +36,49 @@ serve(async (req) => {
       throw new Error('Anthropic API key not found');
     }
 
-    // Generate a prompt for article creation
-    const prompt = `You are a professional content strategist. Generate a compelling blog article idea with the following:
+    // Fetch user's brand settings
+    const { data: brandSettings } = await supabaseClient
+      .from('brand_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
 
+    // Generate a personalized prompt based on brand settings
+    let contextPrompt = 'You are a professional content strategist. ';
+    
+    if (brandSettings) {
+      contextPrompt += `Generate a compelling blog article idea for ${brandSettings.brand_name || 'this company'}`;
+      
+      if (brandSettings.industry) {
+        contextPrompt += ` in the ${brandSettings.industry} industry`;
+      }
+      
+      if (brandSettings.target_audience) {
+        contextPrompt += `. The target audience is: ${brandSettings.target_audience}`;
+      }
+      
+      if (brandSettings.description) {
+        contextPrompt += `. Company description: ${brandSettings.description}`;
+      }
+      
+      contextPrompt += `. Use a ${brandSettings.tone_of_voice || 'professional'} tone.`;
+      
+      if (brandSettings.tags && brandSettings.tags.length > 0) {
+        contextPrompt += ` Consider these relevant topics: ${brandSettings.tags.join(', ')}.`;
+      }
+    } else {
+      contextPrompt += `Generate a compelling blog article idea. Since no brand information is available, create a general business-focused topic.`;
+    }
+
+    contextPrompt += `
+
+Generate the following:
 1. An engaging, SEO-optimized title (under 60 characters)
 2. A brief article outline with 3-4 main sections
 3. Target keywords to focus on
 4. A suggested introduction paragraph
 
-Focus on trending topics that would be valuable for business blogs. Make it actionable and engaging.
+Make it actionable, engaging, and valuable for the target audience.
 
 Respond in this format:
 Title: [Your title here]
@@ -73,7 +107,7 @@ Introduction:
         messages: [
           {
             role: 'user',
-            content: prompt
+            content: contextPrompt
           }
         ]
       }),
@@ -88,7 +122,7 @@ Introduction:
     const data = await response.json();
     const generatedContent = data.content[0].text;
 
-    console.log('AI prompt generated successfully');
+    console.log('Personalized AI prompt generated successfully');
 
     // Parse the generated content to extract title and content
     const titleMatch = generatedContent.match(/Title:\s*(.+)/i);
@@ -103,7 +137,8 @@ Introduction:
       success: true,
       title,
       content,
-      fullResponse: generatedContent
+      fullResponse: generatedContent,
+      brandBased: !!brandSettings
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

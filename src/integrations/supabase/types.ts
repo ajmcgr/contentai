@@ -89,6 +89,57 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_settings: {
+        Row: {
+          brand_name: string | null
+          created_at: string
+          description: string | null
+          id: string
+          industry: string | null
+          internal_links: string[] | null
+          language: string | null
+          logo_url: string | null
+          tags: string[] | null
+          target_audience: string | null
+          tone_of_voice: string | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          brand_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          industry?: string | null
+          internal_links?: string[] | null
+          language?: string | null
+          logo_url?: string | null
+          tags?: string[] | null
+          target_audience?: string | null
+          tone_of_voice?: string | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          brand_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          industry?: string | null
+          internal_links?: string[] | null
+          language?: string | null
+          logo_url?: string | null
+          tags?: string[] | null
+          target_audience?: string | null
+          tone_of_voice?: string | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       cms_connections: {
         Row: {
           access_token: string | null

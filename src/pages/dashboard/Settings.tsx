@@ -20,6 +20,115 @@ import { useToast } from "@/hooks/use-toast";
 export default function Settings() {
   const { toast } = useToast();
   
+  // Load existing brand settings
+  useEffect(() => {
+    const loadBrandSettings = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: settings } = await supabase
+          .from('brand_settings')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (settings) {
+          setBrandSettings({
+            logo: null,
+            brandName: settings.brand_name || '',
+            description: settings.description || '',
+            targetAudience: settings.target_audience || '',
+            language: settings.language || 'en-US',
+            toneOfVoice: settings.tone_of_voice || '',
+            industry: settings.industry || '',
+            tags: settings.tags ? settings.tags.join(', ') : '',
+            internalLinks: settings.internal_links ? settings.internal_links.join(', ') : ''
+          });
+        }
+      } catch (error) {
+        console.error('Error loading brand settings:', error);
+      }
+    };
+
+    loadBrandSettings();
+    fetchConnections();
+    const params = new URLSearchParams(window.location.search);
+    const platform = params.get('platform');
+    const success = params.get('success');
+    if (platform === 'wordpress' && success === '1') {
+      toast({
+        title: 'Connection successful',
+        description: 'Connected to WordPress successfully.'
+      });
+      fetchConnections();
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
+
+  const saveBrandSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to save settings.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const brandData = {
+        user_id: user.id,
+        brand_name: brandSettings.brandName,
+        description: brandSettings.description,
+        target_audience: brandSettings.targetAudience,
+        industry: brandSettings.industry,
+        tone_of_voice: brandSettings.toneOfVoice,
+        language: brandSettings.language,
+        tags: brandSettings.tags ? brandSettings.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        internal_links: brandSettings.internalLinks ? brandSettings.internalLinks.split(',').map(l => l.trim()).filter(Boolean) : []
+      };
+
+      // Check if brand settings already exist
+      const { data: existing } = await supabase
+        .from('brand_settings')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (existing) {
+        // Update existing settings
+        const { error } = await supabase
+          .from('brand_settings')
+          .update(brandData)
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+      } else {
+        // Create new settings
+        const { error } = await supabase
+          .from('brand_settings')
+          .insert(brandData);
+        
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Brand settings saved!",
+        description: "Your brand information has been updated successfully.",
+      });
+    } catch (error: any) {
+      console.error('Error saving brand settings:', error);
+      toast({
+        title: "Error saving settings",
+        description: error.message || "Failed to save brand settings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
   const [brandSettings, setBrandSettings] = useState({
     logo: null as File | null,
     brandName: "",
@@ -80,6 +189,103 @@ export default function Settings() {
     accessToken: "",
     loading: false
   });
+
+  // Fetch existing connections and handle OAuth return
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to save settings.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const brandData = {
+        user_id: user.id,
+        brand_name: brandSettings.brandName,
+        description: brandSettings.description,
+        target_audience: brandSettings.targetAudience,
+        industry: brandSettings.industry,
+        tone_of_voice: brandSettings.toneOfVoice,
+        language: brandSettings.language,
+        tags: brandSettings.tags ? brandSettings.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        internal_links: brandSettings.internalLinks ? brandSettings.internalLinks.split(',').map(l => l.trim()).filter(Boolean) : []
+      };
+
+      // Check if brand settings already exist
+      const { data: existing } = await supabase
+        .from('brand_settings')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (existing) {
+        // Update existing settings
+        const { error } = await supabase
+          .from('brand_settings')
+          .update(brandData)
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+      } else {
+        // Create new settings
+        const { error } = await supabase
+          .from('brand_settings')
+          .insert(brandData);
+        
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Brand settings saved!",
+        description: "Your brand information has been updated successfully.",
+      });
+    } catch (error: any) {
+      console.error('Error saving brand settings:', error);
+      toast({
+        title: "Error saving settings",
+        description: error.message || "Failed to save brand settings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Load existing brand settings
+  useEffect(() => {
+    const loadBrandSettings = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: settings } = await supabase
+          .from('brand_settings')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (settings) {
+          setBrandSettings({
+            logo: null,
+            brandName: settings.brand_name || '',
+            description: settings.description || '',
+            targetAudience: settings.target_audience || '',
+            language: settings.language || 'en-US',
+            toneOfVoice: settings.tone_of_voice || '',
+            industry: settings.industry || '',
+            tags: settings.tags ? settings.tags.join(', ') : '',
+            internalLinks: settings.internal_links ? settings.internal_links.join(', ') : ''
+          });
+        }
+      } catch (error) {
+        console.error('Error loading brand settings:', error);
+      }
+    };
+
+    loadBrandSettings();
+  }, []);
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -467,7 +673,7 @@ export default function Settings() {
                         />
                       </div>
 
-                      <Button>Save Brand Settings</Button>
+                      <Button onClick={saveBrandSettings}>Save Brand Settings</Button>
                     </CardContent>
                   </Card>
                 </TabsContent>
