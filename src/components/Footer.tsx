@@ -12,7 +12,7 @@ export const Footer = () => {
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div>
-            <h3 className="font-semibold text-foreground mb-4 text-base font-sans">Company</h3>
+            <h3 className="font-medium text-foreground mb-4 text-base font-sans">Company</h3>
             <ul className="space-y-2">
               <li><Link to="/about" onClick={scrollToTop} className="text-gray-600 hover:text-primary-700 text-sm">About</Link></li>
               <li><a href="https://discord.gg/whXSXeVJC2" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-primary-700 text-sm">Community</a></li>
@@ -20,7 +20,7 @@ export const Footer = () => {
             </ul>
           </div>
           <div>
-            <h3 className="font-semibold text-foreground mb-4 text-base font-sans">Support</h3>
+            <h3 className="font-medium text-foreground mb-4 text-base font-sans">Support</h3>
             <ul className="space-y-2">
               <li><a href="mailto:support@trycontent.ai" className="text-gray-600 hover:text-primary-700 text-sm">Support</a></li>
               <li><Link to="/terms" onClick={scrollToTop} className="text-gray-600 hover:text-primary-700 text-sm">Terms</Link></li>
@@ -28,7 +28,7 @@ export const Footer = () => {
             </ul>
           </div>
           <div>
-            <h3 className="font-semibold text-foreground mb-4 text-base font-sans">Free Tools</h3>
+            <h3 className="font-medium text-foreground mb-4 text-base font-sans">Free Tools</h3>
             <ul className="space-y-2">
               <li><Link to="/tools/headline-generator" onClick={scrollToTop} className="text-gray-600 hover:text-primary-700 text-sm">Headline Generator</Link></li>
               <li><Link to="/tools/meta-description-generator" onClick={scrollToTop} className="text-gray-600 hover:text-primary-700 text-sm">Meta Description Generator</Link></li>
@@ -42,7 +42,7 @@ export const Footer = () => {
             </ul>
           </div>
           <div>
-            <h3 className="font-semibold text-foreground mb-4 text-base font-sans">Connect</h3>
+            <h3 className="font-medium text-foreground mb-4 text-base font-sans">Connect</h3>
             <ul className="space-y-2">
               <li><a href="https://x.com/trycontentai" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-primary-700 text-sm">X</a></li>
               <li><a href="https://www.linkedin.com/company/105644042" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-primary-700 text-sm">LinkedIn</a></li>
