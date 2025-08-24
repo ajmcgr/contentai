@@ -47,23 +47,25 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
           </div>
           <div className="flex-1 flex items-center justify-center space-x-6">
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             {authed ? (
               <>
                 <Button 
                   variant="ghost" 
-                  className="text-gray-700 gap-2 hover:text-gray-900 hover:bg-gray-100"
+                  size="sm"
+                  className="text-gray-700 gap-1 hover:text-gray-900 hover:bg-gray-100 px-2 py-1 text-xs"
                   onClick={() => navigate('/dashboard/account')}
                 >
-                  <User size={18} />
+                  <User size={16} />
                   Account
                 </Button>
                 <Button
                   variant="ghost"
-                  className="text-gray-700 gap-2 hover:text-gray-900 hover:bg-gray-100"
+                  size="sm"
+                  className="text-gray-700 gap-1 hover:text-gray-900 hover:bg-gray-100 px-2 py-1 text-xs"
                   onClick={handleSignOut}
                 >
-                  <LogOut size={18} />
+                  <LogOut size={16} />
                   Sign Out
                 </Button>
               </>
