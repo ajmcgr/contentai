@@ -50,7 +50,7 @@ export const Footer = () => {
           </div>
         </div>
         <div className="text-center pt-8 border-t">
-          <p className="text-gray-600 text-sm">Copyright © 2025 Works App, Inc. Built with ♥️ by Works.</p>
+          <p className="text-gray-600 text-sm">Copyright © 2025 Works App, Inc. Built with ♥️ by <a href="https://works.xyz/" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-primary-700">Works</a>.</p>
         </div>
       </div>
     </footer>
