@@ -122,6 +122,13 @@ export default function Settings() {
       if (!connectionDialog.platform) throw new Error('Please choose a platform.');
       if (!connectionDialog.siteUrl) throw new Error('Please enter your site URL.');
       if ((connectionDialog.platform === 'wordpress' || connectionDialog.platform === 'webhook') && !connectionDialog.apiKey) {
+        // Check if it's WordPress.com (requires OAuth)
+        if (connectionDialog.platform === 'wordpress' && 
+            (connectionDialog.siteUrl.includes('wordpress.com') || connectionDialog.siteUrl.includes('.wordpress.com'))) {
+          // Start OAuth flow for WordPress.com
+          await handleWordPressComOAuth();
+          return;
+        }
         throw new Error(connectionDialog.platform === 'wordpress'
           ? 'Enter WordPress credentials: username:application_password'
           : 'Enter your webhook secret/key');
@@ -167,6 +174,16 @@ export default function Settings() {
         return;
       }
 
+      // Check if OAuth is required
+      if (data?.requiresOAuth && data?.oauthUrl) {
+        toast({
+          title: 'OAuth Required',
+          description: 'Redirecting to WordPress.com for authorization...',
+        });
+        window.location.href = data.oauthUrl;
+        return;
+      }
+
       if (data?.success) {
         setIntegrations(prev => ({
           ...prev,
@@ -203,6 +220,34 @@ export default function Settings() {
       });
     } finally {
       setConnectionDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const handleWordPressComOAuth = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('cms-integration/oauth-start', {
+        body: {
+          platform: 'wordpress',
+          siteUrl: connectionDialog.siteUrl
+        }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || 'Failed to start OAuth flow');
+      }
+
+      toast({
+        title: 'Redirecting to WordPress.com',
+        description: 'Please authorize the connection in the new window.',
+      });
+
+      window.location.href = data.oauthUrl;
+    } catch (error: any) {
+      toast({
+        title: 'OAuth Error',
+        description: error.message || 'Failed to start WordPress.com OAuth flow',
+        variant: 'destructive',
+      });
     }
   };
 

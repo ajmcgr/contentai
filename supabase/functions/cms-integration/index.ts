@@ -47,6 +47,10 @@ serve(async (req) => {
     switch (action) {
       case 'connect':
         return await handleConnect(req, supabaseClient, user);
+      case 'oauth-start':
+        return await handleOAuthStart(req, supabaseClient, user);
+      case 'oauth-callback':
+        return await handleOAuthCallback(req, supabaseClient, user);
       case 'publish':
         return await handlePublish(req, supabaseClient, user);
       case 'status':
@@ -86,12 +90,25 @@ async function handleConnect(req: Request, supabaseClient: any, user: any) {
 
   console.log('CMS connection request:', { platform, siteUrl });
 
+  // For WordPress.com sites, redirect to OAuth flow
+  if (platform === 'wordpress' && (siteUrl.includes('wordpress.com') || siteUrl.includes('.wordpress.com'))) {
+    return new Response(JSON.stringify({
+      success: false,
+      requiresOAuth: true,
+      oauthUrl: await generateWordPressOAuthUrl(siteUrl, user.id),
+      message: 'WordPress.com requires OAuth authentication'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   // Validate connection based on platform
   let connectionValid = false;
   let config = {};
 
   switch (platform) {
     case 'wordpress':
+      // Self-hosted WordPress only
       connectionValid = await validateWordPressConnection(siteUrl, apiKey);
       config = { endpoint: `${siteUrl}/wp-json/wp/v2/` };
       break;
@@ -555,6 +572,166 @@ async function publishToNotion(article: any, connection: any, options: any) {
   }
 
   return await response.json();
+}
+
+// WordPress.com OAuth functions
+async function generateWordPressOAuthUrl(siteUrl: string, userId: string): Promise<string> {
+  const clientId = Deno.env.get('WORDPRESS_CLIENT_ID');
+  if (!clientId) {
+    throw new Error('WordPress.com OAuth not configured');
+  }
+
+  const baseUrl = 'https://0d84bc4c-60bd-4402-8799-74365f8b638e.sandbox.lovable.dev'; // Use your actual domain
+  const redirectUri = `${baseUrl}/dashboard/settings?oauth=wordpress&callback=true`;
+  
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: 'auth',
+    state: userId, // Use user ID as state for security
+  });
+
+  return `https://public-api.wordpress.com/oauth2/authorize?${params.toString()}`;
+}
+
+async function handleOAuthStart(req: Request, supabaseClient: any, user: any) {
+  const { platform, siteUrl } = await req.json();
+  
+  if (platform !== 'wordpress') {
+    return new Response(JSON.stringify({
+      error: 'OAuth only supported for WordPress.com',
+      success: false
+    }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    const oauthUrl = await generateWordPressOAuthUrl(siteUrl, user.id);
+    
+    return new Response(JSON.stringify({
+      success: true,
+      oauthUrl,
+      message: 'Redirect to WordPress.com for authorization'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+async function handleOAuthCallback(req: Request, supabaseClient: any, user: any) {
+  const { code, state, siteUrl } = await req.json();
+  
+  if (state !== user.id) {
+    return new Response(JSON.stringify({
+      error: 'Invalid OAuth state',
+      success: false
+    }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    const clientId = Deno.env.get('WORDPRESS_CLIENT_ID');
+    const clientSecret = Deno.env.get('WORDPRESS_CLIENT_SECRET');
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('WordPress.com OAuth credentials not configured');
+    }
+
+    const baseUrl = 'https://0d84bc4c-60bd-4402-8799-74365f8b638e.sandbox.lovable.dev';
+    const redirectUri = `${baseUrl}/dashboard/settings?oauth=wordpress&callback=true`;
+
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://public-api.wordpress.com/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      throw new Error('Failed to exchange OAuth code for token');
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    // Validate the token by getting user info
+    const userResponse = await fetch('https://public-api.wordpress.com/rest/v1/me', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!userResponse.ok) {
+      throw new Error('Failed to validate WordPress.com access token');
+    }
+
+    const wpUser = await userResponse.json();
+
+    // Save connection
+    const { data: connection, error } = await supabaseClient
+      .from('cms_connections')
+      .upsert({
+        user_id: user.id,
+        platform: 'wordpress',
+        site_url: siteUrl,
+        access_token: accessToken,
+        config: { 
+          endpoint: 'https://public-api.wordpress.com/rest/v1.1/',
+          wpcom: true,
+          wpUserId: wpUser.ID,
+          wpUsername: wpUser.username
+        },
+        is_active: true,
+        last_sync: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,platform,site_url'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to save connection: ${error.message}`);
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      connection,
+      message: 'Successfully connected to WordPress.com'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error: any) {
+    console.error('WordPress.com OAuth error:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 }
 
 async function publishToWebhook(article: any, connection: any, options: any) {
