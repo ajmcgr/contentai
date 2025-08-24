@@ -26,7 +26,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
           <div className="flex items-center space-x-4">
             <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
               <img
-                src={authed ? "/lovable-uploads/4affed32-8b02-45a4-98c8-6a9921198210.png" : "/lovable-uploads/26bbcb78-84ac-46a3-9fed-739eebd05c90.png"}
+                src="/lovable-uploads/3178870e-8a32-4f12-803b-900aae260b5c.png"
                 alt="Content AI"
                 className="h-8 w-auto"
               />
