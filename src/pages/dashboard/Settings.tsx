@@ -12,9 +12,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Upload, Globe, Clock, Key, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Upload, Globe, Clock, Key, Trash2, Check, ExternalLink } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
+  const { toast } = useToast();
+  
   const [brandSettings, setBrandSettings] = useState({
     logo: null as File | null,
     brandName: "",
@@ -55,6 +60,21 @@ export default function Settings() {
     timezone: "UTC"
   });
 
+  const [integrations, setIntegrations] = useState({
+    wordpress: { connected: false, siteUrl: "", apiKey: "", name: "" },
+    shopify: { connected: false, siteUrl: "", accessToken: "", name: "" },
+    webflow: { connected: false, siteUrl: "", accessToken: "", name: "" }
+  });
+
+  const [connectionDialog, setConnectionDialog] = useState({
+    open: false,
+    platform: "",
+    siteUrl: "",
+    apiKey: "",
+    accessToken: "",
+    loading: false
+  });
+
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -66,6 +86,108 @@ export default function Settings() {
     const file = event.target.files?.[0];
     if (file) {
       setAccountSettings(prev => ({ ...prev, profilePicture: file }));
+    }
+  };
+
+  const openConnectionDialog = (platform: string) => {
+    setConnectionDialog({
+      open: true,
+      platform,
+      siteUrl: "",
+      apiKey: "",
+      accessToken: "",
+      loading: false
+    });
+  };
+
+  const closeConnectionDialog = () => {
+    setConnectionDialog({
+      open: false,
+      platform: "",
+      siteUrl: "",
+      apiKey: "",
+      accessToken: "",
+      loading: false
+    });
+  };
+
+  const handleConnect = async () => {
+    setConnectionDialog(prev => ({ ...prev, loading: true }));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('cms-integration', {
+        body: {
+          action: 'connect',
+          platform: connectionDialog.platform,
+          siteUrl: connectionDialog.siteUrl,
+          ...(connectionDialog.platform === 'wordpress' 
+            ? { apiKey: connectionDialog.apiKey }
+            : { accessToken: connectionDialog.accessToken }
+          )
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setIntegrations(prev => ({
+          ...prev,
+          [connectionDialog.platform]: {
+            connected: true,
+            siteUrl: connectionDialog.siteUrl,
+            ...(connectionDialog.platform === 'wordpress' 
+              ? { apiKey: connectionDialog.apiKey }
+              : { accessToken: connectionDialog.accessToken }
+            ),
+            name: connectionDialog.siteUrl
+          }
+        }));
+
+        toast({
+          title: "Connection successful!",
+          description: `Successfully connected to your ${connectionDialog.platform} site.`,
+        });
+
+        closeConnectionDialog();
+      } else {
+        throw new Error(data.message || 'Connection failed');
+      }
+    } catch (error: any) {
+      console.error('Connection error:', error);
+      toast({
+        title: "Connection failed",
+        description: error.message || "Failed to connect to the platform. Please check your credentials.",
+        variant: "destructive",
+      });
+    } finally {
+      setConnectionDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const handleDisconnect = async (platform: string) => {
+    try {
+      setIntegrations(prev => ({
+        ...prev,
+        [platform]: {
+          connected: false,
+          siteUrl: "",
+          apiKey: "",
+          accessToken: "",
+          name: ""
+        }
+      }));
+
+      toast({
+        title: "Disconnected",
+        description: `Successfully disconnected from ${platform}.`,
+      });
+    } catch (error: any) {
+      console.error('Disconnect error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to disconnect from the platform.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -567,49 +689,139 @@ export default function Settings() {
                         <p className="text-muted-foreground">Connect to your favorite CMS and auto-publish your SEO blogs</p>
                         
                         <div className="grid gap-4">
+                          {/* WordPress Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-blue-600 rounded flex items-center justify-center text-white font-bold">
                                 W
                               </div>
-                              <div>
-                                <h4 className="font-medium">Wordpress</h4>
+                              <div className="flex-1">
+                                <h4 className="font-medium flex items-center gap-2">
+                                  WordPress
+                                  {integrations.wordpress.connected && <Check className="w-4 h-4 text-green-600" />}
+                                </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Publish your blogs directly to your WordPress site. No plugins or coding required.
                                 </p>
+                                {integrations.wordpress.connected && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    Connected to: {integrations.wordpress.siteUrl}
+                                  </p>
+                                )}
                               </div>
                             </div>
-                            <Button variant="outline">Connect</Button>
+                            {integrations.wordpress.connected ? (
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Manage
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDisconnect('wordpress')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline"
+                                onClick={() => openConnectionDialog('wordpress')}
+                              >
+                                Connect
+                              </Button>
+                            )}
                           </div>
 
+                          {/* Shopify Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-green-600 rounded flex items-center justify-center text-white font-bold">
                                 S
                               </div>
-                              <div>
-                                <h4 className="font-medium">Shopify</h4>
+                              <div className="flex-1">
+                                <h4 className="font-medium flex items-center gap-2">
+                                  Shopify
+                                  {integrations.shopify.connected && <Check className="w-4 h-4 text-green-600" />}
+                                </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Add a blog to your Shopify store and boost your SEO with ease.
                                 </p>
+                                {integrations.shopify.connected && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    Connected to: {integrations.shopify.siteUrl}
+                                  </p>
+                                )}
                               </div>
                             </div>
-                            <Button variant="outline">Connect</Button>
+                            {integrations.shopify.connected ? (
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Manage
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDisconnect('shopify')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline"
+                                onClick={() => openConnectionDialog('shopify')}
+                              >
+                                Connect
+                              </Button>
+                            )}
                           </div>
 
+                          {/* Webflow Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-purple-600 rounded flex items-center justify-center text-white font-bold">
                                 W
                               </div>
-                              <div>
-                                <h4 className="font-medium">Webflow</h4>
+                              <div className="flex-1">
+                                <h4 className="font-medium flex items-center gap-2">
+                                  Webflow
+                                  {integrations.webflow.connected && <Check className="w-4 h-4 text-green-600" />}
+                                </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Integrate Blogbuster with Webflow to publish blogs.
                                 </p>
+                                {integrations.webflow.connected && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    Connected to: {integrations.webflow.siteUrl}
+                                  </p>
+                                )}
                               </div>
                             </div>
-                            <Button variant="outline">Connect</Button>
+                            {integrations.webflow.connected ? (
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Manage
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDisconnect('webflow')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline"
+                                onClick={() => openConnectionDialog('webflow')}
+                              >
+                                Connect
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -638,6 +850,89 @@ export default function Settings() {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Connection Dialog */}
+                  <Dialog open={connectionDialog.open} onOpenChange={(open) => !open && closeConnectionDialog()}>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>
+                          Connect to {connectionDialog.platform}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="siteUrl">
+                            {connectionDialog.platform === 'wordpress' ? 'WordPress Site URL' : 
+                             connectionDialog.platform === 'shopify' ? 'Shopify Store URL' : 
+                             'Webflow Site URL'}
+                          </Label>
+                          <Input
+                            id="siteUrl"
+                            value={connectionDialog.siteUrl}
+                            onChange={(e) => setConnectionDialog(prev => ({ ...prev, siteUrl: e.target.value }))}
+                            placeholder={
+                              connectionDialog.platform === 'wordpress' ? 'https://yoursite.com' :
+                              connectionDialog.platform === 'shopify' ? 'https://your-shop.myshopify.com' :
+                              'https://yoursite.webflow.io'
+                            }
+                          />
+                        </div>
+                        
+                        {connectionDialog.platform === 'wordpress' ? (
+                          <div className="space-y-2">
+                            <Label htmlFor="apiKey">Application Password</Label>
+                            <Input
+                              id="apiKey"
+                              type="password"
+                              value={connectionDialog.apiKey}
+                              onChange={(e) => setConnectionDialog(prev => ({ ...prev, apiKey: e.target.value }))}
+                              placeholder="Your WordPress application password"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Create an application password in your WordPress admin under Users → Profile
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Label htmlFor="accessToken">
+                              {connectionDialog.platform === 'shopify' ? 'Private App Access Token' : 'API Token'}
+                            </Label>
+                            <Input
+                              id="accessToken"
+                              type="password"
+                              value={connectionDialog.accessToken}
+                              onChange={(e) => setConnectionDialog(prev => ({ ...prev, accessToken: e.target.value }))}
+                              placeholder={
+                                connectionDialog.platform === 'shopify' 
+                                  ? 'Your Shopify private app access token'
+                                  : 'Your Webflow API token'
+                              }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {connectionDialog.platform === 'shopify' 
+                                ? 'Create a private app in your Shopify admin to get an access token'
+                                : 'Generate an API token in your Webflow project settings'
+                              }
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 pt-4">
+                          <Button 
+                            onClick={handleConnect}
+                            disabled={connectionDialog.loading || !connectionDialog.siteUrl || 
+                              (connectionDialog.platform === 'wordpress' ? !connectionDialog.apiKey : !connectionDialog.accessToken)}
+                            className="flex-1"
+                          >
+                            {connectionDialog.loading ? 'Connecting...' : 'Connect'}
+                          </Button>
+                          <Button variant="outline" onClick={closeConnectionDialog}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </TabsContent>
 
                 <TabsContent value="publishing" className="space-y-6">
