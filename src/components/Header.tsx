@@ -33,8 +33,8 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
   };
 
   return (
-    <header className={authed ? "bg-white border-b w-full" : "bg-primary w-full"}>
-      <div className={authed ? "max-w-5xl mx-auto px-4 py-4" : "max-w-5xl mx-auto px-4 py-4"}>
+    <header className={authed ? "bg-white border-b w-full h-16" : "bg-primary w-full h-16"}>
+      <div className={authed ? "max-w-5xl mx-auto px-4 h-full" : "max-w-5xl mx-auto px-4 h-full"}>
         <nav className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
