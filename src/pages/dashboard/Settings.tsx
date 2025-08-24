@@ -196,6 +196,94 @@ export default function Settings() {
     }
   };
   
+  const saveAccountSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to save settings.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update user profile in profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          full_name: `${accountSettings.firstName} ${accountSettings.lastName}`.trim(),
+          username: accountSettings.email.split('@')[0], // Use email prefix as username
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Account settings saved!",
+        description: "Your profile information has been updated successfully.",
+      });
+    } catch (error: any) {
+      console.error('Error saving account settings:', error);
+      toast({
+        title: "Error saving account settings",
+        description: error.message || "Failed to save account settings. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const savePublishingSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Authentication required',
+          description: 'Please sign in to save settings.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const structure = { ...publishingSettings };
+
+      const { data: existing } = await supabase
+        .from('content_templates')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('template_type', 'publishing_settings')
+        .eq('name', 'default')
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('content_templates')
+          .update({ structure, updated_at: new Date().toISOString(), description: 'Publishing settings' })
+          .eq('id', (existing as any).id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('content_templates')
+          .insert({ user_id: user.id, structure, variables: [], is_public: false, name: 'default', description: 'Publishing settings', template_type: 'publishing_settings' });
+        if (error) throw error;
+      }
+
+      toast({
+        title: 'Publishing settings saved!',
+        description: 'Your scheduling preferences have been updated.',
+      });
+    } catch (error: any) {
+      console.error('Error saving publishing settings:', error);
+      toast({
+        title: 'Error saving publishing settings',
+        description: error.message || 'Failed to save publishing settings. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+  
   const [brandSettings, setBrandSettings] = useState({
     logo: null as File | null,
     brandName: "",
@@ -232,6 +320,7 @@ export default function Settings() {
   });
 
   const [publishingSettings, setPublishingSettings] = useState({
+    scheduledDate: "",
     scheduledTime: "18:30",
     timezone: "UTC"
   });
@@ -934,8 +1023,10 @@ export default function Settings() {
                             Delete account
                           </Button>
                           <Button variant="outline">Manage subscription</Button>
-                        </div>
-                      </div>
+                         </div>
+
+                         <Button onClick={saveAccountSettings}>Save Account Settings</Button>
+                       </div>
 
                       <Separator />
 
@@ -1619,40 +1710,48 @@ export default function Settings() {
                         <h3 className="text-lg font-semibold">Scheduler</h3>
                         <p className="text-muted-foreground">Choose the date and time to schedule</p>
                         
-                        <div className="space-y-4">
-                          <div className="flex gap-4">
-                            <Button>Save</Button>
-                          </div>
+                         <div className="space-y-4">
+                           <div className="space-y-2">
+                             <Label>Date</Label>
+                             <Input
+                               type="date"
+                               value={publishingSettings.scheduledDate}
+                               onChange={(e) => setPublishingSettings(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                               className="max-w-xs"
+                             />
+                           </div>
 
-                          <div className="space-y-2">
-                            <Label>Times</Label>
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4" />
-                              <Input
-                                type="time"
-                                value={publishingSettings.scheduledTime}
-                                onChange={(e) => setPublishingSettings(prev => ({ ...prev, scheduledTime: e.target.value }))}
-                                className="max-w-xs"
-                              />
-                            </div>
-                            <Button variant="outline" size="sm">Add new daily time</Button>
-                          </div>
+                           <div className="space-y-2">
+                             <Label>Times</Label>
+                             <div className="flex items-center gap-2">
+                               <Clock className="w-4 h-4" />
+                               <Input
+                                 type="time"
+                                 value={publishingSettings.scheduledTime}
+                                 onChange={(e) => setPublishingSettings(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                                 className="max-w-xs"
+                               />
+                             </div>
+                             <Button variant="outline" size="sm">Add new daily time</Button>
+                           </div>
 
-                          <div className="space-y-2">
-                            <Label>Select timezone</Label>
-                            <Select value={publishingSettings.timezone} onValueChange={(value) => setPublishingSettings(prev => ({ ...prev, timezone: value }))}>
-                              <SelectTrigger className="max-w-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="UTC">GMT+00:00 (UTC)</SelectItem>
-                                <SelectItem value="EST">GMT-05:00 (EST)</SelectItem>
-                                <SelectItem value="PST">GMT-08:00 (PST)</SelectItem>
-                                <SelectItem value="CET">GMT+01:00 (CET)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
+                           <div className="space-y-2">
+                             <Label>Select timezone</Label>
+                             <Select value={publishingSettings.timezone} onValueChange={(value) => setPublishingSettings(prev => ({ ...prev, timezone: value }))}>
+                               <SelectTrigger className="max-w-xs">
+                                 <SelectValue />
+                               </SelectTrigger>
+                               <SelectContent>
+                                 <SelectItem value="UTC">GMT+00:00 (UTC)</SelectItem>
+                                 <SelectItem value="EST">GMT-05:00 (EST)</SelectItem>
+                                 <SelectItem value="PST">GMT-08:00 (PST)</SelectItem>
+                                 <SelectItem value="CET">GMT+01:00 (CET)</SelectItem>
+                               </SelectContent>
+                             </Select>
+                           </div>
+
+                           <Button onClick={savePublishingSettings}>Save Publishing Settings</Button>
+                         </div>
                       </div>
                     </CardContent>
                   </Card>
