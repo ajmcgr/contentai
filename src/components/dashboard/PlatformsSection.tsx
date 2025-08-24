@@ -16,6 +16,16 @@ export const PlatformsSection = () => {
       description: "Publish directly to your Webflow CMS"
     },
     {
+      name: "Wix",
+      logo: "/lovable-uploads/c661dec1-2ebf-4dad-ac81-56fd058c7266.png",
+      description: "Publish blogs directly to your Wix site"
+    },
+    {
+      name: "Notion",
+      logo: "/lovable-uploads/c80ace00-6c75-4b88-9a7f-c13ba9e3d29d.png",
+      description: "Create pages in your Notion database"
+    },
+    {
       name: "Ghost",
       logo: "/lovable-uploads/af07b7e4-6f3c-4202-8e50-f810cca951bc.png",
       description: "Publish to your Ghost blog platform"
@@ -44,7 +54,7 @@ export const PlatformsSection = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
           {platforms.map((platform, index) => (
             <div 
               key={index}
@@ -65,7 +75,7 @@ export const PlatformsSection = () => {
         
         <div className="text-center mt-12">
           <p className="text-sm text-muted-foreground">
-            More integrations coming soon including Framer, Wix, Notion, and custom APIs
+            More integrations coming soon including Framer and custom APIs
           </p>
         </div>
       </div>
