@@ -142,7 +142,12 @@ export function ArticleManagement() {
                       <TableRow key={article.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">
                           <div>
-                            <div className="font-semibold text-foreground">{article.title}</div>
+                            <Link 
+                              to={`/dashboard/write?edit=${article.id}`}
+                              className="font-semibold text-foreground hover:text-primary hover:underline cursor-pointer transition-colors"
+                            >
+                              {article.title}
+                            </Link>
                             {article.target_keyword && (
                               <div className="text-sm text-muted-foreground">{article.target_keyword}</div>
                             )}
