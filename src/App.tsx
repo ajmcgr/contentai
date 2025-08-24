@@ -15,6 +15,7 @@ import { SignIn } from "./pages/SignIn";
 import { SignUp } from "./pages/SignUp";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
+import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import { AuthenticatedLayout } from "./components/layouts/AuthenticatedLayout";
 import DashboardIndex from "./pages/dashboard/Index";
 import ArticlesDashboard from "./pages/dashboard/ArticlesDashboard";
@@ -38,6 +39,7 @@ import ReadabilityChecker from "./pages/tools/ReadabilityChecker";
 const queryClient = new QueryClient();
 
 const App = () => (
+  <SubscriptionProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -89,6 +91,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </SubscriptionProvider>
 );
 
 export default App;
