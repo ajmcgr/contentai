@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, Edit, Trash2, Eye, Plus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-// Sample data - this would come from your API/database
-const sampleArticles: any[] = [];
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const getStatusBadge = (status: string) => {
   const variants = {
@@ -27,11 +27,37 @@ const getStatusBadge = (status: string) => {
 
 export function ArticleManagement() {
   const [activeTab, setActiveTab] = useState("all");
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setArticles([]);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('articles')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        setArticles(data || []);
+      } catch (err) {
+        console.error('Error loading articles:', err);
+        toast({ title: 'Failed to load articles', variant: 'destructive' });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchArticles();
+  }, []);
 
   const filteredArticles = activeTab === "all" 
-    ? sampleArticles 
-    : sampleArticles.filter(article => article.status === activeTab);
-
+    ? articles 
+    : articles.filter(article => article.status === activeTab);
   return (
     <div className="flex-1 p-6">
       <div className="mb-6">
@@ -79,12 +105,14 @@ export function ArticleManagement() {
                         <TableCell className="font-medium">
                           <div>
                             <div className="font-semibold text-foreground">{article.title}</div>
-                            <div className="text-sm text-muted-foreground">{article.category}</div>
+                            {article.target_keyword && (
+                              <div className="text-sm text-muted-foreground">{article.target_keyword}</div>
+                            )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{article.author}</TableCell>
+                        <TableCell className="text-muted-foreground">You</TableCell>
                         <TableCell className="text-muted-foreground">
-                          {new Date(article.createdOn).toLocaleDateString()}
+                          {article.created_at ? new Date(article.created_at).toLocaleDateString() : ""}
                         </TableCell>
                         <TableCell>{getStatusBadge(article.status)}</TableCell>
                         <TableCell>
