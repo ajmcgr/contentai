@@ -18,8 +18,10 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
 
   const handleSignOut = async () => {
     try {
-      console.log('Signing out user...');
-      const { error } = await supabase.auth.signOut();
+      console.log('Starting sign out process...');
+      
+      // Force sign out with scope: 'local' to ensure it works
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
       
       if (error) {
         console.error('Sign out error:', error);
@@ -31,14 +33,19 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
         return;
       }
 
-      console.log('Sign out successful, redirecting...');
+      console.log('Sign out successful');
+      
+      // Clear any local storage items that might persist
+      localStorage.removeItem('supabase.auth.token');
+      
       toast({
         title: "Signed out",
         description: "You have been signed out successfully.",
       });
       
-      // Navigate to signin page
-      navigate('/signin');
+      // Force navigation to home page instead of signin
+      window.location.href = '/';
+      
     } catch (error) {
       console.error('Unexpected sign out error:', error);
       toast({
