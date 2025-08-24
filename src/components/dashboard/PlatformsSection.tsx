@@ -14,6 +14,21 @@ export const PlatformsSection = () => {
       name: "Webflow",
       logo: "/lovable-uploads/dea3f4ce-82f3-48a3-af08-5c64d570b629.png", 
       description: "Publish directly to your Webflow CMS"
+    },
+    {
+      name: "Ghost",
+      logo: "/lovable-uploads/af07b7e4-6f3c-4202-8e50-f810cca951bc.png",
+      description: "Publish to your Ghost blog platform"
+    },
+    {
+      name: "Squarespace",
+      logo: "/lovable-uploads/94e1830f-eb6c-4c1d-aa6e-42152232cf2f.png",
+      description: "Publish blog posts to your Squarespace website"
+    },
+    {
+      name: "Zapier",
+      logo: "/lovable-uploads/28858514-61f5-43b3-8eec-762b7b23c1b7.png",
+      description: "Automate publishing to 5000+ apps"
     }
   ];
 
@@ -29,7 +44,7 @@ export const PlatformsSection = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {platforms.map((platform, index) => (
             <div 
               key={index}
@@ -42,13 +57,15 @@ export const PlatformsSection = () => {
                   className="h-16 w-auto object-contain"
                 />
               </div>
+              <h3 className="text-lg font-medium mb-2">{platform.name}</h3>
+              <p className="text-sm text-muted-foreground">{platform.description}</p>
             </div>
           ))}
         </div>
         
         <div className="text-center mt-12">
           <p className="text-sm text-muted-foreground">
-            More integrations coming soon including Framer, Notion, Wix, and custom APIs
+            More integrations coming soon including Framer, Wix, Notion, and custom APIs
           </p>
         </div>
       </div>
