@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { User, LogOut, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -12,11 +13,40 @@ interface HeaderProps {
 export const Header = ({ isAuthenticated }: HeaderProps) => {
   const navigate = useNavigate();
   const { user } = useSubscription();
+  const { toast } = useToast();
   const authed = !!user;
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/signin');
+    try {
+      console.log('Signing out user...');
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Sign out error:', error);
+        toast({
+          title: "Error",
+          description: "Failed to sign out. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Sign out successful, redirecting...');
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully.",
+      });
+      
+      // Navigate to signin page
+      navigate('/signin');
+    } catch (error) {
+      console.error('Unexpected sign out error:', error);
+      toast({
+        title: "Error", 
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

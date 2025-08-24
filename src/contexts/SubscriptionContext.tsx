@@ -89,10 +89,15 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   useEffect(() => {
     // Check subscription status on mount and auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
       setUser(session?.user || null);
+      
       if (session?.user) {
         await checkSubscriptionStatus();
       } else {
+        // Clear subscription status when user signs out
+        console.log('Clearing subscription status - user signed out');
         setSubscriptionStatus({
           subscribed: false,
           planType: 'free',
@@ -104,6 +109,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
 
     // Initial check
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.id);
       setUser(session?.user || null);
       if (session?.user) {
         checkSubscriptionStatus();
