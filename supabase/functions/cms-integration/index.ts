@@ -431,15 +431,24 @@ async function validateWebhookConnection(webhookUrl: string): Promise<boolean> {
 
 // Platform-specific publishing functions
 async function publishToWordPress(article: any, connection: any, options: any) {
-  const endpoint = `${connection.site_url}/wp-json/wp/v2/posts`;
+  const cleanUrl = connection.site_url.replace(/\/$/, '');
+  const endpoint = `${cleanUrl}/wp-json/wp/v2/posts`;
+  
+  console.log('Publishing to WordPress:', {
+    endpoint,
+    siteUrl: connection.site_url,
+    hasApiKey: !!connection.api_key
+  });
   
   const postData = {
     title: article.title,
     content: article.content,
-    excerpt: article.meta_description,
+    excerpt: article.meta_description || '',
     status: options.status || 'draft',
     featured_media: options.featured_media || null
   };
+
+  console.log('WordPress post data:', JSON.stringify(postData, null, 2));
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -450,11 +459,28 @@ async function publishToWordPress(article: any, connection: any, options: any) {
     body: JSON.stringify(postData)
   });
 
+  console.log('WordPress API response:', {
+    status: response.status,
+    statusText: response.statusText,
+    url: response.url
+  });
+
   if (!response.ok) {
-    throw new Error(`WordPress publish failed: ${response.statusText}`);
+    const errorBody = await response.text();
+    console.error('WordPress API error body:', errorBody);
+    
+    if (response.status === 404) {
+      throw new Error(`WordPress REST API not found at ${endpoint}. Please ensure WordPress REST API is enabled and the URL is correct.`);
+    } else if (response.status === 401 || response.status === 403) {
+      throw new Error(`WordPress authentication failed. Please check your credentials.`);
+    } else {
+      throw new Error(`WordPress publish failed: ${response.status} ${response.statusText} - ${errorBody}`);
+    }
   }
 
-  return await response.json();
+  const result = await response.json();
+  console.log('WordPress publish successful:', result.id);
+  return result;
 }
 
 async function publishToShopify(article: any, connection: any, options: any) {
