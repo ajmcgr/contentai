@@ -25,7 +25,19 @@ export const HeroSection = () => {
           </Button>
           <div className="senja-embed" data-id="77285219-9d5a-4b35-bd39-6e413a1e81e4" data-mode="shadow" data-lazyload="false"></div>
         </div>
-        <p className="text-center text-black text-sm md:text-base mb-4">✓ 7 days free trial ✓ Secure payment ✓ Cancel any-time</p>
+        <p className="text-center text-black text-sm md:text-base mb-8">✓ 7 days free trial ✓ Secure payment ✓ Cancel any-time</p>
+        
+        {/* Dashboard Preview Image */}
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="relative">
+            <img 
+              src="/lovable-uploads/7594ded9-ce63-4c8a-b8fb-aa0ec9277526.png" 
+              alt="Content AI Dashboard Preview"
+              className="w-full h-auto rounded-lg shadow-2xl border border-gray-200"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent rounded-lg"></div>
+          </div>
+        </div>
       </div>
     </div>
   );
