@@ -269,7 +269,17 @@ export default function Write() {
                       )}
                     </Button>
                   )}
-                  <Button variant="outline">Preview</Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      const blob = new Blob([`# ${title}\n\n${content}`], { type: 'text/markdown' });
+                      const url = URL.createObjectURL(blob);
+                      window.open(url, '_blank');
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Preview
+                  </Button>
                   <Button variant="secondary">Publish</Button>
                 </div>
               </CardContent>

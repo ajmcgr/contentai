@@ -63,56 +63,40 @@ serve(async (req) => {
       console.log('Anthropic API key found');
     }
 
-    // Generate a personalized prompt based on brand settings
-    let contextPrompt = 'You are a professional content strategist. ';
+    // Generate a full blog article based on brand settings
+    let contextPrompt = 'You are an expert content writer and SEO specialist. ';
     
-    if (brandSettings) {
-      contextPrompt += `Generate a compelling blog article idea for ${brandSettings.brand_name || 'this company'}`;
-      
-      if (brandSettings.industry) {
-        contextPrompt += ` in the ${brandSettings.industry} industry`;
-      }
-      
-      if (brandSettings.target_audience) {
-        contextPrompt += `. The target audience is: ${brandSettings.target_audience}`;
-      }
-      
-      if (brandSettings.description) {
-        contextPrompt += `. Company description: ${brandSettings.description}`;
-      }
-      
-      contextPrompt += `. Use a ${brandSettings.tone_of_voice || 'professional'} tone.`;
-      
-      if (brandSettings.tags && brandSettings.tags.length > 0) {
-        contextPrompt += ` Consider these relevant topics: ${brandSettings.tags.join(', ')}.`;
-      }
-    } else {
-      contextPrompt += `Generate a compelling blog article idea. Since no brand information is available, create a general business-focused topic.`;
-    }
+    const brandName = brandSettings?.brand_name || 'our company';
+    const industry = brandSettings?.industry || 'business';
+    const audience = brandSettings?.target_audience || 'professionals';
+    const tone = brandSettings?.tone_of_voice || 'professional';
+    const description = brandSettings?.description || 'innovative solutions';
+    const topics = brandSettings?.tags?.join(', ') || 'industry trends, best practices';
 
-    contextPrompt += `
+    contextPrompt += `Write a complete, high-quality blog article for ${brandName} in the ${industry} industry.
 
-Generate the following:
-1. An engaging, SEO-optimized title (under 60 characters)
-2. A brief article outline with 3-4 main sections
-3. Target keywords to focus on
-4. A suggested introduction paragraph
+TARGET AUDIENCE: ${audience}
+TONE: ${tone}
+COMPANY DESCRIPTION: ${description}
+RELEVANT TOPICS: ${topics}
 
-Make it actionable, engaging, and valuable for the target audience.
+REQUIREMENTS:
+- Write a complete article of 800-1200 words
+- Include an SEO-optimized title (under 60 characters)
+- Add 5-8 relevant keywords naturally throughout
+- Include 3-4 internal link suggestions [use format: [anchor text](internal-link-suggestion)]
+- Add 2-3 external link references [use format: [source name](https://example.com)]
+- Suggest 2-3 relevant images with descriptions [use format: ![Alt text](image-description)]
+- Use proper markdown formatting with headers (##, ###)
+- Include actionable tips and insights
+- Add a compelling conclusion with call-to-action
 
-Respond in this format:
-Title: [Your title here]
+FORMAT:
+Title: [SEO-optimized title]
 
-Outline:
-1. [Section 1]
-2. [Section 2]  
-3. [Section 3]
-4. [Section 4]
+[Full article content with proper markdown formatting, keywords, links, and image suggestions]
 
-Keywords: [keyword1, keyword2, keyword3]
-
-Introduction:
-[Write a compelling introduction paragraph here]`;
+Keywords used: [list the 5-8 keywords you naturally incorporated]`;
 
     try {
       console.log('Making request to Anthropic API...');
@@ -125,7 +109,7 @@ Introduction:
         },
         body: JSON.stringify({
           model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 1000,
+          max_tokens: 4000,
           messages: [
             {
               role: 'user',
@@ -171,8 +155,55 @@ Introduction:
       const tone = brandSettings?.tone_of_voice || 'professional';
       const industry = brandSettings?.industry || 'your industry';
 
-      const fallbackTitle = `Actionable ${industry} post idea for ${brandName}`.slice(0, 58);
-      const fallbackBody = `Outline:\n1. Pain points ${brandName} solves\n2. Step-by-step solution\n3. Proof (data, case study, customer quote)\n4. Clear next steps\n\nKeywords: [${industry}, ${brandName}, strategy]\n\nIntroduction:\nWrite a ${tone} intro that states the problem in one sentence, the promised outcome in another, and previews 3 concrete steps.`;
+      const fallbackTitle = `5 Proven Strategies to Transform Your ${industry} Business`;
+      const fallbackBody = `## Introduction
+
+In today's competitive ${industry} landscape, businesses need more than just good intentions to succeed. They need proven strategies that deliver measurable results.
+
+## 1. Optimize Your Customer Experience
+
+Focus on understanding your customers' pain points and addressing them systematically. Research shows that companies prioritizing customer experience see 60% higher profits.
+
+**Action Steps:**
+- Conduct regular customer feedback surveys
+- Map your customer journey
+- Implement feedback loops
+
+[Learn more about customer experience optimization](customer-experience-guide)
+
+## 2. Leverage Data-Driven Decision Making
+
+Use analytics to guide your business decisions rather than relying on gut feelings alone.
+
+**Key Metrics to Track:**
+- Customer acquisition cost
+- Lifetime value
+- Conversion rates
+- Customer satisfaction scores
+
+![Analytics Dashboard](business-analytics-dashboard)
+
+## 3. Invest in Team Development
+
+Your team is your greatest asset. Companies that invest in employee development see 11% greater profitability.
+
+## 4. Embrace Digital Transformation
+
+Stay competitive by adopting new technologies and processes that streamline operations.
+
+[Read about digital transformation trends](https://example.com/digital-trends)
+
+## 5. Build Strategic Partnerships
+
+Collaborate with complementary businesses to expand your reach and capabilities.
+
+![Partnership Network](business-partnerships-diagram)
+
+## Conclusion
+
+Implementing these five strategies can significantly impact your ${industry} business growth. Start with one area and gradually expand your efforts.
+
+**Keywords used: ${industry} business, customer experience, data-driven decisions, digital transformation, strategic partnerships, business growth**`;
 
       return new Response(JSON.stringify({
         success: true,
