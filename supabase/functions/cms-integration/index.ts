@@ -431,10 +431,52 @@ async function validateWebhookConnection(webhookUrl: string): Promise<boolean> {
 
 // Platform-specific publishing functions
 async function publishToWordPress(article: any, connection: any, options: any) {
+  // WordPress.com via OAuth (wpcom)
+  if (connection?.config?.wpcom) {
+    const siteRef = connection.site_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const endpoint = `https://public-api.wordpress.com/wp/v2/sites/${encodeURIComponent(siteRef)}/posts`;
+
+    console.log('Publishing to WordPress.com (WP.com):', { endpoint, siteRef });
+
+    const postData = {
+      title: article.title,
+      content: article.content,
+      excerpt: article.meta_description || '',
+      status: options.status || 'draft',
+    };
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${connection.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(postData)
+    });
+
+    console.log('WP.com API response:', { status: response.status, statusText: response.statusText, url: response.url });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('WP.com API error body:', errorBody);
+      if (response.status === 404) {
+        throw new Error(`WordPress.com REST API not found for site ${siteRef}. Ensure the site exists and OAuth connection is valid in Settings → Integrations.`);
+      } else if (response.status === 401 || response.status === 403) {
+        throw new Error('WordPress.com authentication failed. Reconnect in Settings → Integrations.');
+      }
+      throw new Error(`WordPress.com publish failed: ${response.status} ${response.statusText} - ${errorBody}`);
+    }
+
+    const result = await response.json();
+    console.log('WordPress.com publish successful:', result.id);
+    return result;
+  }
+
+  // Self-hosted WordPress via application password (Basic Auth)
   const cleanUrl = connection.site_url.replace(/\/$/, '');
   const endpoint = `${cleanUrl}/wp-json/wp/v2/posts`;
   
-  console.log('Publishing to WordPress:', {
+  console.log('Publishing to WordPress (self-hosted):', {
     endpoint,
     siteUrl: connection.site_url,
     hasApiKey: !!connection.api_key
