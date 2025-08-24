@@ -1,9 +1,9 @@
 
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { User, LogOut, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -11,21 +11,8 @@ interface HeaderProps {
 
 export const Header = ({ isAuthenticated }: HeaderProps) => {
   const navigate = useNavigate();
-  const [authed, setAuthed] = useState<boolean>(!!isAuthenticated);
-
-  useEffect(() => {
-    let isMounted = true;
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (isMounted) setAuthed(!!session);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (isMounted) setAuthed(!!session);
-    });
-    return () => {
-      subscription.unsubscribe();
-      isMounted = false;
-    };
-  }, []);
+  const { user } = useSubscription();
+  const authed = !!user;
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
