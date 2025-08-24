@@ -15,7 +15,13 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      return new Response(JSON.stringify({ 
+        error: 'Unauthorized: missing token',
+        success: false
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const supabaseClient = createClient(
@@ -26,7 +32,13 @@ serve(async (req) => {
 
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
-      throw new Error('No user found');
+      return new Response(JSON.stringify({ 
+        error: 'Unauthorized: invalid session',
+        success: false
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const url = new URL(req.url);
@@ -40,7 +52,13 @@ serve(async (req) => {
       case 'status':
         return await handleStatus(req, supabaseClient, user);
       default:
-        throw new Error('Invalid action');
+        return new Response(JSON.stringify({
+          error: 'Invalid action',
+          success: false
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
     }
 
   } catch (error) {
@@ -54,6 +72,14 @@ serve(async (req) => {
     });
   }
 });
+
+function wpAuthHeaders(token: string) {
+  const isBasic = token.includes(':');
+  return {
+    Authorization: isBasic ? `Basic ${btoa(token)}` : `Bearer ${token}`,
+    Accept: 'application/json',
+  };
+}
 
 async function handleConnect(req: Request, supabaseClient: any, user: any) {
   const { platform, siteUrl, apiKey, accessToken } = await req.json();
@@ -92,7 +118,13 @@ async function handleConnect(req: Request, supabaseClient: any, user: any) {
   }
 
   if (!connectionValid) {
-    throw new Error(`Failed to validate ${platform} connection`);
+    return new Response(JSON.stringify({
+      success: false,
+      error: `Failed to validate ${platform} connection`
+    }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   // Save connection
@@ -220,13 +252,13 @@ async function handleStatus(req: Request, supabaseClient: any, user: any) {
 // Platform-specific validation functions
 async function validateWordPressConnection(siteUrl: string, apiKey: string): Promise<boolean> {
   try {
-    const response = await fetch(`${siteUrl}/wp-json/wp/v2/users/me`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
+    const cleanUrl = siteUrl.replace(/\/$/, '');
+    const response = await fetch(`${cleanUrl}/wp-json/wp/v2/users/me`, {
+      headers: wpAuthHeaders(apiKey),
     });
     return response.ok;
-  } catch {
+  } catch (e) {
+    console.error('WordPress validation error:', e);
     return false;
   }
 }
@@ -319,7 +351,7 @@ async function publishToWordPress(article: any, connection: any, options: any) {
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${connection.api_key}`,
+      ...wpAuthHeaders(connection.api_key || ''),
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(postData)
