@@ -22,7 +22,7 @@ export const PlatformsSection = () => {
     },
     {
       name: "Notion",
-      logo: "/lovable-uploads/c80ace00-6c75-4b88-9a7f-c13ba9e3d29d.png",
+      logo: "/lovable-uploads/3668248b-f746-4b84-85a3-9a25cf2a937e.png",
       description: "Create pages in your Notion database"
     },
     {

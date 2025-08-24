@@ -971,7 +971,7 @@ export default function Settings() {
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
                               <img 
-                                src="/lovable-uploads/c80ace00-6c75-4b88-9a7f-c13ba9e3d29d.png"
+                                src="/lovable-uploads/3668248b-f746-4b84-85a3-9a25cf2a937e.png"
                                 alt="Notion logo"
                                 className="w-10 h-10 object-contain"
                               />
