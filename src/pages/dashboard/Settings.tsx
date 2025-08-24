@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { TrialBanner } from "@/components/TrialBanner";
@@ -116,6 +116,45 @@ export default function Settings() {
       loading: false
     });
   };
+
+  // Fetch existing connections and handle OAuth return
+  const fetchConnections = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('cms-integration/status', { method: 'GET' });
+      if (!error && data?.success && Array.isArray(data.connections)) {
+        setIntegrations(prev => {
+          const next: typeof prev = { ...prev };
+          for (const c of data.connections as any[]) {
+            if ((next as any)[c.platform]) {
+              (next as any)[c.platform] = {
+                connected: true,
+                siteUrl: c.site_url,
+                apiKey: '',
+                accessToken: '',
+                name: c.site_url
+              } as any;
+            }
+          }
+          return next;
+        });
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchConnections();
+    const params = new URLSearchParams(window.location.search);
+    const platform = params.get('platform');
+    const success = params.get('success');
+    if (platform === 'wordpress' && success === '1') {
+      toast({
+        title: 'Connection successful',
+        description: 'Connected to WordPress successfully.'
+      });
+      fetchConnections();
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   const handleConnect = async () => {
     setConnectionDialog(prev => ({ ...prev, loading: true }));

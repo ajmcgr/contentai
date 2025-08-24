@@ -759,7 +759,7 @@ async function handleOAuthCallbackPublic(req: Request) {
       return new Response(JSON.stringify({ success:false, error:`Failed to save connection: ${error.message}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
     }
 
-    const appUrl = 'https://0d84bc4c-60bd-4402-8799-74365f8b638e.sandbox.lovable.dev/dashboard/settings?oauth=wordpress_success=1';
+    const appUrl = 'https://0d84bc4c-60bd-4402-8799-74365f8b638e.sandbox.lovable.dev/dashboard/settings?platform=wordpress&success=1';
     const html = `<!doctype html><html><body><script>location.href="${appUrl}";</script>Connected to WordPress. You can close this window.</body></html>`;
     return new Response(html, { headers: { ...corsHeaders, 'Content-Type': 'text/html' } });
   } catch (e: any) {
