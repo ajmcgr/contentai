@@ -67,13 +67,15 @@ export function DashboardSidebar() {
         {/* Upgrade Plan */}
         <div className="mt-auto p-4 border-t border-border">
           <SidebarMenuButton asChild className="h-12">
-            <NavLink 
-              to="/dashboard/upgrade" 
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+            <button 
+              onClick={() => {
+                window.open('https://buy.stripe.com/14AaEZ2Bd06k6KXbCYeAg00', '_blank');
+              }}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-colors"
             >
               <Star className="h-5 w-5" />
               {!isCollapsed && <span className="ml-3">Upgrade Plan</span>}
-            </NavLink>
+            </button>
           </SidebarMenuButton>
         </div>
       </SidebarContent>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -36,9 +37,11 @@ export function ArticleManagement() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-reckless font-medium text-foreground">Articles</h1>
-          <Button className="bg-primary hover:bg-primary/90">
-            <Plus className="h-4 w-4 mr-2" />
-            Write Article
+          <Button className="bg-primary hover:bg-primary/90" asChild>
+            <Link to="/dashboard/write">
+              <Plus className="h-4 w-4 mr-2" />
+              Write Article
+            </Link>
           </Button>
         </div>
 
