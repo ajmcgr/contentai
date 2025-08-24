@@ -190,69 +190,6 @@ export default function Settings() {
     loading: false
   });
 
-  // Fetch existing connections and handle OAuth return
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to save settings.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const brandData = {
-        user_id: user.id,
-        brand_name: brandSettings.brandName,
-        description: brandSettings.description,
-        target_audience: brandSettings.targetAudience,
-        industry: brandSettings.industry,
-        tone_of_voice: brandSettings.toneOfVoice,
-        language: brandSettings.language,
-        tags: brandSettings.tags ? brandSettings.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-        internal_links: brandSettings.internalLinks ? brandSettings.internalLinks.split(',').map(l => l.trim()).filter(Boolean) : []
-      };
-
-      // Check if brand settings already exist
-      const { data: existing } = await supabase
-        .from('brand_settings')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (existing) {
-        // Update existing settings
-        const { error } = await supabase
-          .from('brand_settings')
-          .update(brandData)
-          .eq('user_id', user.id);
-        
-        if (error) throw error;
-      } else {
-        // Create new settings
-        const { error } = await supabase
-          .from('brand_settings')
-          .insert(brandData);
-        
-        if (error) throw error;
-      }
-
-      toast({
-        title: "Brand settings saved!",
-        description: "Your brand information has been updated successfully.",
-      });
-    } catch (error: any) {
-      console.error('Error saving brand settings:', error);
-      toast({
-        title: "Error saving settings",
-        description: error.message || "Failed to save brand settings. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Load existing brand settings
   useEffect(() => {
     const loadBrandSettings = async () => {
