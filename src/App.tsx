@@ -18,6 +18,11 @@ import { Header } from "./components/Header";
 import { AuthenticatedLayout } from "./components/layouts/AuthenticatedLayout";
 import DashboardIndex from "./pages/dashboard/Index";
 import ArticlesDashboard from "./pages/dashboard/ArticlesDashboard";
+import Write from "./pages/dashboard/Write";
+import Topics from "./pages/dashboard/Topics";
+import Scheduler from "./pages/dashboard/Scheduler";
+import Backlinks from "./pages/dashboard/Backlinks";
+import Settings from "./pages/dashboard/Settings";
 import Account from "./pages/Account";
 import ContentGenerator from "./pages/ContentGenerator";
 import HeadlineGenerator from "./pages/tools/HeadlineGenerator";
@@ -42,12 +47,12 @@ const App = () => (
         <Routes>
           <Route path="/dashboard/*" element={<AuthenticatedLayout />}>
             <Route index element={<ArticlesDashboard />} />
-            <Route path="articles" element={<div>Articles Dashboard</div>} />
-            <Route path="write" element={<div>Write Article</div>} />
-            <Route path="topics" element={<div>Topics</div>} />
-            <Route path="scheduler" element={<div>Scheduler</div>} />
-            <Route path="backlinks" element={<div>Backlinks</div>} />
-            <Route path="settings" element={<div>Settings</div>} />
+            <Route path="articles" element={<ArticlesDashboard />} />
+            <Route path="write" element={<Write />} />
+            <Route path="topics" element={<Topics />} />
+            <Route path="scheduler" element={<Scheduler />} />
+            <Route path="backlinks" element={<Backlinks />} />
+            <Route path="settings" element={<Settings />} />
             <Route path="upgrade" element={<div>Upgrade Plan</div>} />
             <Route path="generator" element={<ContentGenerator />} />
             <Route path="account" element={<Account />} />

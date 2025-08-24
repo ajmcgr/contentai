@@ -7,40 +7,7 @@ import { MoreHorizontal, Edit, Trash2, Eye, Plus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Sample data - this would come from your API/database
-const sampleArticles = [
-  {
-    id: 1,
-    title: "10 Best SEO Practices for 2024",
-    author: "AI Writer",
-    createdOn: "2024-01-15",
-    status: "published",
-    category: "SEO"
-  },
-  {
-    id: 2,
-    title: "How to Increase Blog Traffic",
-    author: "AI Writer", 
-    createdOn: "2024-01-14",
-    status: "draft",
-    category: "Marketing"
-  },
-  {
-    id: 3,
-    title: "Content Marketing Strategy Guide",
-    author: "AI Writer",
-    createdOn: "2024-01-13", 
-    status: "scheduled",
-    category: "Content"
-  },
-  {
-    id: 4,
-    title: "Social Media Optimization Tips",
-    author: "AI Writer",
-    createdOn: "2024-01-12",
-    status: "generated",
-    category: "Social Media"
-  }
-];
+const sampleArticles: any[] = [];
 
 const getStatusBadge = (status: string) => {
   const variants = {
@@ -100,7 +67,7 @@ export function ArticleManagement() {
                   {filteredArticles.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        No articles found for this filter.
+                        No articles yet. Click "Write Article" to get started.
                       </TableCell>
                     </TableRow>
                   ) : (

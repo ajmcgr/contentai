@@ -42,7 +42,7 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar
-      className="border-r border-border top-16"
+      className="border-r border-border fixed top-16 left-0 h-[calc(100vh-4rem)] z-40"
       collapsible="icon"
     >
       <SidebarContent className="bg-background">
