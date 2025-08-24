@@ -782,9 +782,11 @@ export default function Settings() {
                           {/* WordPress Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-blue-600 rounded flex items-center justify-center text-white font-bold">
-                                W
-                              </div>
+                              <img 
+                                src="/lovable-uploads/d8fa0a46-f1a4-4e86-a9fa-f2102a039436.png"
+                                alt="WordPress logo"
+                                className="w-10 h-10 object-contain"
+                              />
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   WordPress
@@ -827,9 +829,11 @@ export default function Settings() {
                           {/* Shopify Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-green-600 rounded flex items-center justify-center text-white font-bold">
-                                S
-                              </div>
+                              <img 
+                                src="/lovable-uploads/93b6287a-d091-4ee7-b4ae-e45ea7a3e122.png"
+                                alt="Shopify logo"
+                                className="w-10 h-10 object-contain"
+                              />
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Shopify
@@ -872,9 +876,11 @@ export default function Settings() {
                           {/* Webflow Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-purple-600 rounded flex items-center justify-center text-white font-bold">
-                                W
-                              </div>
+                              <img 
+                                src="/lovable-uploads/dea3f4ce-82f3-48a3-af08-5c64d570b629.png"
+                                alt="Webflow logo"
+                                className="w-10 h-10 object-contain"
+                              />
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Webflow
@@ -917,9 +923,11 @@ export default function Settings() {
                           {/* Wix Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-orange-600 rounded flex items-center justify-center text-white font-bold">
-                                W
-                              </div>
+                              <img 
+                                src="/lovable-uploads/c661dec1-2ebf-4dad-ac81-56fd058c7266.png"
+                                alt="Wix logo"
+                                className="w-10 h-10 object-contain"
+                              />
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Wix
@@ -962,9 +970,11 @@ export default function Settings() {
                           {/* Notion Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gray-900 rounded flex items-center justify-center text-white font-bold">
-                                N
-                              </div>
+                              <img 
+                                src="/lovable-uploads/c80ace00-6c75-4b88-9a7f-c13ba9e3d29d.png"
+                                alt="Notion logo"
+                                className="w-10 h-10 object-contain"
+                              />
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Notion
@@ -1007,9 +1017,11 @@ export default function Settings() {
                           {/* Ghost Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-slate-600 rounded flex items-center justify-center text-white font-bold">
-                                G
-                              </div>
+                              <img 
+                                src="/lovable-uploads/af07b7e4-6f3c-4202-8e50-f810cca951bc.png"
+                                alt="Ghost logo"
+                                className="w-10 h-10 object-contain"
+                              />
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Ghost
@@ -1052,9 +1064,11 @@ export default function Settings() {
                           {/* Squarespace Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-black rounded flex items-center justify-center text-white font-bold">
-                                S
-                              </div>
+                              <img 
+                                src="/lovable-uploads/94e1830f-eb6c-4c1d-aa6e-42152232cf2f.png"
+                                alt="Squarespace logo"
+                                className="w-10 h-10 object-contain"
+                              />
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Squarespace
@@ -1097,9 +1111,11 @@ export default function Settings() {
                           {/* Zapier Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-orange-500 rounded flex items-center justify-center text-white font-bold">
-                                Z
-                              </div>
+                              <img 
+                                src="/lovable-uploads/28858514-61f5-43b3-8eec-762b7b23c1b7.png"
+                                alt="Zapier logo"
+                                className="w-10 h-10 object-contain"
+                              />
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Zapier

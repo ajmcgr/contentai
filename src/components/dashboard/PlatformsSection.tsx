@@ -2,17 +2,17 @@ export const PlatformsSection = () => {
   const platforms = [
     {
       name: "WordPress",
-      logo: "/lovable-uploads/6dd255c2-8a17-4484-896a-eb032dc2e7ec.png",
+      logo: "/lovable-uploads/d8fa0a46-f1a4-4e86-a9fa-f2102a039436.png",
       description: "Seamlessly publish to your WordPress blog"
     },
     {
       name: "Shopify", 
-      logo: "/lovable-uploads/5643a3ef-6962-4c2f-b99f-4314df6ed5ee.png",
+      logo: "/lovable-uploads/93b6287a-d091-4ee7-b4ae-e45ea7a3e122.png",
       description: "Create content for your Shopify store blog"
     },
     {
       name: "Webflow",
-      logo: "/lovable-uploads/2dba3e23-9055-4a36-902c-26ec9ea8f668.png", 
+      logo: "/lovable-uploads/dea3f4ce-82f3-48a3-af08-5c64d570b629.png", 
       description: "Publish directly to your Webflow CMS"
     }
   ];
