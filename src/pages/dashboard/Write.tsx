@@ -76,14 +76,14 @@ export default function Write() {
         : "Generic article prompt generated. Add your brand info in Settings for personalized prompts.";
 
       toast({
-        title: "AI Prompt Generated!",
+        title: "AI Article Generated!",
         description: brandBasedMessage,
       });
     } catch (error) {
       console.error('Error generating prompt:', error);
       toast({
-        title: "Error generating prompt",
-        description: error instanceof Error ? error.message : "Failed to generate AI prompt. Please try again.",
+        title: "Error generating article",
+        description: error instanceof Error ? error.message : "Failed to generate AI article. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -205,7 +205,7 @@ export default function Write() {
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Generate AI Prompt
+                          Generate AI Article
                         </>
                       )}
                     </Button>

@@ -20,13 +20,16 @@ serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error('No user found');
+    // Extract the JWT token from the Authorization header
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.error('Auth error:', userError);
+      throw new Error(`Authentication failed: ${userError?.message || 'No user found'}`);
     }
 
     console.log('Generating AI prompt for user:', user.id);
@@ -37,11 +40,15 @@ serve(async (req) => {
     }
 
     // Fetch user's brand settings
-    const { data: brandSettings } = await supabaseClient
+    const { data: brandSettings, error: brandError } = await supabaseClient
       .from('brand_settings')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (brandError) {
+      console.error('Error fetching brand settings:', brandError);
+    }
 
     // Generate a personalized prompt based on brand settings
     let contextPrompt = 'You are a professional content strategist. ';
@@ -102,7 +109,7 @@ Introduction:
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         messages: [
           {
