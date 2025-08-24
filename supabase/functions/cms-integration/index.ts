@@ -71,11 +71,11 @@ async function handleConnect(req: Request, supabaseClient: any, user: any) {
       break;
     case 'shopify':
       connectionValid = await validateShopifyConnection(siteUrl, accessToken);
-      config = { endpoint: `https://${siteUrl}/admin/api/2023-10/` };
+      config = { endpoint: `https://${siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}/admin/api/2024-01/` };
       break;
     case 'webflow':
       connectionValid = await validateWebflowConnection(siteUrl, accessToken);
-      config = { endpoint: 'https://api.webflow.com/' };
+      config = { endpoint: 'https://api.webflow.com/v2/' };
       break;
     case 'wix':
       connectionValid = await validateWixConnection(siteUrl, accessToken);
@@ -233,26 +233,36 @@ async function validateWordPressConnection(siteUrl: string, apiKey: string): Pro
 
 async function validateShopifyConnection(siteUrl: string, accessToken: string): Promise<boolean> {
   try {
-    const response = await fetch(`https://${siteUrl}/admin/api/2023-10/shop.json`, {
+    // Remove protocol and trailing slash if present
+    const cleanUrl = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const response = await fetch(`https://${cleanUrl}/admin/api/2024-01/shop.json`, {
       headers: {
-        'X-Shopify-Access-Token': accessToken
+        'X-Shopify-Access-Token': accessToken,
+        'Content-Type': 'application/json'
       }
     });
+    
+    console.log('Shopify validation response:', response.status, await response.text());
     return response.ok;
-  } catch {
+  } catch (error) {
+    console.error('Shopify validation error:', error);
     return false;
   }
 }
 
 async function validateWebflowConnection(siteUrl: string, accessToken: string): Promise<boolean> {
   try {
-    const response = await fetch('https://api.webflow.com/sites', {
+    const response = await fetch('https://api.webflow.com/v2/sites', {
       headers: {
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json'
       }
     });
+    
+    console.log('Webflow validation response:', response.status, await response.text());
     return response.ok;
-  } catch {
+  } catch (error) {
+    console.error('Webflow validation error:', error);
     return false;
   }
 }
@@ -323,59 +333,107 @@ async function publishToWordPress(article: any, connection: any, options: any) {
 }
 
 async function publishToShopify(article: any, connection: any, options: any) {
-  const endpoint = `https://${connection.site_url}/admin/api/2023-10/blogs/${options.blogId || 'default'}/articles.json`;
-  
-  const articleData = {
-    article: {
-      title: article.title,
-      body_html: article.content,
-      summary: article.meta_description,
-      published: options.published || false
+  try {
+    // Clean the site URL
+    const cleanUrl = connection.site_url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    
+    // First, get the default blog ID if not provided
+    let blogId = options.blogId;
+    if (!blogId) {
+      const blogsResponse = await fetch(`https://${cleanUrl}/admin/api/2024-01/blogs.json`, {
+        headers: {
+          'X-Shopify-Access-Token': connection.access_token,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (blogsResponse.ok) {
+        const blogsData = await blogsResponse.json();
+        if (blogsData.blogs && blogsData.blogs.length > 0) {
+          blogId = blogsData.blogs[0].id; // Use the first blog
+        }
+      }
     }
-  };
+    
+    if (!blogId) {
+      throw new Error('No blog found on Shopify store. Please create a blog first.');
+    }
+    
+    const endpoint = `https://${cleanUrl}/admin/api/2024-01/blogs/${blogId}/articles.json`;
+    
+    const articleData = {
+      article: {
+        title: article.title,
+        body_html: article.content,
+        summary: article.meta_description,
+        published: options.published || false,
+        tags: article.keywords || ''
+      }
+    };
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'X-Shopify-Access-Token': connection.access_token,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(articleData)
-  });
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'X-Shopify-Access-Token': connection.access_token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(articleData)
+    });
 
-  if (!response.ok) {
-    throw new Error(`Shopify publish failed: ${response.statusText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Shopify publish failed: ${response.statusText} - ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Shopify publish error:', error);
+    throw error;
   }
-
-  return await response.json();
 }
 
 async function publishToWebflow(article: any, connection: any, options: any) {
-  const endpoint = `https://api.webflow.com/collections/${options.collectionId}/items`;
-  
-  const itemData = {
-    name: article.title,
-    slug: article.slug,
-    'post-body': article.content,
-    'post-summary': article.meta_description,
-    '_archived': false,
-    '_draft': options.draft || true
-  };
+  try {
+    const siteId = options.siteId;
+    const collectionId = options.collectionId;
+    
+    if (!siteId || !collectionId) {
+      throw new Error('Site ID and Collection ID are required for Webflow publishing');
+    }
+    
+    const endpoint = `https://api.webflow.com/v2/collections/${collectionId}/items`;
+    
+    const itemData = {
+      isArchived: false,
+      isDraft: options.draft !== false, // Default to draft unless explicitly set to false
+      fieldData: {
+        name: article.title,
+        slug: article.slug || article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        'post-body': article.content,
+        'post-summary': article.meta_description
+      }
+    };
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${connection.access_token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(itemData)
-  });
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${connection.access_token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(itemData)
+    });
 
-  if (!response.ok) {
-    throw new Error(`Webflow publish failed: ${response.statusText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Webflow publish failed: ${response.statusText} - ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Webflow publish error:', error);
+    throw error;
   }
-
-  return await response.json();
 }
 
 async function publishToWix(article: any, connection: any, options: any) {
