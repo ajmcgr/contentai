@@ -129,6 +129,18 @@ async function handleConnect(req: Request, supabaseClient: any, user: any) {
       connectionValid = await validateNotionConnection(accessToken);
       config = { endpoint: 'https://api.notion.com/v1/' };
       break;
+    case 'ghost':
+      connectionValid = await validateGhostConnection(siteUrl, apiKey);
+      config = { endpoint: `${siteUrl}/ghost/api/admin/` };
+      break;
+    case 'zapier':
+      connectionValid = await validateZapierWebhook(siteUrl);
+      config = { endpoint: siteUrl };
+      break;
+    case 'squarespace':
+      connectionValid = await validateSquarespaceConnection(siteUrl, accessToken);
+      config = { endpoint: `${siteUrl}/api/1.0/` };
+      break;
     case 'webhook':
       connectionValid = await validateWebhookConnection(siteUrl);
       config = { endpoint: siteUrl };
@@ -152,8 +164,8 @@ async function handleConnect(req: Request, supabaseClient: any, user: any) {
       user_id: user.id,
       platform,
       site_url: siteUrl,
-      api_key: platform === 'wordpress' ? apiKey : null,
-      access_token: ['shopify', 'webflow', 'wix', 'notion'].includes(platform) ? accessToken : null,
+      api_key: ['wordpress', 'ghost'].includes(platform) ? apiKey : null,
+      access_token: ['shopify', 'webflow', 'wix', 'notion', 'squarespace'].includes(platform) ? accessToken : null,
       config,
       is_active: true,
       last_sync: new Date().toISOString()
@@ -222,6 +234,15 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
       break;
     case 'notion':
       publishResult = await publishToNotion(article, connection, publishOptions);
+      break;
+    case 'ghost':
+      publishResult = await publishToGhost(article, connection, publishOptions);
+      break;
+    case 'zapier':
+      publishResult = await publishToZapier(article, connection, publishOptions);
+      break;
+    case 'squarespace':
+      publishResult = await publishToSquarespace(article, connection, publishOptions);
       break;
     case 'webhook':
       publishResult = await publishToWebhook(article, connection, publishOptions);
@@ -340,6 +361,55 @@ async function validateNotionConnection(accessToken: string): Promise<boolean> {
     });
     return response.ok;
   } catch {
+    return false;
+  }
+}
+
+async function validateGhostConnection(siteUrl: string, apiKey: string): Promise<boolean> {
+  try {
+    const cleanUrl = siteUrl.replace(/\/$/, '');
+    const [keyId, secret] = apiKey.split(':');
+    
+    if (!keyId || !secret) {
+      return false;
+    }
+    
+    const response = await fetch(`${cleanUrl}/ghost/api/admin/site/`, {
+      headers: {
+        'Authorization': `Ghost ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.ok;
+  } catch (e) {
+    console.error('Ghost validation error:', e);
+    return false;
+  }
+}
+
+async function validateZapierWebhook(webhookUrl: string): Promise<boolean> {
+  try {
+    // Validate URL and ensure it's a Zapier webhook
+    const url = new URL(webhookUrl);
+    return (url.protocol === 'http:' || url.protocol === 'https:') && 
+           url.hostname.includes('zapier');
+  } catch {
+    return false;
+  }
+}
+
+async function validateSquarespaceConnection(siteUrl: string, accessToken: string): Promise<boolean> {
+  try {
+    const cleanUrl = siteUrl.replace(/\/$/, '');
+    const response = await fetch(`${cleanUrl}/api/1.0/authorization/website`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.ok;
+  } catch (e) {
+    console.error('Squarespace validation error:', e);
     return false;
   }
 }
@@ -732,6 +802,102 @@ async function handleOAuthCallback(req: Request, supabaseClient: any, user: any)
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+  }
+}
+
+// Ghost publishing function
+async function publishToGhost(article: any, connection: any, options: any) {
+  try {
+    const endpoint = `${connection.site_url}/ghost/api/admin/posts/`;
+    
+    const postData = {
+      posts: [{
+        title: article.title,
+        html: article.content,
+        excerpt: article.meta_description,
+        status: options.status || 'draft',
+        tags: article.keywords ? article.keywords.split(',').map((tag: string) => tag.trim()) : []
+      }]
+    };
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Ghost ${connection.api_key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(postData)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Ghost publish failed: ${response.statusText} - ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Ghost publish error:', error);
+    throw error;
+  }
+}
+
+// Zapier webhook function
+async function publishToZapier(article: any, connection: any, options: any) {
+  const zapierData = {
+    title: article.title,
+    content: article.content,
+    meta_description: article.meta_description,
+    keywords: article.keywords,
+    published_at: new Date().toISOString(),
+    ...options
+  };
+
+  const response = await fetch(connection.site_url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(zapierData)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Zapier webhook failed: ${response.statusText}`);
+  }
+
+  return { success: true, webhook_url: connection.site_url };
+}
+
+// Squarespace publishing function
+async function publishToSquarespace(article: any, connection: any, options: any) {
+  try {
+    const endpoint = `${connection.site_url}/api/1.0/blog-posts`;
+    
+    const postData = {
+      title: article.title,
+      body: article.content,
+      excerpt: article.meta_description,
+      publishOn: options.publishOn || new Date().toISOString(),
+      tags: article.keywords ? article.keywords.split(',').map((tag: string) => tag.trim()) : []
+    };
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${connection.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(postData)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Squarespace publish failed: ${response.statusText} - ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Squarespace publish error:', error);
+    throw error;
   }
 }
 

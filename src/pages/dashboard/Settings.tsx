@@ -66,6 +66,9 @@ export default function Settings() {
     webflow: { connected: false, siteUrl: "", accessToken: "", name: "" },
     wix: { connected: false, siteUrl: "", accessToken: "", name: "" },
     notion: { connected: false, siteUrl: "", accessToken: "", name: "" },
+    ghost: { connected: false, siteUrl: "", apiKey: "", name: "" },
+    squarespace: { connected: false, siteUrl: "", accessToken: "", name: "" },
+    zapier: { connected: false, siteUrl: "", apiKey: "", name: "" },
     webhook: { connected: false, siteUrl: "", apiKey: "", name: "" }
   });
 
@@ -190,7 +193,7 @@ export default function Settings() {
           [connectionDialog.platform]: {
             connected: true,
             siteUrl: connectionDialog.siteUrl,
-            ...(connectionDialog.platform === 'wordpress' || connectionDialog.platform === 'webhook'
+            ...(['wordpress', 'ghost', 'zapier', 'webhook'].includes(connectionDialog.platform)
               ? { apiKey: connectionDialog.apiKey }
               : { accessToken: connectionDialog.accessToken }
             ),
@@ -1001,6 +1004,141 @@ export default function Settings() {
                             )}
                           </div>
 
+                          {/* Ghost Integration */}
+                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-slate-600 rounded flex items-center justify-center text-white font-bold">
+                                G
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium flex items-center gap-2">
+                                  Ghost
+                                  {integrations.ghost?.connected && <Check className="w-4 h-4 text-green-600" />}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Publish directly to your Ghost blog platform.
+                                </p>
+                                {integrations.ghost?.connected && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    Connected to: {integrations.ghost.siteUrl}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {integrations.ghost?.connected ? (
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Manage
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDisconnect('ghost')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline"
+                                onClick={() => openConnectionDialog('ghost')}
+                              >
+                                Connect
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Squarespace Integration */}
+                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-black rounded flex items-center justify-center text-white font-bold">
+                                S
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium flex items-center gap-2">
+                                  Squarespace
+                                  {integrations.squarespace?.connected && <Check className="w-4 h-4 text-green-600" />}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Publish blog posts to your Squarespace website.
+                                </p>
+                                {integrations.squarespace?.connected && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    Connected to: {integrations.squarespace.siteUrl}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {integrations.squarespace?.connected ? (
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Manage
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDisconnect('squarespace')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline"
+                                onClick={() => openConnectionDialog('squarespace')}
+                              >
+                                Connect
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Zapier Integration */}
+                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-orange-500 rounded flex items-center justify-center text-white font-bold">
+                                Z
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium flex items-center gap-2">
+                                  Zapier
+                                  {integrations.zapier?.connected && <Check className="w-4 h-4 text-green-600" />}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Automate publishing to 5000+ apps via Zapier webhooks.
+                                </p>
+                                {integrations.zapier?.connected && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    Connected to Zapier webhook
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {integrations.zapier?.connected ? (
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Manage
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDisconnect('zapier')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline"
+                                onClick={() => openConnectionDialog('zapier')}
+                              >
+                                Connect
+                              </Button>
+                            )}
+                          </div>
+
                           {/* Webhook Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
@@ -1083,99 +1221,121 @@ export default function Settings() {
                       </DialogHeader>
                       <div className="space-y-4">
                         <div className="space-y-2">
-                           <Label htmlFor="siteUrl">
-                             {connectionDialog.platform === 'wordpress' ? 'WordPress Site URL' : 
-                              connectionDialog.platform === 'shopify' ? 'Shopify Store URL' : 
-                              connectionDialog.platform === 'webflow' ? 'Webflow Site URL' :
-                              connectionDialog.platform === 'wix' ? 'Wix Site URL' :
-                              connectionDialog.platform === 'notion' ? 'Notion Database ID' :
-                              connectionDialog.platform === 'webhook' ? 'Webhook URL' : 'Site URL'}
-                          </Label>
+                             <Label htmlFor="siteUrl">
+                              {connectionDialog.platform === 'wordpress' ? 'WordPress Site URL' : 
+                               connectionDialog.platform === 'shopify' ? 'Shopify Store URL' : 
+                               connectionDialog.platform === 'webflow' ? 'Webflow Site URL' :
+                               connectionDialog.platform === 'wix' ? 'Wix Site URL' :
+                               connectionDialog.platform === 'notion' ? 'Notion Database ID' :
+                               connectionDialog.platform === 'ghost' ? 'Ghost Site URL' :
+                               connectionDialog.platform === 'squarespace' ? 'Squarespace Site URL' :
+                               connectionDialog.platform === 'zapier' ? 'Zapier Webhook URL' :
+                               connectionDialog.platform === 'webhook' ? 'Webhook URL' : 'Site URL'}
+                           </Label>
                           <Input
                             id="siteUrl"
                             value={connectionDialog.siteUrl}
                             onChange={(e) => setConnectionDialog(prev => ({ ...prev, siteUrl: e.target.value }))}
-                             placeholder={
-                               connectionDialog.platform === 'wordpress' ? 'https://yoursite.com' :
-                               connectionDialog.platform === 'shopify' ? 'https://your-shop.myshopify.com' :
-                               connectionDialog.platform === 'webflow' ? 'https://yoursite.webflow.io' :
-                               connectionDialog.platform === 'wix' ? 'https://yoursite.wixsite.com' :
-                               connectionDialog.platform === 'notion' ? 'database_id_here' :
-                               connectionDialog.platform === 'webhook' ? 'https://your-webhook-url.com/endpoint' :
-                               'https://yoursite.com'
-                             }
+                              placeholder={
+                                connectionDialog.platform === 'wordpress' ? 'https://yoursite.com' :
+                                connectionDialog.platform === 'shopify' ? 'https://your-shop.myshopify.com' :
+                                connectionDialog.platform === 'webflow' ? 'https://yoursite.webflow.io' :
+                                connectionDialog.platform === 'wix' ? 'https://yoursite.wixsite.com' :
+                                connectionDialog.platform === 'notion' ? 'database_id_here' :
+                                connectionDialog.platform === 'ghost' ? 'https://yourblog.ghost.io' :
+                                connectionDialog.platform === 'squarespace' ? 'https://yoursite.squarespace.com' :
+                                connectionDialog.platform === 'zapier' ? 'https://hooks.zapier.com/hooks/catch/...' :
+                                connectionDialog.platform === 'webhook' ? 'https://your-webhook-url.com/endpoint' :
+                                'https://yoursite.com'
+                              }
                           />
                         </div>
                         
-                         {(connectionDialog.platform === 'wordpress' || connectionDialog.platform === 'webhook') ? (
-                           <div className="space-y-2">
-                             <Label htmlFor="apiKey">
-                               {connectionDialog.platform === 'wordpress' ? 'Application Password' : 'API Key (Optional)'}
+                         {(connectionDialog.platform === 'wordpress' || connectionDialog.platform === 'ghost' || connectionDialog.platform === 'zapier' || connectionDialog.platform === 'webhook') ? (
+                            <div className="space-y-2">
+                              <Label htmlFor="apiKey">
+                                {connectionDialog.platform === 'wordpress' ? 'Application Password' : 
+                                 connectionDialog.platform === 'ghost' ? 'Admin API Key' :
+                                 connectionDialog.platform === 'zapier' ? 'API Key (Optional)' :
+                                 'API Key (Optional)'}
+                              </Label>
+                              <Input
+                                id="apiKey"
+                                type="password"
+                                value={connectionDialog.apiKey}
+                                onChange={(e) => setConnectionDialog(prev => ({ ...prev, apiKey: e.target.value }))}
+                                placeholder={
+                                  connectionDialog.platform === 'wordpress' 
+                                    ? 'Your WordPress application password'
+                                    : connectionDialog.platform === 'ghost'
+                                    ? 'Your Ghost Admin API key'
+                                    : connectionDialog.platform === 'zapier'
+                                    ? 'Optional API key for Zapier authentication'
+                                    : 'Optional API key for webhook authentication'
+                                }
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                {connectionDialog.platform === 'wordpress'
+                                  ? 'Create an application password in your WordPress admin under Users → Profile'
+                                  : connectionDialog.platform === 'ghost'
+                                  ? 'Get your Admin API key from Ghost Admin → Settings → Integrations'
+                                  : connectionDialog.platform === 'zapier'
+                                  ? 'Optional: Add an API key if your Zapier webhook requires authentication'
+                                  : 'Optional: Add an API key if your webhook requires authentication'
+                                }
+                              </p>
+                            </div>
+                         ) : (
+                            <div className="space-y-2">
+                              <Label htmlFor="accessToken">
+                                {connectionDialog.platform === 'shopify' ? 'Private App Access Token' : 
+                                 connectionDialog.platform === 'webflow' ? 'API Token' :
+                                 connectionDialog.platform === 'wix' ? 'API Key' :
+                                 connectionDialog.platform === 'squarespace' ? 'API Key' :
+                                 connectionDialog.platform === 'notion' ? 'Integration Token' : 'API Token'}
                              </Label>
                              <Input
-                               id="apiKey"
+                               id="accessToken"
                                type="password"
-                               value={connectionDialog.apiKey}
-                               onChange={(e) => setConnectionDialog(prev => ({ ...prev, apiKey: e.target.value }))}
-                               placeholder={
-                                 connectionDialog.platform === 'wordpress' 
-                                   ? 'Your WordPress application password'
-                                   : 'Optional API key for webhook authentication'
-                               }
+                               value={connectionDialog.accessToken}
+                               onChange={(e) => setConnectionDialog(prev => ({ ...prev, accessToken: e.target.value }))}
+                                placeholder={
+                                  connectionDialog.platform === 'shopify' 
+                                    ? 'Your Shopify private app access token'
+                                    : connectionDialog.platform === 'webflow' 
+                                    ? 'Your Webflow API token'
+                                    : connectionDialog.platform === 'wix'
+                                    ? 'Your Wix API key'
+                                    : connectionDialog.platform === 'squarespace'
+                                    ? 'Your Squarespace API key'
+                                    : connectionDialog.platform === 'notion'
+                                    ? 'Your Notion integration token'
+                                    : 'Your API token'
+                                }
                              />
-                             <p className="text-xs text-muted-foreground">
-                               {connectionDialog.platform === 'wordpress'
-                                 ? 'Create an application password in your WordPress admin under Users → Profile'
-                                 : 'Optional: Add an API key if your webhook requires authentication'
-                               }
+                              <p className="text-xs text-muted-foreground">
+                                {connectionDialog.platform === 'shopify' 
+                                  ? 'Create a private app in your Shopify admin to get an access token'
+                                  : connectionDialog.platform === 'webflow'
+                                  ? 'Generate an API token in your Webflow project settings'
+                                  : connectionDialog.platform === 'wix'
+                                  ? 'Get your API key from the Wix Developers dashboard'
+                                  : connectionDialog.platform === 'squarespace'
+                                  ? 'Get your API key from the Squarespace developer platform'
+                                  : connectionDialog.platform === 'notion'
+                                  ? 'Create an integration in your Notion workspace to get a token'
+                                  : 'Check your platform\'s API documentation for token generation'
+                                }
                              </p>
                            </div>
-                        ) : (
-                           <div className="space-y-2">
-                             <Label htmlFor="accessToken">
-                               {connectionDialog.platform === 'shopify' ? 'Private App Access Token' : 
-                                connectionDialog.platform === 'webflow' ? 'API Token' :
-                                connectionDialog.platform === 'wix' ? 'API Key' :
-                                connectionDialog.platform === 'notion' ? 'Integration Token' : 'API Token'}
-                            </Label>
-                            <Input
-                              id="accessToken"
-                              type="password"
-                              value={connectionDialog.accessToken}
-                              onChange={(e) => setConnectionDialog(prev => ({ ...prev, accessToken: e.target.value }))}
-                               placeholder={
-                                 connectionDialog.platform === 'shopify' 
-                                   ? 'Your Shopify private app access token'
-                                   : connectionDialog.platform === 'webflow' 
-                                   ? 'Your Webflow API token'
-                                   : connectionDialog.platform === 'wix'
-                                   ? 'Your Wix API key'
-                                   : connectionDialog.platform === 'notion'
-                                   ? 'Your Notion integration token'
-                                   : 'Your API token'
-                               }
-                            />
-                             <p className="text-xs text-muted-foreground">
-                               {connectionDialog.platform === 'shopify' 
-                                 ? 'Create a private app in your Shopify admin to get an access token'
-                                 : connectionDialog.platform === 'webflow'
-                                 ? 'Generate an API token in your Webflow project settings'
-                                 : connectionDialog.platform === 'wix'
-                                 ? 'Get your API key from the Wix Developers dashboard'
-                                 : connectionDialog.platform === 'notion'
-                                 ? 'Create an integration in your Notion workspace to get a token'
-                                 : 'Check your platform\'s API documentation for token generation'
-                               }
-                            </p>
-                          </div>
-                        )}
+                         )}
 
                         <div className="flex gap-2 pt-4">
                           <Button 
                             onClick={handleConnect}
                              disabled={connectionDialog.loading || !connectionDialog.siteUrl || 
-                               (connectionDialog.platform === 'wordpress' ? !connectionDialog.apiKey : 
-                                connectionDialog.platform === 'webhook' ? false : !connectionDialog.accessToken)}
+                                ((['wordpress', 'ghost'].includes(connectionDialog.platform)) ? !connectionDialog.apiKey : 
+                                 (['zapier', 'webhook'].includes(connectionDialog.platform)) ? false : !connectionDialog.accessToken)}
                             className="flex-1"
                           >
                             {connectionDialog.loading ? 'Connecting...' : 'Connect'}
