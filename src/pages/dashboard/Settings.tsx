@@ -887,7 +887,7 @@ export default function Settings() {
                                   {integrations.webflow.connected && <Check className="w-4 h-4 text-green-600" />}
                                 </h4>
                                 <p className="text-sm text-muted-foreground">
-                                  Integrate Blogbuster with Webflow to publish blogs.
+                                  Integrate Content AI with Webflow to publish blogs.
                                 </p>
                                 {integrations.webflow.connected && (
                                   <p className="text-xs text-green-600 mt-1">
