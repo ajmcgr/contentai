@@ -13,6 +13,14 @@ serve(async (req) => {
   }
 
   try {
+    const url = new URL(req.url);
+    const action = url.pathname.split('/').pop();
+
+    // Public callback endpoint hit by WordPress.com (no auth header available)
+    if (action === 'oauth-callback' && req.method === 'GET') {
+      return await handleOAuthCallbackPublic(req);
+    }
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ 
@@ -41,9 +49,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const url = new URL(req.url);
-    const action = url.pathname.split('/').pop();
 
     switch (action) {
       case 'connect':
@@ -648,19 +653,17 @@ async function publishToNotion(article: any, connection: any, options: any) {
 // WordPress.com OAuth functions
 async function generateWordPressOAuthUrl(siteUrl: string, userId: string): Promise<string> {
   const clientId = Deno.env.get('WORDPRESS_CLIENT_ID');
-  if (!clientId) {
-    throw new Error('WordPress.com OAuth not configured');
-  }
+  if (!clientId) throw new Error('WordPress.com OAuth not configured');
 
-  const baseUrl = 'https://0d84bc4c-60bd-4402-8799-74365f8b638e.sandbox.lovable.dev'; // Use your actual domain
-  const redirectUri = `${baseUrl}/dashboard/settings?oauth=wordpress&callback=true`;
-  
+  const redirectUri = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')}/functions/v1/cms-integration/oauth-callback`;
+  const state = btoa(JSON.stringify({ u: userId, s: siteUrl }));
+
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'auth',
-    state: userId, // Use user ID as state for security
+    state,
   });
 
   return `https://public-api.wordpress.com/oauth2/authorize?${params.toString()}`;
@@ -697,13 +700,94 @@ async function handleOAuthStart(req: Request, supabaseClient: any, user: any) {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+  } catch (error: any) {
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Public callback handler for WordPress.com OAuth
+async function handleOAuthCallbackPublic(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const code = url.searchParams.get('code') || '';
+    const stateParam = url.searchParams.get('state') || '';
+    if (!code || !stateParam) {
+      return new Response(JSON.stringify({ success:false, error:'Missing code or state' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    let parsed: any = {};
+    try { parsed = JSON.parse(atob(stateParam)); } catch {}
+    const userId = parsed?.u;
+    const siteUrl = parsed?.s;
+    if (!userId || !siteUrl) {
+      return new Response(JSON.stringify({ success:false, error:'Invalid state' }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+    }
+
+    const clientId = Deno.env.get('WORDPRESS_CLIENT_ID');
+    const clientSecret = Deno.env.get('WORDPRESS_CLIENT_SECRET');
+    if (!clientId || !clientSecret) {
+      return new Response(JSON.stringify({ success:false, error:'WordPress.com OAuth credentials not configured' }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+    }
+
+    const redirectUri = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')}/functions/v1/cms-integration/oauth-callback`;
+
+    const tokenResponse = await fetch('https://public-api.wordpress.com/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, code, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
+    });
+    if (!tokenResponse.ok) {
+      const err = await tokenResponse.text();
+      return new Response(JSON.stringify({ success:false, error:`Token exchange failed: ${err}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+    }
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    const meRes = await fetch('https://public-api.wordpress.com/rest/v1/me', { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (!meRes.ok) {
+      const err = await meRes.text();
+      return new Response(JSON.stringify({ success:false, error:`Token validation failed: ${err}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+    }
+    const wpUser = await meRes.json();
+
+    const adminClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+    const { data: connection, error } = await adminClient
+      .from('cms_connections')
+      .upsert({ user_id: userId, platform: 'wordpress', site_url: siteUrl, access_token: accessToken, config: { endpoint: 'https://public-api.wordpress.com/rest/v1.1/', wpcom: true, wpUserId: wpUser.ID, wpUsername: wpUser.username }, is_active: true, last_sync: new Date().toISOString() }, { onConflict: 'user_id,platform,site_url' })
+      .select()
+      .single();
+
+    if (error) {
+      return new Response(JSON.stringify({ success:false, error:`Failed to save connection: ${error.message}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+    }
+
+    const appUrl = 'https://0d84bc4c-60bd-4402-8799-74365f8b638e.sandbox.lovable.dev/dashboard/settings?oauth=wordpress_success=1';
+    const html = `<!doctype html><html><body><script>location.href="${appUrl}";</script>Connected to WordPress. You can close this window.</body></html>`;
+    return new Response(html, { headers: { ...corsHeaders, 'Content-Type': 'text/html' } });
+  } catch (e: any) {
+    const msg = e?.message || 'Unexpected error';
+    return new Response(JSON.stringify({ success:false, error: msg }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
   }
 }
 
 async function handleOAuthCallback(req: Request, supabaseClient: any, user: any) {
   const { code, state, siteUrl } = await req.json();
   
-  if (state !== user.id) {
+  // Accept both raw userId state and encoded JSON state
+  let expectedUserId = user.id;
+  let stateUserId = state;
+  try {
+    const parsed = JSON.parse(atob(state));
+    stateUserId = parsed?.u || state;
+  } catch {}
+
+  if (stateUserId !== expectedUserId) {
     return new Response(JSON.stringify({
       error: 'Invalid OAuth state',
       success: false
@@ -721,8 +805,7 @@ async function handleOAuthCallback(req: Request, supabaseClient: any, user: any)
       throw new Error('WordPress.com OAuth credentials not configured');
     }
 
-    const baseUrl = 'https://0d84bc4c-60bd-4402-8799-74365f8b638e.sandbox.lovable.dev';
-    const redirectUri = `${baseUrl}/dashboard/settings?oauth=wordpress&callback=true`;
+    const redirectUri = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')}/functions/v1/cms-integration/oauth-callback`;
 
     // Exchange code for access token
     const tokenResponse = await fetch('https://public-api.wordpress.com/oauth2/token', {
