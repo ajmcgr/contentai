@@ -34,7 +34,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
 
   return (
     <header className={authed ? "bg-white border-b w-full" : "bg-primary w-full"}>
-      <div className={authed ? "w-full px-4 py-4" : "max-w-5xl mx-auto px-4 py-4"}>
+      <div className={authed ? "max-w-5xl mx-auto px-4 py-4" : "max-w-5xl mx-auto px-4 py-4"}>
         <nav className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link to={authed ? "/dashboard" : "/"} className="flex items-center">
@@ -52,20 +52,18 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
               <>
                 <Button 
                   variant="ghost" 
-                  size="sm"
-                  className="text-gray-700 gap-1 hover:text-gray-900 hover:bg-gray-100 px-2 py-1 text-xs"
+                  className="text-gray-700 gap-1 hover:text-gray-900 hover:bg-gray-100 px-2"
                   onClick={() => navigate('/dashboard/account')}
                 >
-                  <User size={16} />
+                  <User size={18} />
                   Account
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="text-gray-700 gap-1 hover:text-gray-900 hover:bg-gray-100 px-2 py-1 text-xs"
+                  className="text-gray-700 gap-1 hover:text-gray-900 hover:bg-gray-100 px-2"
                   onClick={handleSignOut}
                 >
-                  <LogOut size={16} />
+                  <LogOut size={18} />
                   Sign Out
                 </Button>
               </>
