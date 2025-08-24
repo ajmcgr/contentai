@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function Settings() {
   const { toast } = useToast();
   
-  // Load existing brand settings
+  // Load existing brand settings on component mount
   useEffect(() => {
     const loadBrandSettings = async () => {
       try {
@@ -31,7 +31,7 @@ export default function Settings() {
           .from('brand_settings')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (settings) {
           setBrandSettings({
@@ -53,6 +53,7 @@ export default function Settings() {
 
     loadBrandSettings();
     fetchConnections();
+    
     const params = new URLSearchParams(window.location.search);
     const platform = params.get('platform');
     const success = params.get('success');
@@ -64,7 +65,7 @@ export default function Settings() {
       fetchConnections();
       window.history.replaceState(null, '', window.location.pathname);
     }
-  }, []);
+  }, [toast]);
 
   const saveBrandSettings = async () => {
     try {
@@ -190,39 +191,6 @@ export default function Settings() {
     loading: false
   });
 
-  // Load existing brand settings
-  useEffect(() => {
-    const loadBrandSettings = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data: settings } = await supabase
-          .from('brand_settings')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-
-        if (settings) {
-          setBrandSettings({
-            logo: null,
-            brandName: settings.brand_name || '',
-            description: settings.description || '',
-            targetAudience: settings.target_audience || '',
-            language: settings.language || 'en-US',
-            toneOfVoice: settings.tone_of_voice || '',
-            industry: settings.industry || '',
-            tags: settings.tags ? settings.tags.join(', ') : '',
-            internalLinks: settings.internal_links ? settings.internal_links.join(', ') : ''
-          });
-        }
-      } catch (error) {
-        console.error('Error loading brand settings:', error);
-      }
-    };
-
-    loadBrandSettings();
-  }, []);
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
