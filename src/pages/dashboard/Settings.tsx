@@ -441,7 +441,7 @@ export default function Settings() {
                           <div className="space-y-1">
                             <Label>Use brand info</Label>
                             <p className="text-sm text-muted-foreground">
-                              When selected, Blogbuster uses both the topic brief and your brand info (description, activity, audience, internal links) to tailor the article. If not, only the brief is used.
+                              When selected, Content AI uses both the topic brief and your brand info (description, activity, audience, internal links) to tailor the article. If not, only the brief is used.
                             </p>
                           </div>
                           <Switch
