@@ -106,7 +106,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
                   Login
                 </span>
                 <span 
-                  className="text-sm font-medium px-4 py-2 rounded cursor-pointer inline-flex items-center"
+                  className="text-base font-medium px-6 py-3 rounded cursor-pointer inline-flex items-center"
                   style={{ backgroundColor: '#e84848', color: 'white' }}
                   onClick={() => navigate('/signup')}
                 >
