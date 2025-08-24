@@ -20,7 +20,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
   };
 
   return (
-    <header className="bg-white border-b w-full h-16">
+    <header className="bg-white w-full h-16">
       <div className="max-w-5xl mx-auto px-4 h-full">
         <nav className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -58,12 +58,12 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
               <>
                 <Link 
                   to="/pricing" 
-                  className="text-black text-sm font-medium no-hover"
+                  className="text-black text-sm font-medium hover:text-black"
                 >
                   Pricing
                 </Link>
                 <span 
-                  className="text-black text-sm font-medium cursor-pointer hover:text-gray-600"
+                  className="text-black text-sm font-medium cursor-pointer hover:text-black"
                   onClick={() => navigate('/signin')}
                 >
                   Login

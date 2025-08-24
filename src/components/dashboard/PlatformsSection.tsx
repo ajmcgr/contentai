@@ -21,7 +21,7 @@ export const PlatformsSection = () => {
     <section className="py-16 bg-gradient-to-br from-background via-background to-muted/30">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-reckless font-medium text-foreground mb-4">
+          <h2 className="text-3xl md:text-4xl font-reckless font-medium text-muted-foreground mb-4">
             Publish to Your Favorite Platform
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
