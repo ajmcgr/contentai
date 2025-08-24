@@ -53,6 +53,8 @@ serve(async (req) => {
     switch (action) {
       case 'connect':
         return await handleConnect(req, supabaseClient, user);
+      case 'disconnect':
+        return await handleDisconnect(req, supabaseClient, user);
       case 'oauth-start':
         return await handleOAuthStart(req, supabaseClient, user);
       case 'oauth-callback':
@@ -291,6 +293,49 @@ async function handleStatus(req: Request, supabaseClient: any, user: any) {
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
+}
+
+// Disconnect an integration (soft delete)
+async function handleDisconnect(req: Request, supabaseClient: any, user: any) {
+  try {
+    const { platform, siteUrl } = await req.json();
+    if (!platform) {
+      return new Response(JSON.stringify({ success: false, error: 'Missing platform' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    let builder = supabaseClient
+      .from('cms_connections')
+      .update({
+        is_active: false,
+        access_token: null,
+        api_key: null,
+        last_sync: new Date().toISOString(),
+      })
+      .eq('user_id', user.id)
+      .eq('platform', platform)
+      .eq('is_active', true);
+
+    if (siteUrl) {
+      builder = builder.eq('site_url', siteUrl);
+    }
+
+    const { error } = await builder;
+    if (error) {
+      throw new Error(`Failed to disconnect: ${error.message}`);
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ success: false, error: e.message || 'Failed to disconnect' }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 }
 
 // Platform-specific validation functions

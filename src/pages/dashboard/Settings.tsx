@@ -801,32 +801,29 @@ export default function Settings() {
     }
   };
 
-  const handleDisconnect = async (platform: string) => {
-    try {
-      setIntegrations(prev => ({
-        ...prev,
-        [platform]: {
-          connected: false,
-          siteUrl: "",
-          apiKey: "",
-          accessToken: "",
-          name: ""
-        }
-      }));
+const handleDisconnect = async (platform: string) => {
+  try {
+    const siteUrl = (integrations as any)[platform]?.siteUrl || '';
 
-      toast({
-        title: "Disconnected",
-        description: `Successfully disconnected from ${platform}.`,
-      });
-    } catch (error: any) {
-      console.error('Disconnect error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to disconnect from the platform.",
-        variant: "destructive",
-      });
+    const { data, error } = await supabase.functions.invoke('cms-integration/disconnect', {
+      body: { platform, siteUrl }
+    });
+
+    if (error || !data?.success) {
+      throw new Error(data?.error || 'Failed to disconnect');
     }
-  };
+
+    setIntegrations(prev => ({
+      ...prev,
+      [platform]: { connected: false, siteUrl: '', apiKey: '', accessToken: '', name: '' }
+    }));
+
+    toast({ title: 'Disconnected', description: `Successfully disconnected from ${platform}.` });
+  } catch (error: any) {
+    console.error('Disconnect error:', error);
+    toast({ title: 'Error', description: error.message || 'Failed to disconnect from the platform.', variant: 'destructive' });
+  }
+};
 
   return (
     <SidebarProvider>
