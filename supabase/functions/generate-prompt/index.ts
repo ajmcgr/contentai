@@ -58,10 +58,10 @@ serve(async (req) => {
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicApiKey) {
-      console.error('Anthropic API key not found');
-      throw new Error('Anthropic API key not found');
+      console.warn('ANTHROPIC_API_KEY not set – will return graceful fallback');
+    } else {
+      console.log('Anthropic API key found');
     }
-    console.log('Anthropic API key found');
 
     // Generate a personalized prompt based on brand settings
     let contextPrompt = 'You are a professional content strategist. ';
@@ -114,56 +114,77 @@ Keywords: [keyword1, keyword2, keyword3]
 Introduction:
 [Write a compelling introduction paragraph here]`;
 
-    console.log('Making request to Anthropic API...');
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${anthropicApiKey}`,
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 1000,
-        messages: [
-          {
-            role: 'user',
-            content: contextPrompt
-          }
-        ]
-      }),
-    });
+    try {
+      console.log('Making request to Anthropic API...');
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${anthropicApiKey}`,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 1000,
+          messages: [
+            {
+              role: 'user',
+              content: contextPrompt
+            }
+          ]
+        }),
+      });
 
-    console.log('Anthropic API response status:', response.status);
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Anthropic API error response:', errorText);
-      throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
+      console.log('Anthropic API response status:', response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Anthropic API error response:', errorText);
+        throw new Error(`Anthropic API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      const generatedContent = data.content?.[0]?.text || '';
+
+      console.log('Personalized AI prompt generated successfully');
+
+      // Parse the generated content to extract title and content
+      const titleMatch = generatedContent.match(/Title:\s*(.+)/i);
+      const title = titleMatch ? titleMatch[1].trim() : "AI-Generated Article Idea";
+      
+      // Remove the title from content and clean it up
+      const content = generatedContent
+        .replace(/Title:\s*.+\n?/i, '')
+        .trim();
+
+      return new Response(JSON.stringify({
+        success: true,
+        title,
+        content,
+        fullResponse: generatedContent,
+        brandBased: !!brandSettings
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (aiError) {
+      console.error('AI generation failed, returning graceful fallback:', aiError);
+      const brandName = brandSettings?.brand_name || 'your brand';
+      const tone = brandSettings?.tone_of_voice || 'professional';
+      const industry = brandSettings?.industry || 'your industry';
+
+      const fallbackTitle = `Actionable ${industry} post idea for ${brandName}`.slice(0, 58);
+      const fallbackBody = `Outline:\n1. Pain points ${brandName} solves\n2. Step-by-step solution\n3. Proof (data, case study, customer quote)\n4. Clear next steps\n\nKeywords: [${industry}, ${brandName}, strategy]\n\nIntroduction:\nWrite a ${tone} intro that states the problem in one sentence, the promised outcome in another, and previews 3 concrete steps.`;
+
+      return new Response(JSON.stringify({
+        success: true,
+        title: fallbackTitle,
+        content: fallbackBody,
+        fullResponse: `Title: ${fallbackTitle}\n\n${fallbackBody}`,
+        brandBased: !!brandSettings,
+        fallback: true
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
-
-    const data = await response.json();
-    const generatedContent = data.content[0].text;
-
-    console.log('Personalized AI prompt generated successfully');
-
-    // Parse the generated content to extract title and content
-    const titleMatch = generatedContent.match(/Title:\s*(.+)/i);
-    const title = titleMatch ? titleMatch[1].trim() : "AI-Generated Article Idea";
-    
-    // Remove the title from content and clean it up
-    const content = generatedContent
-      .replace(/Title:\s*.+\n?/i, '')
-      .trim();
-
-    return new Response(JSON.stringify({
-      success: true,
-      title,
-      content,
-      fullResponse: generatedContent,
-      brandBased: !!brandSettings
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
 
   } catch (error) {
     console.error('Error in generate-prompt function:', error);
