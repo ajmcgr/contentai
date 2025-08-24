@@ -39,7 +39,7 @@ export const PricingSection = () => {
           {/* Pro Plan */}
           <div className="bg-white p-8 rounded-xl shadow-lg border-2 border-primary">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-reckless font-medium mb-4">Content AI Pro</h3>
+              <h3 className="text-2xl font-reckless font-medium mb-4">Pro</h3>
               <p className="text-4xl font-bold mb-2">$49<span className="text-xl text-gray-500">/month</span></p>
               <p className="text-gray-600">30 SEO-optimized articles per month, published automatically</p>
             </div>

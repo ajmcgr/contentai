@@ -11,7 +11,7 @@ const Pricing = () => {
         <div className="max-w-2xl mx-auto">
           <div className="bg-white p-10 rounded-xl shadow-lg border-2 border-primary">
             <div className="text-center mb-8">
-              <h3 className="text-3xl font-reckless font-medium mb-4">Content AI Pro</h3>
+              <h3 className="text-3xl font-reckless font-medium mb-4">Pro</h3>
               <p className="text-5xl font-bold mb-2">$49<span className="text-xl text-gray-500">/month</span></p>
               <p className="text-gray-600">30 SEO-optimized articles per month, published automatically</p>
             </div>
