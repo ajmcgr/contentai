@@ -27,15 +27,31 @@ export const HeroSection = () => {
         </div>
         <p className="text-center text-black text-sm md:text-base mb-8">✓ 7 days free trial ✓ Secure payment ✓ Cancel any-time</p>
         
-        {/* Dashboard Preview Image */}
+        {/* Dashboard Preview Image with Browser Window */}
         <div className="max-w-4xl mx-auto px-4">
-          <div className="relative">
-            <img 
-              src="/lovable-uploads/7594ded9-ce63-4c8a-b8fb-aa0ec9277526.png" 
-              alt="Content AI Dashboard Preview"
-              className="w-full h-auto rounded-lg shadow-2xl border border-gray-200"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent rounded-lg"></div>
+          <div className="relative bg-white rounded-t-lg shadow-2xl">
+            {/* Browser window header */}
+            <div className="flex items-center gap-2 px-4 py-3 bg-gray-100 rounded-t-lg border-b border-gray-200">
+              <div className="flex gap-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              </div>
+              <div className="flex-1 mx-4">
+                <div className="bg-white rounded px-3 py-1 text-sm text-gray-600 text-center">
+                  content.ai/dashboard
+                </div>
+              </div>
+            </div>
+            {/* Image content */}
+            <div className="relative overflow-hidden rounded-b-lg">
+              <img 
+                src="/lovable-uploads/7594ded9-ce63-4c8a-b8fb-aa0ec9277526.png" 
+                alt="Content AI Dashboard Preview"
+                className="w-full h-auto"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent"></div>
+            </div>
           </div>
         </div>
       </div>
