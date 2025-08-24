@@ -397,6 +397,7 @@ export default function Settings() {
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    console.log('Logo upload triggered, file:', file);
     if (!file) return;
 
     try {
@@ -444,6 +445,7 @@ export default function Settings() {
         throw updateError;
       }
 
+      console.log('Logo uploaded successfully, URL:', publicUrl);
       setBrandSettings(prev => ({ ...prev, logo: file, logoUrl: publicUrl }));
 
       toast({
@@ -462,6 +464,7 @@ export default function Settings() {
 
   const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    console.log('Profile picture upload triggered, file:', file);
     if (!file) return;
 
     try {
@@ -509,6 +512,7 @@ export default function Settings() {
         throw updateError;
       }
 
+      console.log('Profile picture uploaded successfully, URL:', publicUrl);
       setAccountSettings(prev => ({ ...prev, profilePicture: file, avatarUrl: publicUrl }));
 
       toast({
