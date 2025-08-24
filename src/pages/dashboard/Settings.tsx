@@ -653,10 +653,44 @@ export default function Settings() {
       // Check if OAuth is required
       if (data?.requiresOAuth && data?.oauthUrl) {
         toast({
-          title: 'OAuth Required',
-          description: 'Redirecting to WordPress.com for authorization...',
+          title: 'Authorization Required',
+          description: 'Please complete the authorization in the popup window.',
         });
-        window.location.href = data.oauthUrl;
+
+        const popup = window.open(
+          data.oauthUrl,
+          'wordpress_oauth',
+          'width=500,height=600,scrollbars=yes,resizable=yes'
+        );
+
+        if (!popup) {
+          toast({
+            title: 'Popup blocked',
+            description: 'Please allow popups and try again.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data.type === 'wordpress_connected' && event.data.success) {
+            window.removeEventListener('message', handleMessage);
+            popup.close();
+            toast({ title: 'WordPress Connected!', description: 'Successfully connected to your WordPress site.' });
+            fetchConnections();
+            setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', handleMessage);
+            setConnectionDialog(prev => ({ ...prev, loading: false }));
+          }
+        }, 1000);
         return;
       }
 
