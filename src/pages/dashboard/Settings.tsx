@@ -115,9 +115,8 @@ export default function Settings() {
     setConnectionDialog(prev => ({ ...prev, loading: true }));
 
     try {
-      const { data, error } = await supabase.functions.invoke('cms-integration', {
+      const { data, error } = await supabase.functions.invoke('cms-integration/connect', {
         body: {
-          action: 'connect',
           platform: connectionDialog.platform,
           siteUrl: connectionDialog.siteUrl,
           ...(connectionDialog.platform === 'wordpress' 
