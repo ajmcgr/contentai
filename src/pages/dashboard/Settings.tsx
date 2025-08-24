@@ -712,18 +712,58 @@ export default function Settings() {
         throw new Error(data?.error || 'Failed to start OAuth flow');
       }
 
+      // Open OAuth URL in popup
+      const popup = window.open(
+        data.oauthUrl,
+        'wordpress_oauth',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      );
+
+      if (!popup) {
+        throw new Error('Popup blocked. Please allow popups and try again.');
+      }
+
       toast({
-        title: 'Redirecting to WordPress.com',
-        description: 'Please authorize the connection in the new window.',
+        title: 'Authorization Required',
+        description: 'Please complete the authorization in the popup window.',
       });
 
-      window.location.href = data.oauthUrl;
+      // Listen for popup messages
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === 'wordpress_connected' && event.data.success) {
+          window.removeEventListener('message', handleMessage);
+          popup.close();
+          
+          toast({
+            title: 'WordPress Connected!',
+            description: 'Successfully connected to your WordPress site.',
+          });
+          
+          // Refresh connections and close dialog
+          fetchConnections();
+          setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+
+      // Check if popup was closed manually
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
+          setConnectionDialog(prev => ({ ...prev, loading: false }));
+        }
+      }, 1000);
+
     } catch (error: any) {
+      console.error('WordPress OAuth error:', error);
       toast({
         title: 'OAuth Error',
         description: error.message || 'Failed to start WordPress.com OAuth flow',
         variant: 'destructive',
       });
+      setConnectionDialog(prev => ({ ...prev, loading: false }));
     }
   };
 

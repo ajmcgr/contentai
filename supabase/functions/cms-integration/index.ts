@@ -827,8 +827,85 @@ async function handleOAuthCallbackPublic(req: Request) {
       return new Response(JSON.stringify({ success:false, error:`Failed to save connection: ${error.message}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
     }
 
-    const appUrl = 'https://0d84bc4c-60bd-4402-8799-74365f8b638e.sandbox.lovable.dev/dashboard/settings?platform=wordpress&success=1';
-    const html = `<!doctype html><html><body><script>location.href="${appUrl}";</script>Connected to WordPress. You can close this window.</body></html>`;
+    const appUrl = `${req.headers.get('origin') || 'https://www.trycontent.ai'}/dashboard/settings?platform=wordpress&success=1`;
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordPress Connected</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        .container {
+            max-width: 400px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            margin: 0 0 1rem 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        .spinner {
+            margin: 1rem auto;
+            width: 24px;
+            height: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">✅</div>
+        <h1>WordPress Connected!</h1>
+        <p>Successfully connected to your WordPress site.</p>
+        <div class="spinner"></div>
+        <p style="font-size: 0.875rem; margin-top: 1rem;">Redirecting you back...</p>
+    </div>
+    <script>
+        // Close popup if opened in popup, otherwise redirect
+        if (window.opener) {
+            window.opener.postMessage({ type: 'wordpress_connected', success: true }, '*');
+            window.close();
+        } else {
+            setTimeout(() => {
+                window.location.href = "${appUrl}";
+            }, 1500);
+        }
+    </script>
+</body>
+</html>`;
     return new Response(html, { headers: { ...corsHeaders, 'Content-Type': 'text/html' } });
   } catch (e: any) {
     const msg = e?.message || 'Unexpected error';
