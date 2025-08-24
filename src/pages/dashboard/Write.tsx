@@ -53,7 +53,18 @@ export default function Write() {
   const generatePrompt = async () => {
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-prompt');
+      // Get the current session to pass authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Please sign in to generate AI articles');
+      }
+
+      const { data, error } = await supabase.functions.invoke('generate-prompt', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
       if (error) {
         console.error('Supabase function error:', error);
