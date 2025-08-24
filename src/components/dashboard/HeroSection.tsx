@@ -28,7 +28,7 @@ export const HeroSection = () => {
         <p className="text-center text-black text-sm md:text-base mb-8">✓ 7 days free trial ✓ Secure payment ✓ Cancel any-time</p>
         
         {/* Dashboard Preview Image with Browser Window */}
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="max-w-5xl mx-auto px-4">
           <div className="relative bg-white rounded-t-lg shadow-2xl">
             {/* Browser window header */}
             <div className="flex items-center gap-2 px-4 py-3 bg-gray-100 rounded-t-lg border-b border-gray-200">
