@@ -19,7 +19,7 @@ serve(async (req) => {
         error: 'Unauthorized: missing token',
         success: false
       }), {
-        status: 401,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -36,7 +36,7 @@ serve(async (req) => {
         error: 'Unauthorized: invalid session',
         success: false
       }), {
-        status: 401,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -60,7 +60,7 @@ serve(async (req) => {
           error: 'Invalid action',
           success: false
         }), {
-          status: 400,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
     }
@@ -68,10 +68,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in cms-integration function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: (error as any).message,
       success: false
     }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -139,7 +139,7 @@ async function handleConnect(req: Request, supabaseClient: any, user: any) {
       success: false,
       error: `Failed to validate ${platform} connection`
     }), {
-      status: 400,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -603,7 +603,7 @@ async function handleOAuthStart(req: Request, supabaseClient: any, user: any) {
       error: 'OAuth only supported for WordPress.com',
       success: false
     }), {
-      status: 400,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -623,7 +623,7 @@ async function handleOAuthStart(req: Request, supabaseClient: any, user: any) {
       success: false,
       error: error.message
     }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -637,7 +637,7 @@ async function handleOAuthCallback(req: Request, supabaseClient: any, user: any)
       error: 'Invalid OAuth state',
       success: false
     }), {
-      status: 400,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
@@ -728,7 +728,7 @@ async function handleOAuthCallback(req: Request, supabaseClient: any, user: any)
       success: false,
       error: error.message
     }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
