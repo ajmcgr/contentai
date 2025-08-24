@@ -165,6 +165,10 @@ export function ArticleManagement() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => (window.location.href = `/dashboard/write?edit=${article.id}&publish=1`)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                Publish
+                              </DropdownMenuItem>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <DropdownMenuItem 

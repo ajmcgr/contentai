@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function Write() {
   const [title, setTitle] = useState("");
@@ -17,6 +18,10 @@ export default function Write() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const [isPublishOpen, setIsPublishOpen] = useState(false);
+  const [connections, setConnections] = useState<any[]>([]);
+  const [selectedConnection, setSelectedConnection] = useState<string>("");
+  const [publishing, setPublishing] = useState(false);
 
   // Check for edit mode on load
   useEffect(() => {
@@ -144,25 +149,24 @@ export default function Write() {
         });
       } else {
         // Create new article
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('articles')
           .insert({
             title: title.trim(),
             content: content.trim(),
             status: 'draft',
             user_id: user.id,
-          });
+          })
+          .select('id')
+          .single();
 
         if (error) throw error;
+        if (inserted?.id) setEditingId(inserted.id);
 
         toast({
           title: "Draft saved!",
           description: "Your article has been saved as a draft.",
         });
-
-        // Clear the form for new articles
-        setTitle("");
-        setContent("");
       }
     } catch (error) {
       console.error('Error saving draft:', error);
@@ -173,6 +177,76 @@ export default function Write() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Open publish dialog if URL contains ?publish=1
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('publish') === '1') {
+      setIsPublishOpen(true);
+    }
+  }, []);
+
+  // Load active CMS connections when publish dialog opens
+  useEffect(() => {
+    if (!isPublishOpen) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('cms-integration/status', { method: 'GET' });
+        if (!error && data?.success) {
+          setConnections(data.connections || []);
+          if ((data.connections || []).length === 1) {
+            setSelectedConnection((data.connections[0] as any).id);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load connections', e);
+      }
+    })();
+  }, [isPublishOpen]);
+
+  const handlePublish = async () => {
+    try {
+      if (!selectedConnection) {
+        toast({ title: 'Select a platform', description: 'Choose a connected platform to publish.', variant: 'destructive' });
+        return;
+      }
+      setPublishing(true);
+
+      let articleId = editingId;
+      if (!articleId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Please sign in to publish');
+        const { data: inserted, error } = await supabase
+          .from('articles')
+          .insert({ title: title.trim(), content: content.trim(), status: 'draft', user_id: user.id })
+          .select('id')
+          .single();
+        if (error) throw error;
+        articleId = inserted?.id as string;
+        setEditingId(articleId || null);
+      }
+
+      const { data, error } = await supabase.functions.invoke('cms-integration/publish', {
+        body: {
+          articleId,
+          connectionId: selectedConnection,
+          publishOptions: { status: 'publish' }
+        }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || 'Publish failed');
+      }
+
+      toast({ title: 'Published!', description: data.message || 'Article published successfully.' });
+      setIsPublishOpen(false);
+    } catch (err: any) {
+      console.error('Publish error:', err);
+      toast({ title: 'Publish failed', description: err.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -280,10 +354,54 @@ export default function Write() {
                   >
                     Preview
                   </Button>
-                  <Button variant="secondary">Publish</Button>
+                  <Button variant="secondary" onClick={() => setIsPublishOpen(true)}>Publish</Button>
                 </div>
               </CardContent>
             </Card>
+
+            <Dialog open={isPublishOpen} onOpenChange={setIsPublishOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Publish article</DialogTitle>
+                </DialogHeader>
+                {connections.length === 0 ? (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      No platforms connected. Connect WordPress, Shopify, Webflow and more in Settings → Integrations.
+                    </p>
+                    <Button asChild variant="outline">
+                      <a href="/dashboard/settings">Open Settings</a>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Choose a platform</label>
+                      <div className="grid gap-2">
+                        {connections.map((c: any) => (
+                          <Button
+                            key={c.id}
+                            variant={selectedConnection === c.id ? 'default' : 'outline'}
+                            className="justify-start"
+                            onClick={() => setSelectedConnection(c.id)}
+                          >
+                            {c.platform} • {c.site_url}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsPublishOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handlePublish} disabled={publishing || !selectedConnection}>
+                    {publishing ? 'Publishing…' : 'Publish now'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>

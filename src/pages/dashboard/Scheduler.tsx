@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { TrialBanner } from "@/components/TrialBanner";
@@ -8,9 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Plus } from "lucide-react";
 import { format, addDays, startOfDay } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Scheduler() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const { toast } = useToast();
+  const [topics, setTopics] = useState<string[]>([]);
+  const [topicPickerIndex, setTopicPickerIndex] = useState<number | null>(null);
   
   // Generate dates for the next 90 days
   const generateScheduleDates = () => {
@@ -37,6 +43,31 @@ export default function Scheduler() {
     if (isTomorrow) return "Tomorrow";
     return format(date, "dd MMM yyyy");
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setTopics(['Content strategy', 'SEO tips', 'Industry news']);
+          return;
+        }
+        const { data } = await supabase
+          .from('brand_settings')
+          .select('tags')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data?.tags && Array.isArray(data.tags) && data.tags.length > 0) {
+          setTopics(data.tags as string[]);
+        } else {
+          setTopics(['Content strategy', 'SEO tips', 'Industry news']);
+        }
+      } catch (e) {
+        console.error('Failed to load topics', e);
+        setTopics(['Content strategy', 'SEO tips', 'Industry news']);
+      }
+    })();
+  }, []);
 
   return (
     <SidebarProvider>
@@ -92,7 +123,7 @@ export default function Scheduler() {
                               </div>
                             </div>
                             
-                            <Button variant="outline" size="sm" className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => setTopicPickerIndex(index)}>
                               <Plus className="w-4 h-4" />
                               Choose from topics
                             </Button>
@@ -117,6 +148,38 @@ export default function Scheduler() {
                   </Card>
                 </TabsContent>
               </Tabs>
+
+              <Dialog open={topicPickerIndex !== null} onOpenChange={(open) => { if (!open) setTopicPickerIndex(null); }}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Choose a topic</DialogTitle>
+                  </DialogHeader>
+                  {topics.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No topics found. Add tags in Settings → Brand to see topics here.</p>
+                  ) : (
+                    <div className="grid gap-2">
+                      {topics.map((t) => (
+                        <Button
+                          key={t}
+                          variant="outline"
+                          className="justify-start"
+                          onClick={() => {
+                            const idx = topicPickerIndex ?? 0;
+                            const picked = scheduleDates[idx];
+                            toast({
+                              title: 'Topic selected',
+                              description: `${t} scheduled for ${format(picked.date, 'dd MMM yyyy')} at ${picked.time}`,
+                            });
+                            setTopicPickerIndex(null);
+                          }}
+                        >
+                          {t}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
