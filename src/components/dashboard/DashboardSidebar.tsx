@@ -42,8 +42,9 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar
-      className="border-r border-border fixed top-16 left-0 h-[calc(100vh-4rem)] z-40"
+      className="border-r border-border z-40"
       collapsible="icon"
+      style={{ top: '4rem', bottom: 'auto', height: 'calc(100vh - 4rem)' }}
     >
       <SidebarContent className="bg-background">
         {/* Navigation */}
