@@ -41,6 +41,16 @@ export const SignUp = () => {
         }
       });
 
+      // If we got an action link (success case), skip email and redirect immediately
+      if ((resp as any)?.action_link) {
+        toast({
+          title: "Verifying your account",
+          description: "Redirecting you to complete signup...",
+        });
+        window.location.href = (resp as any).action_link as string;
+        return;
+      }
+ 
       // If Resend failed but we got a fallback link, redirect user to complete verification
       if ((resp as any)?.fallback_link) {
         toast({
