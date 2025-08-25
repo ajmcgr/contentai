@@ -1,26 +1,23 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
 
-/* Register Reckless from local fonts */
+/* Register Reckless from Lovable Assets */
 @font-face{
   font-family:"Reckless";
-  src: url("/fonts/Reckless-Regular.woff2") format("woff2"),
-       url("/fonts/Reckless-Regular.woff") format("woff"),
-       url("/fonts/Reckless-Regular.ttf") format("truetype");
+  src: url("/fonts/reckless/Reckless-Regular.woff2") format("woff2"),
+       url("/fonts/reckless/Reckless-Regular.woff")  format("woff");
   font-weight:400; font-style:normal; font-display:swap;
 }
 @font-face{
   font-family:"Reckless";
-  src: url("/fonts/Reckless-Medium.woff2") format("woff2"),
-       url("/fonts/Reckless-Medium.woff") format("woff"),
-       url("/fonts/Reckless-Medium.otf") format("opentype");
+  src: url("/fonts/reckless/Reckless-Medium.woff2") format("woff2"),
+       url("/fonts/reckless/Reckless-Medium.woff")  format("woff");
   font-weight:500; font-style:normal; font-display:swap;
 }
 @font-face{
   font-family:"Reckless";
-  src: url("/fonts/Reckless-Bold.woff2") format("woff2"),
-       url("/fonts/Reckless-Bold.woff") format("woff"),
-       url("/fonts/Reckless-Bold.ttf") format("truetype");
+  src: url("/fonts/reckless/Reckless-Bold.woff2")   format("woff2"),
+       url("/fonts/reckless/Reckless-Bold.woff")    format("woff");
   font-weight:700; font-style:normal; font-display:swap;
 }
 
@@ -138,8 +135,8 @@
   }
 
   h1,h2,h3,h4,.h1,.h2,.h3,.h4,[data-typography="heading"],[data-heading]{
-    font-family:var(--heading-font) !important;
-    font-weight:var(--heading-weight) !important;
+    font-family:var(--heading-font);
+    font-weight:var(--heading-weight);
     font-style:normal;
   }
 
