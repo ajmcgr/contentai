@@ -19,6 +19,21 @@ export const SignUp = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
 
+  const sendWelcomeEmail = async (userEmail: string) => {
+    try {
+      await supabase.functions.invoke('send-transactional-email', {
+        body: {
+          to: userEmail,
+          subject: "Welcome to TryContent",
+          html: "<p>Thanks for signing up to TryContent! We're excited to have you onboard.</p>"
+        }
+      });
+    } catch (error) {
+      console.error("Failed to send welcome email:", error);
+      // Don't throw - welcome email failure shouldn't break signup flow
+    }
+  };
+
   useEffect(() => {
     // Trigger onboarding only when session exists (e.g., after Google OAuth)
     if (searchParams.get('onboarding') === 'true') {
@@ -97,6 +112,7 @@ export const SignUp = () => {
 
         if (signUpData?.session) {
           toast({ title: "Account created", description: "You're all set!" });
+          await sendWelcomeEmail(email);
           navigate("/dashboard");
           return;
         }
@@ -134,7 +150,12 @@ export const SignUp = () => {
     }
   };
 
-  const handleOnboardingComplete = () => {
+  const handleOnboardingComplete = async () => {
+    // Send welcome email for Google OAuth users
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email) {
+      await sendWelcomeEmail(user.email);
+    }
     setShowOnboarding(false);
     navigate("/dashboard");
   };

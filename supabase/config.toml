@@ -29,6 +29,9 @@ verify_jwt = true
 [functions.send-verification]
 verify_jwt = false
 
+[functions.send-transactional-email]
+verify_jwt = true
+
 [functions.twitter-connect]
 verify_jwt = true
 
