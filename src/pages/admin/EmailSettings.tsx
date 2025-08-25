@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,14 +27,14 @@ export default function EmailSettings() {
   });
 
   // Update form data when config loads
-  useState(() => {
+  useEffect(() => {
     if (config) {
       setFormData({
         resend_api_key: config.resend_api_key || "",
         email_from: config.email_from || "support@trycontent.ai",
       });
     }
-  });
+  }, [config]);
 
   const handleSaveConfig = () => {
     updateConfig.mutate(formData);
