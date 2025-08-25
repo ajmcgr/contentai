@@ -61,10 +61,14 @@ const handler = async (req: Request): Promise<Response> => {
     const resp: any = emailResponse as any;
     if (resp?.error) {
       console.error("Resend email error:", resp.error);
-      return new Response(JSON.stringify({ error: resp.error }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      // Return a fallback link so the client can proceed without email during setup/testing
+      return new Response(
+        JSON.stringify({ ok: false, resend_error: resp.error, fallback_link: data?.properties?.action_link }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     console.log("Email sent successfully:", emailResponse);

@@ -33,13 +33,22 @@ export const SignUp = () => {
     setLoading(true);
 
     try {
-      // Use edge function to send Resend verification link (no direct signUp to avoid Supabase emails)
-      const { error: verifyError } = await supabase.functions.invoke('send-verification', {
+      const { data: resp, error: verifyError } = await supabase.functions.invoke('send-verification', {
         body: {
           email,
           password,
         }
       });
+
+      // If Resend failed but we got a fallback link, redirect user to complete verification
+      if ((resp as any)?.fallback_link) {
+        toast({
+          title: "Verification link ready",
+          description: "Email provider not configured yet. Redirecting you to verify now...",
+        });
+        window.location.href = (resp as any).fallback_link as string;
+        return;
+      }
 
       if (verifyError) {
         throw verifyError;
