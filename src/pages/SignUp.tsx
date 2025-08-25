@@ -59,8 +59,11 @@ export const SignUp = () => {
         description: "Please check your email to verify your account.",
       });
       
-      // Show onboarding dialog for new users
-      setShowOnboarding(true);
+      // Open onboarding only if a session exists (e.g., Google sign-in or email confirmation disabled)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setShowOnboarding(true);
+      }
     } catch (error: any) {
       toast({
         title: "Error signing up",
