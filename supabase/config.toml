@@ -32,6 +32,12 @@ verify_jwt = false
 [functions.send-transactional-email]
 verify_jwt = true
 
+[functions.send-email-with-config]
+verify_jwt = true
+
+[functions.update-email-config]
+verify_jwt = true
+
 [functions.twitter-connect]
 verify_jwt = true
 

@@ -21,7 +21,7 @@ export const SignUp = () => {
 
   const sendWelcomeEmail = async (userEmail: string) => {
     try {
-      await supabase.functions.invoke('send-transactional-email', {
+      await supabase.functions.invoke('send-email-with-config', {
         body: {
           to: userEmail,
           subject: "Welcome to TryContent",
