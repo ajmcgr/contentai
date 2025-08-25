@@ -38,6 +38,9 @@ verify_jwt = true
 [functions.verify-email-token]
 verify_jwt = false
 
+[functions.send-password-reset]
+verify_jwt = false
+
 [functions.send-email-with-config]
 verify_jwt = true
 

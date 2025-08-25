@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -34,6 +34,16 @@ export const SignIn = () => {
       toast({
         title: "New verification email sent",
         description: "Please check your email for the new verification link."
+      });
+    } else if (message === 'reset-sent') {
+      toast({
+        title: "Password reset email sent",
+        description: "Please check your email for password reset instructions."
+      });
+    } else if (message === 'password-updated') {
+      toast({
+        title: "Password updated successfully",
+        description: "You can now sign in with your new password."
       });
     }
 
@@ -135,7 +145,15 @@ export const SignIn = () => {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="password">Password</Label>
+              <Link 
+                to="/forgot-password" 
+                className="text-sm text-primary hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <Input
               id="password"
               type="password"

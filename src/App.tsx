@@ -15,6 +15,8 @@ import { SignIn } from "./pages/SignIn";
 import { SignUp } from "./pages/SignUp";
 import Verify from "./pages/Verify";
 import ResendVerification from "./pages/ResendVerification";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
@@ -83,6 +85,8 @@ const App = () => (
             <Route path="signup" element={<SignUp />} />
             <Route path="verify" element={<Verify />} />
             <Route path="resend-verification" element={<ResendVerification />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
             <Route path="tools/headline-generator" element={<HeadlineGenerator />} />
             <Route path="tools/meta-description-generator" element={<MetaDescriptionGenerator />} />
             <Route path="tools/keyword-research" element={<KeywordResearch />} />
