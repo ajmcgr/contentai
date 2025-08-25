@@ -284,6 +284,9 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          email_verification_expires_at: string | null
+          email_verification_token: string | null
+          email_verified_at: string | null
           full_name: string | null
           id: string
           updated_at: string | null
@@ -291,6 +294,9 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          email_verification_expires_at?: string | null
+          email_verification_token?: string | null
+          email_verified_at?: string | null
           full_name?: string | null
           id: string
           updated_at?: string | null
@@ -298,6 +304,9 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          email_verification_expires_at?: string | null
+          email_verification_token?: string | null
+          email_verified_at?: string | null
           full_name?: string | null
           id?: string
           updated_at?: string | null

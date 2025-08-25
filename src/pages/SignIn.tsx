@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -15,8 +15,28 @@ export const SignIn = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    // Handle query params for messages
+    const message = searchParams.get('message');
+    const emailParam = searchParams.get('email');
+    
+    if (message === 'verify-email') {
+      toast({
+        title: "Verification email sent",
+        description: "Please check your email and click the verification link to complete your account setup."
+      });
+      if (emailParam) {
+        setEmail(decodeURIComponent(emailParam));
+      }
+    } else if (message === 'verification-sent') {
+      toast({
+        title: "New verification email sent",
+        description: "Please check your email for the new verification link."
+      });
+    }
+
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -34,7 +54,7 @@ export const SignIn = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, searchParams, toast]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

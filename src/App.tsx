@@ -13,6 +13,8 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import { SignIn } from "./pages/SignIn";
 import { SignUp } from "./pages/SignUp";
+import Verify from "./pages/Verify";
+import ResendVerification from "./pages/ResendVerification";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
@@ -79,6 +81,8 @@ const App = () => (
             <Route path="privacy" element={<Privacy />} />
             <Route path="signin" element={<SignIn />} />
             <Route path="signup" element={<SignUp />} />
+            <Route path="verify" element={<Verify />} />
+            <Route path="resend-verification" element={<ResendVerification />} />
             <Route path="tools/headline-generator" element={<HeadlineGenerator />} />
             <Route path="tools/meta-description-generator" element={<MetaDescriptionGenerator />} />
             <Route path="tools/keyword-research" element={<KeywordResearch />} />

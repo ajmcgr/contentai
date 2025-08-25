@@ -48,84 +48,104 @@ export const SignUp = () => {
     setLoading(true);
 
     try {
-      const { data: resp, error: verifyError } = await supabase.functions.invoke('send-verification', {
-        body: {
-          email,
-          password,
-          appOrigin: window.location.origin,
+      console.log("Starting custom signup flow");
+
+      // Create user account without email verification
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: undefined, // Disable built-in email verification
         }
       });
 
-      // If we got an action link (success case), skip email and redirect immediately
-      if ((resp as any)?.action_link) {
-        toast({
-          title: "Verifying your account",
-          description: "Redirecting you to complete signup...",
-        });
-        window.location.href = (resp as any).action_link as string;
-        return;
-      }
- 
-      // If Resend failed but we got a fallback link, redirect user to complete verification
-      if ((resp as any)?.fallback_link) {
-        toast({
-          title: "Verification link ready",
-          description: "Email provider not configured yet. Redirecting you to verify now...",
-        });
-        window.location.href = (resp as any).fallback_link as string;
-        return;
-      }
-
-      if (verifyError) {
-        throw verifyError;
-      }
-
-      toast({
-        title: "Check your inbox",
-        description: "We've sent a verification email via Resend. Click the link to finish signup.",
-      });
-
-      // No session yet until they verify; onboarding opens after they return with a session
-      setShowOnboarding(false);
-    } catch (error: any) {
-      console.warn("send-verification failed, falling back to direct signup", error);
-      try {
-        const redirectUrl = `${window.location.origin}/dashboard`;
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: redirectUrl },
-        });
-
-        if (signUpError) {
-          const alreadyExists = (signUpError as any)?.code === 'user_already_exists' ||
-            (signUpError.message || '').toLowerCase().includes('already');
-          if (alreadyExists) {
-            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-            if (signInError) throw signInError;
-            toast({ title: "Signed in", description: "Welcome back!" });
-            navigate("/dashboard");
-            return;
-          }
-          throw signUpError;
-        }
-
-        if (signUpData?.session) {
-          toast({ title: "Account created", description: "You're all set!" });
-          await sendWelcomeEmail(email);
-          navigate("/dashboard");
+      if (signUpError) {
+        // Handle existing user case
+        if (signUpError.message.includes("already registered") || signUpError.message.includes("already")) {
+          toast({
+            title: "Account exists",
+            description: "An account with this email already exists. Please sign in instead.",
+            variant: "destructive"
+          });
           return;
         }
-
-        // If no session (rare), inform user
-        toast({ title: "Check your email", description: "Please follow the link we sent to continue." });
-      } catch (fallbackErr: any) {
-        toast({
-          title: "Error signing up",
-          description: fallbackErr.message,
-          variant: "destructive",
-        });
+        throw signUpError;
       }
+
+      const user = signUpData.user;
+      if (!user) {
+        throw new Error("Failed to create user account");
+      }
+
+      console.log("User created, generating verification token");
+
+      // Generate verification token
+      const { data: tokenData, error: tokenError } = await supabase.functions.invoke('generate-verification-token', {
+        body: { userId: user.id }
+      });
+
+      if (tokenError) {
+        console.error("Token generation failed:", tokenError);
+        throw new Error("Failed to generate verification token");
+      }
+
+      console.log("Token generated, sending verification email");
+
+      // Send verification email using our custom system
+      const { error: emailError } = await supabase.functions.invoke('send-email-with-config', {
+        body: {
+          to: email,
+          subject: "Verify your TryContent account",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h1 style="color: #333; text-align: center;">Welcome to TryContent!</h1>
+              <p style="color: #666; font-size: 16px;">Thanks for signing up! Please verify your email address to complete your account setup.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${tokenData.verificationUrl}" 
+                   style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                  Verify Email Address
+                </a>
+              </div>
+              <p style="color: #999; font-size: 14px;">
+                This link will expire in 60 minutes. If you didn't sign up for TryContent, please ignore this email.
+              </p>
+              <p style="color: #999; font-size: 14px;">
+                If the button doesn't work, copy and paste this link: ${tokenData.verificationUrl}
+              </p>
+            </div>
+          `,
+          text: `Welcome to TryContent!\nPlease verify your email: ${tokenData.verificationUrl}\nThis link expires in 60 minutes.`
+        }
+      });
+
+      if (emailError) {
+        console.error("Email sending failed:", emailError);
+        // Don't throw here - account is created, just email failed
+        toast({
+          title: "Account created",
+          description: "Account created but verification email failed to send. Please contact support.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log("Verification email sent successfully");
+
+      toast({
+        title: "Account created!",
+        description: "Please check your email and click the verification link to complete setup."
+      });
+
+      // Redirect to sign in with a message
+      navigate("/signin?message=verify-email&email=" + encodeURIComponent(email));
+
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      toast({
+        title: "Signup failed",
+        description: error.message || "An error occurred during signup. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
