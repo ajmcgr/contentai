@@ -182,6 +182,27 @@ export type Database = {
         }
         Relationships: []
       }
+      config: {
+        Row: {
+          email_from: string | null
+          id: string
+          resend_api_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          email_from?: string | null
+          id: string
+          resend_api_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          email_from?: string | null
+          id?: string
+          resend_api_key?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       content_templates: {
         Row: {
           created_at: string | null
