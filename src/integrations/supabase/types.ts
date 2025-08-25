@@ -203,6 +203,30 @@ export type Database = {
         }
         Relationships: []
       }
+      config_integrations: {
+        Row: {
+          id: string
+          updated_at: string
+          updated_by_user_id: string | null
+          wp_supabase_client_id: string | null
+          wp_supabase_client_secret: string | null
+        }
+        Insert: {
+          id: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          wp_supabase_client_id?: string | null
+          wp_supabase_client_secret?: string | null
+        }
+        Update: {
+          id?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          wp_supabase_client_id?: string | null
+          wp_supabase_client_secret?: string | null
+        }
+        Relationships: []
+      }
       content_templates: {
         Row: {
           created_at: string | null
@@ -356,6 +380,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_trials: {
         Row: {
           articles_created: number
@@ -400,6 +442,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       increment_trial_articles: {
         Args: { user_uuid: string }
         Returns: boolean
@@ -410,7 +459,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -537,6 +586,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
