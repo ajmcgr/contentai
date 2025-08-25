@@ -100,7 +100,7 @@ export function ArticleManagement() {
     <div className="flex-1 p-6">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-reckless font-medium text-foreground">Articles</h1>
+          <h1 className="text-2xl font-reckless text-foreground">Articles</h1>
           <Button className="bg-primary hover:bg-primary/90" asChild>
             <Link to="/dashboard/write">
               <Plus className="h-4 w-4 mr-2" />

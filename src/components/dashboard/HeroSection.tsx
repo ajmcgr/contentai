@@ -7,7 +7,7 @@ export const HeroSection = () => {
   return (
     <div className="py-16 md:py-28 bg-white">
       <div className="max-w-5xl mx-auto px-4 md:px-6">
-        <h2 className="text-4xl md:text-6xl font-reckless font-medium text-center mb-4 text-black">
+        <h2 className="text-4xl md:text-6xl font-reckless text-center mb-4 text-black">
           Meet Your AI Blog Content<br />Writing Assistant
         </h2>
         <p className="text-lg md:text-xl text-center max-w-2xl mx-auto mb-8 text-black">

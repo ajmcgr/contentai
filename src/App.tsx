@@ -41,6 +41,7 @@ import SEOTitleGenerator from "./pages/tools/SEOTitleGenerator";
 import SocialMediaCaptionGenerator from "./pages/tools/SocialMediaCaptionGenerator";
 import ContentOutlineGenerator from "./pages/tools/ContentOutlineGenerator";
 import ReadabilityChecker from "./pages/tools/ReadabilityChecker";
+import TypographyQA from "./pages/TypographyQA";
 
 const queryClient = new QueryClient();
 
@@ -98,6 +99,7 @@ const App = () => (
             <Route path="tools/social-media-caption-generator" element={<SocialMediaCaptionGenerator />} />
             <Route path="tools/content-outline-generator" element={<ContentOutlineGenerator />} />
             <Route path="tools/readability-checker" element={<ReadabilityChecker />} />
+            <Route path="typography-qa" element={<TypographyQA />} />
           </Route>
         </Routes>
       </BrowserRouter>

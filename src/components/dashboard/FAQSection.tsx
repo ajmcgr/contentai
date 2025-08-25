@@ -40,7 +40,7 @@ export const FAQSection = () => {
   return (
     <div className="py-20">
       <div className="max-w-4xl mx-auto px-6">
-        <h2 className="text-4xl font-reckless font-medium text-center mb-12">Frequently Asked Questions</h2>
+        <h2 className="text-4xl font-reckless text-center mb-12">Frequently Asked Questions</h2>
         <Accordion type="single" collapsible className="space-y-4">
           {faqs.map((faq, index) => (
             <AccordionItem 
@@ -48,7 +48,7 @@ export const FAQSection = () => {
               value={`item-${index}`} 
               className="border-0 border-b border-gray-200 px-0"
             >
-              <AccordionTrigger className="text-xl font-reckless font-medium hover:no-underline py-6">
+              <AccordionTrigger className="text-xl font-reckless hover:no-underline py-6">
                 {faq.question}
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 pb-6">

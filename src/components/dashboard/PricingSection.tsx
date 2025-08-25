@@ -6,12 +6,12 @@ export const PricingSection = () => {
   return (
     <div className="py-20 bg-gray-50">
       <div className="max-w-5xl mx-auto px-6">
-        <h2 className="text-4xl font-reckless font-medium text-center mb-12">Simple, Transparent Pricing</h2>
+        <h2 className="text-4xl font-reckless text-center mb-12">Simple, Transparent Pricing</h2>
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {/* Free Trial */}
           <div className="bg-white p-8 rounded-xl shadow-lg border-2 border-gray-200">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-reckless font-medium mb-4">Free Trial</h3>
+              <h3 className="text-2xl font-reckless mb-4">Free Trial</h3>
               <p className="text-4xl font-bold mb-2">$0<span className="text-xl text-gray-500">/7 days</span></p>
               <p className="text-gray-600">Try Content AI for 7 days</p>
             </div>
@@ -39,7 +39,7 @@ export const PricingSection = () => {
           {/* Pro Plan */}
           <div className="bg-white p-8 rounded-xl shadow-lg border-2 border-primary">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-reckless font-medium mb-4">Pro</h3>
+              <h3 className="text-2xl font-reckless mb-4">Pro</h3>
               <p className="text-4xl font-bold mb-2">$49<span className="text-xl text-gray-500">/month</span></p>
               <p className="text-gray-600">30 SEO-optimized articles per month, published automatically</p>
             </div>

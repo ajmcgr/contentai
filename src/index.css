@@ -66,6 +66,9 @@
 
     --radius: 0.5rem;
 
+    /* Typography tokens */
+    --heading-weight: 600;
+
     --sidebar-background: 0 0% 98%;
 
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -140,6 +143,24 @@
   /* Apply Reckless font to all headlines by default */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Reckless', 'Georgia', 'Times New Roman', serif;
+  }
+
+  /* Headline weight normalization */
+  h1, h2, h3, h4,
+  .h1, .h2, .h3, .h4,
+  [data-typography="heading"],
+  [data-heading] {
+    font-weight: var(--heading-weight) !important;
+  }
+
+  /* Ensure no mobile breakpoint overrides drop weight */
+  @media (max-width: 767px) {
+    h1, h2, h3, h4,
+    .h1, .h2, .h3, .h4,
+    [data-typography="heading"],
+    [data-heading] {
+      font-weight: var(--heading-weight) !important;
+    }
   }
 
   a:hover {
