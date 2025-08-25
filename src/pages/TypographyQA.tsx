@@ -168,9 +168,9 @@ export default function TypographyQA() {
                   <li>1280px (Desktop)</li>
                 </ul>
                 <p className="mt-4"><strong>Expected result:</strong></p>
-                <p>All headings (H1-H4) should display with font-weight: 500 at every breakpoint.</p>
+                <p>All headings (H1-H4) should display with font-weight: 500 at every breakpoint with Reckless font family.</p>
                 <p className="mt-4"><strong>How to verify:</strong></p>
-                <p>Use browser dev tools to inspect computed styles. The font-weight should be 500 for all heading elements regardless of screen size.</p>
+                <p>Use browser dev tools to inspect computed styles. The font-weight should be 500 and font-family should include "Reckless" for all heading elements regardless of screen size.</p>
               </div>
             </CardContent>
           </Card>

@@ -2,32 +2,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
 
 @font-face {
-  font-family: 'Reckless';
-  src: url('/fonts/Reckless-Regular.woff') format('woff'),
-       url('/fonts/Reckless-Regular.otf') format('opentype'),
-       url('/fonts/Reckless-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+  font-family: "Reckless";
+  src:
+    url("/src/assets/fonts/Reckless-Regular.otf") format("opentype"),
+    url("/src/assets/fonts/Reckless-Regular.ttf") format("truetype");
+  font-weight: 400; font-style: normal; font-display: swap;
 }
-
 @font-face {
-  font-family: 'Reckless';
-  src: url('/fonts/Reckless-Medium.woff') format('woff'),
-       url('/fonts/Reckless-Medium.otf') format('opentype');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
+  font-family: "Reckless";
+  src: url("/src/assets/fonts/Reckless-Medium.otf") format("opentype");
+  font-weight: 500; font-style: normal; font-display: swap;
 }
-
 @font-face {
-  font-family: 'Reckless';
-  src: url('/fonts/Reckless-Bold.woff') format('woff'),
-       url('/fonts/Reckless-Bold.otf') format('opentype'),
-       url('/fonts/Reckless-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
+  font-family: "Reckless";
+  src:
+    url("/src/assets/fonts/Reckless-Bold.otf") format("opentype"),
+    url("/src/assets/fonts/Reckless-Bold.ttf") format("truetype");
+  font-weight: 700; font-style: normal; font-display: swap;
 }
 
 @tailwind base;
@@ -67,6 +58,7 @@
     --radius: 0.5rem;
 
     /* Typography tokens */
+    --heading-font: "Reckless", serif;
     --heading-weight: 500;
 
     --sidebar-background: 0 0% 98%;
@@ -133,6 +125,10 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-optical-sizing: auto;
   }
 
   /* Ensure Reckless font loads properly on all devices */
@@ -140,19 +136,14 @@
     font-family: 'Reckless', 'Georgia', 'Times New Roman', serif !important;
   }
 
-  /* Apply Reckless font to all headlines by default */
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Reckless', 'Georgia', 'Times New Roman', serif;
-  }
-
-  /* Consistent heading weight across all breakpoints */
-  h1, h2, h3, h4,
-  .h1, .h2, .h3, .h4,
+  /* Apply to all headings (no !important so local opt-ups still work) */
+  h1,h2,h3,h4,
+  .h1,.h2,.h3,.h4,
   [data-typography="heading"],
-  [data-heading] {
+  [data-heading]{
+    font-family: var(--heading-font);
     font-weight: var(--heading-weight);
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    font-style: normal;
   }
 
   /* Ensure no mobile breakpoint overrides */
