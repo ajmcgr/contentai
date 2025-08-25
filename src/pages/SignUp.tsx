@@ -33,37 +33,25 @@ export const SignUp = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+      // Use edge function to send Resend verification link (no direct signUp to avoid Supabase emails)
+      const { error: verifyError } = await supabase.functions.invoke('send-verification', {
+        body: {
+          email,
+          password,
+        }
       });
 
-      if (error) throw error;
-
-      // Send verification email using our edge function
-      if (data?.user && !data.session) {
-        const { error: verifyError } = await supabase.functions.invoke('send-verification', {
-          body: {
-            email,
-            userId: data.user.id,
-          }
-        });
-
-        if (verifyError) {
-          console.error("Failed to send verification email:", verifyError);
-        }
+      if (verifyError) {
+        throw verifyError;
       }
 
       toast({
-        title: "Success!",
-        description: "Please check your email to verify your account.",
+        title: "Check your inbox",
+        description: "We've sent a verification email via Resend. Click the link to finish signup.",
       });
-      
-      // Open onboarding only if a session exists (e.g., Google sign-in or email confirmation disabled)
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setShowOnboarding(true);
-      }
+
+      // No session yet until they verify; onboarding opens after they return with a session
+      setShowOnboarding(false);
     } catch (error: any) {
       toast({
         title: "Error signing up",
