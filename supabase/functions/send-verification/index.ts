@@ -4,6 +4,7 @@ import { Resend } from "npm:resend@2.0.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const FROM_EMAIL = Deno.env.get("RESEND_FROM") || "Content AI <onboarding@resend.dev>";
 
 // Create admin client for generating verification tokens
 const supabaseAdmin = createClient(
@@ -44,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const emailResponse = await resend.emails.send({
-      from: "Content AI <noreply@resend.dev>",
+      from: FROM_EMAIL,
       to: email,
       subject: "Verify your email address",
       html: `
@@ -56,6 +57,15 @@ const handler = async (req: Request): Promise<Response> => {
         <p>If you didn't create an account, you can safely ignore this email.</p>
       `,
     });
+
+    const resp: any = emailResponse as any;
+    if (resp?.error) {
+      console.error("Resend email error:", resp.error);
+      return new Response(JSON.stringify({ error: resp.error }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
     console.log("Email sent successfully:", emailResponse);
 
