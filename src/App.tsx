@@ -42,6 +42,7 @@ import SocialMediaCaptionGenerator from "./pages/tools/SocialMediaCaptionGenerat
 import ContentOutlineGenerator from "./pages/tools/ContentOutlineGenerator";
 import ReadabilityChecker from "./pages/tools/ReadabilityChecker";
 import TypographyQA from "./pages/TypographyQA";
+import FontDebug from "./pages/admin/FontDebug";
 
 const queryClient = new QueryClient();
 
@@ -100,6 +101,7 @@ const App = () => (
             <Route path="tools/content-outline-generator" element={<ContentOutlineGenerator />} />
             <Route path="tools/readability-checker" element={<ReadabilityChecker />} />
             <Route path="typography-qa" element={<TypographyQA />} />
+            <Route path="admin/font-debug" element={<FontDebug />} />
           </Route>
         </Routes>
       </BrowserRouter>

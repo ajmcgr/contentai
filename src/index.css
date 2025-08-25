@@ -135,8 +135,8 @@
   }
 
   h1,h2,h3,h4,.h1,.h2,.h3,.h4,[data-typography="heading"],[data-heading]{
-    font-family:var(--heading-font) !important;
-    font-weight:var(--heading-weight) !important;
+    font-family:var(--heading-font);
+    font-weight:var(--heading-weight);
     font-style:normal;
   }
 
@@ -152,6 +152,21 @@
 
   a:hover {
     color: #000000 !important;
+  }
+
+  /* Force mode for debugging (toggle via body class) */
+  body.force-reckless h1,
+  body.force-reckless h2,
+  body.force-reckless h3,
+  body.force-reckless h4,
+  body.force-reckless .h1,
+  body.force-reckless .h2,
+  body.force-reckless .h3,
+  body.force-reckless .h4,
+  body.force-reckless [data-typography="heading"],
+  body.force-reckless [data-heading]{
+    font-family:"Reckless", serif !important;
+    font-weight:500 !important;
   }
 }
 
