@@ -206,24 +206,27 @@ export type Database = {
       config_integrations: {
         Row: {
           id: string
-          updated_at: string
+          updated_at: string | null
           updated_by_user_id: string | null
-          wp_supabase_client_id: string | null
-          wp_supabase_client_secret: string | null
+          wp_client_id: string | null
+          wp_client_secret: string | null
+          wp_redirect_uri: string | null
         }
         Insert: {
-          id: string
-          updated_at?: string
+          id?: string
+          updated_at?: string | null
           updated_by_user_id?: string | null
-          wp_supabase_client_id?: string | null
-          wp_supabase_client_secret?: string | null
+          wp_client_id?: string | null
+          wp_client_secret?: string | null
+          wp_redirect_uri?: string | null
         }
         Update: {
           id?: string
-          updated_at?: string
+          updated_at?: string | null
           updated_by_user_id?: string | null
-          wp_supabase_client_id?: string | null
-          wp_supabase_client_secret?: string | null
+          wp_client_id?: string | null
+          wp_client_secret?: string | null
+          wp_redirect_uri?: string | null
         }
         Relationships: []
       }
@@ -301,6 +304,24 @@ export type Database = {
           output_data?: Json | null
           progress?: number | null
           status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_states: {
+        Row: {
+          expires_at: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          state?: string
           user_id?: string
         }
         Relationships: []
@@ -437,11 +458,45 @@ export type Database = {
         }
         Relationships: []
       }
+      wp_tokens: {
+        Row: {
+          access_token: string
+          blog_id: string | null
+          blog_url: string | null
+          created_at: string | null
+          id: string
+          scope: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          blog_id?: string | null
+          blog_url?: string | null
+          created_at?: string | null
+          id?: string
+          scope?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          blog_id?: string | null
+          blog_url?: string | null
+          created_at?: string | null
+          id?: string
+          scope?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_oauth_states: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
