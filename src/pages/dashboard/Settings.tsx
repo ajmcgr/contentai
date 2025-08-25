@@ -1376,7 +1376,7 @@ const handleDisconnect = async (platform: string) => {
                           <WordPressConnect />
 
                           {/* Shopify Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/93b6287a-d091-4ee7-b4ae-e45ea7a3e122.png"
@@ -1386,44 +1386,24 @@ const handleDisconnect = async (platform: string) => {
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Shopify
-                                  {integrations.shopify.connected && <Check className="w-4 h-4 text-green-600" />}
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
                                 </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Add a blog to your Shopify store and boost your SEO with ease.
                                 </p>
-                                {integrations.shopify.connected && (
-                                  <p className="text-xs text-green-600 mt-1">
-                                    Connected to: {integrations.shopify.siteUrl}
-                                  </p>
-                                )}
                               </div>
                             </div>
-                            {integrations.shopify.connected ? (
-                              <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  Manage
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleDisconnect('shopify')}
-                                >
-                                  Disconnect
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button 
-                                variant="outline"
-                                onClick={() => openConnectionDialog('shopify')}
-                              >
-                                Connect
-                              </Button>
-                            )}
+                            <Button 
+                              variant="outline"
+                              disabled
+                              className="cursor-not-allowed"
+                            >
+                              Connect
+                            </Button>
                           </div>
 
                           {/* Webflow Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/dea3f4ce-82f3-48a3-af08-5c64d570b629.png"
@@ -1433,48 +1413,24 @@ const handleDisconnect = async (platform: string) => {
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Webflow
-                                  {integrations.webflow.connected && <Check className="w-4 h-4 text-green-600" />}
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
                                 </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Integrate Content AI with Webflow to publish blogs.
                                 </p>
-                                {integrations.webflow.connected && (
-                                  <p className="text-xs text-green-600 mt-1">
-                                    Connected to: {integrations.webflow.siteUrl}
-                                  </p>
-                                )}
                               </div>
                             </div>
-                            {integrations.webflow.connected ? (
-                              <div className="flex gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => window.open(integrations.webflow.siteUrl, '_blank')}
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  Manage
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleDisconnect('webflow')}
-                                >
-                                  Disconnect
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button 
-                                variant="outline"
-                                onClick={() => openConnectionDialog('webflow')}
-                              >
-                                Connect
-                              </Button>
-                            )}
+                            <Button 
+                              variant="outline"
+                              disabled
+                              className="cursor-not-allowed"
+                            >
+                              Connect
+                            </Button>
                            </div>
 
                           {/* Wix Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/c661dec1-2ebf-4dad-ac81-56fd058c7266.png"
@@ -1484,48 +1440,24 @@ const handleDisconnect = async (platform: string) => {
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Wix
-                                  {integrations.wix.connected && <Check className="w-4 h-4 text-green-600" />}
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
                                 </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Publish your blogs directly to your Wix site blog.
                                 </p>
-                                {integrations.wix.connected && (
-                                  <p className="text-xs text-green-600 mt-1">
-                                    Connected to: {integrations.wix.siteUrl}
-                                  </p>
-                                )}
                               </div>
                             </div>
-                            {integrations.wix.connected ? (
-                              <div className="flex gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => window.open(integrations.wix.siteUrl, '_blank')}
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  Manage
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleDisconnect('wix')}
-                                >
-                                  Disconnect
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button 
-                                variant="outline"
-                                onClick={() => openConnectionDialog('wix')}
-                              >
-                                Connect
-                              </Button>
-                            )}
+                            <Button 
+                              variant="outline"
+                              disabled
+                              className="cursor-not-allowed"
+                            >
+                              Connect
+                            </Button>
                           </div>
 
                           {/* Notion Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/3668248b-f746-4b84-85a3-9a25cf2a937e.png"
@@ -1535,48 +1467,24 @@ const handleDisconnect = async (platform: string) => {
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Notion
-                                  {integrations.notion.connected && <Check className="w-4 h-4 text-green-600" />}
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
                                 </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Create pages in your Notion database from your articles.
                                 </p>
-                                {integrations.notion.connected && (
-                                  <p className="text-xs text-green-600 mt-1">
-                                    Connected to Notion workspace
-                                  </p>
-                                )}
                               </div>
                             </div>
-                            {integrations.notion.connected ? (
-                              <div className="flex gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => window.open('https://notion.so', '_blank')}
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  Manage
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleDisconnect('notion')}
-                                >
-                                  Disconnect
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button 
-                                variant="outline"
-                                onClick={() => openConnectionDialog('notion')}
-                              >
-                                Connect
-                              </Button>
-                            )}
+                            <Button 
+                              variant="outline"
+                              disabled
+                              className="cursor-not-allowed"
+                            >
+                              Connect
+                            </Button>
                           </div>
 
                           {/* Ghost Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/af07b7e4-6f3c-4202-8e50-f810cca951bc.png"
@@ -1586,48 +1494,24 @@ const handleDisconnect = async (platform: string) => {
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Ghost
-                                  {integrations.ghost?.connected && <Check className="w-4 h-4 text-green-600" />}
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
                                 </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Publish directly to your Ghost blog platform.
                                 </p>
-                                {integrations.ghost?.connected && (
-                                  <p className="text-xs text-green-600 mt-1">
-                                    Connected to: {integrations.ghost.siteUrl}
-                                  </p>
-                                )}
                               </div>
                             </div>
-                            {integrations.ghost?.connected ? (
-                              <div className="flex gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => window.open(integrations.ghost.siteUrl, '_blank')}
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  Manage
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleDisconnect('ghost')}
-                                >
-                                  Disconnect
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button 
-                                variant="outline"
-                                onClick={() => openConnectionDialog('ghost')}
-                              >
-                                Connect
-                              </Button>
-                            )}
+                            <Button 
+                              variant="outline"
+                              disabled
+                              className="cursor-not-allowed"
+                            >
+                              Connect
+                            </Button>
                           </div>
 
                           {/* Squarespace Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/94e1830f-eb6c-4c1d-aa6e-42152232cf2f.png"
@@ -1637,48 +1521,24 @@ const handleDisconnect = async (platform: string) => {
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Squarespace
-                                  {integrations.squarespace?.connected && <Check className="w-4 h-4 text-green-600" />}
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
                                 </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Publish blog posts to your Squarespace website.
                                 </p>
-                                {integrations.squarespace?.connected && (
-                                  <p className="text-xs text-green-600 mt-1">
-                                    Connected to: {integrations.squarespace.siteUrl}
-                                  </p>
-                                )}
                               </div>
                             </div>
-                            {integrations.squarespace?.connected ? (
-                              <div className="flex gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => window.open(integrations.squarespace.siteUrl, '_blank')}
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  Manage
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleDisconnect('squarespace')}
-                                >
-                                  Disconnect
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button 
-                                variant="outline"
-                                onClick={() => openConnectionDialog('squarespace')}
-                              >
-                                Connect
-                              </Button>
-                            )}
+                            <Button 
+                              variant="outline"
+                              disabled
+                              className="cursor-not-allowed"
+                            >
+                              Connect
+                            </Button>
                           </div>
 
                           {/* Zapier Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/28858514-61f5-43b3-8eec-762b7b23c1b7.png"
@@ -1688,48 +1548,24 @@ const handleDisconnect = async (platform: string) => {
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Zapier
-                                  {integrations.zapier?.connected && <Check className="w-4 h-4 text-green-600" />}
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
                                 </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Automate publishing to 5000+ apps via Zapier webhooks.
                                 </p>
-                                {integrations.zapier?.connected && (
-                                  <p className="text-xs text-green-600 mt-1">
-                                    Connected to Zapier webhook
-                                  </p>
-                                )}
                               </div>
                             </div>
-                            {integrations.zapier?.connected ? (
-                              <div className="flex gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => window.open('https://zapier.com/app/dashboard', '_blank')}
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  Manage
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleDisconnect('zapier')}
-                                >
-                                  Disconnect
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button 
-                                variant="outline"
-                                onClick={() => openConnectionDialog('zapier')}
-                              >
-                                Connect
-                              </Button>
-                            )}
+                            <Button 
+                              variant="outline"
+                              disabled
+                              className="cursor-not-allowed"
+                            >
+                              Connect
+                            </Button>
                           </div>
 
                           {/* Webhook Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-indigo-600 rounded flex items-center justify-center text-white font-bold">
                                 🔗
@@ -1737,44 +1573,20 @@ const handleDisconnect = async (platform: string) => {
                               <div className="flex-1">
                                 <h4 className="font-medium flex items-center gap-2">
                                   Webhook
-                                  {integrations.webhook.connected && <Check className="w-4 h-4 text-green-600" />}
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
                                 </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Send article data to any webhook URL for custom integrations.
                                 </p>
-                                {integrations.webhook.connected && (
-                                  <p className="text-xs text-green-600 mt-1">
-                                    Connected to: {integrations.webhook.siteUrl}
-                                  </p>
-                                )}
                               </div>
                             </div>
-                            {integrations.webhook.connected ? (
-                              <div className="flex gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => window.open(integrations.webhook.siteUrl, '_blank')}
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  Manage
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleDisconnect('webhook')}
-                                >
-                                  Disconnect
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button 
-                                variant="outline"
-                                onClick={() => openConnectionDialog('webhook')}
-                              >
-                                Connect
-                              </Button>
-                            )}
+                            <Button 
+                              variant="outline"
+                              disabled
+                              className="cursor-not-allowed"
+                            >
+                              Connect
+                            </Button>
                           </div>
                          </div>
                       </div>
