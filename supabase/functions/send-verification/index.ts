@@ -35,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Determine app origin for redirect
     const redirectOrigin = appOrigin || req.headers.get("origin") || (new URL(req.url).origin);
 
-    // Generate signup link using admin client (no automatic Supabase email)
+    // Generate signup link; if user exists, fall back to magic link sign-in
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: 'signup',
       email,
@@ -43,21 +43,43 @@ const handler = async (req: Request): Promise<Response> => {
       options: { redirectTo: `${redirectOrigin}/dashboard` }
     });
 
+    let actionLink = data?.properties?.action_link as string | undefined;
+    let emailSubject = "Verify your email address";
+    let heading = "Welcome to Content AI!";
+    let introText = "Please click the link below to verify your email address:";
+
     if (error) {
-      console.error("Error generating verification link:", error);
-      throw error;
+      // Handle already-registered users gracefully by sending a magic sign-in link
+      if ((error as any)?.code === 'email_exists' || (error as any)?.status === 422) {
+        const { data: magicData, error: magicErr } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'magiclink',
+          email,
+          options: { redirectTo: `${redirectOrigin}/dashboard` }
+        });
+        if (magicErr) {
+          console.error("Error generating magic link:", magicErr);
+          throw magicErr;
+        }
+        actionLink = magicData?.properties?.action_link as string | undefined;
+        emailSubject = "Sign in to Content AI";
+        heading = "You're already registered";
+        introText = "Click below to sign in instantly:";
+      } else {
+        console.error("Error generating verification link:", error);
+        throw error;
+      }
     }
 
     const emailResponse = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: "Verify your email address",
+      subject: emailSubject,
       html: `
-        <h1>Welcome to Content AI!</h1>
-        <p>Please click the link below to verify your email address:</p>
-        <a href="${data.properties.action_link}" style="display: inline-block; padding: 12px 24px; background-color: #000; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">Verify Email</a>
+        <h1>${heading}</h1>
+        <p>${introText}</p>
+        <a href="${actionLink}" style="display: inline-block; padding: 12px 24px; background-color: #000; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">Verify Email</a>
         <p>Or copy and paste this link in your browser:</p>
-        <p style="word-break: break-all; color: #666;">${data.properties.action_link}</p>
+        <p style="word-break: break-all; color: #666;">${actionLink}</p>
         <p>If you didn't create an account, you can safely ignore this email.</p>
       `,
     });
@@ -67,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Resend email error:", resp.error);
       // Return a fallback link so the client can proceed without email during setup/testing
       return new Response(
-        JSON.stringify({ ok: false, resend_error: resp.error, fallback_link: data?.properties?.action_link }),
+        JSON.stringify({ ok: false, resend_error: resp.error, fallback_link: actionLink }),
         {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
