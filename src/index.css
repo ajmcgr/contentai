@@ -58,8 +58,11 @@
     --radius: 0.5rem;
 
     /* Global heading defaults (match trywrite.ai look) */
-    --heading-font:"Reckless", serif;
-    --heading-weight:500;
+    --font-heading: "Reckless", serif;
+    --font-heading-weight: 500;
+    /* Map to design-system tokens */
+    --heading-font: var(--font-heading);
+    --heading-weight: var(--font-heading-weight);
 
     --sidebar-background: 0 0% 98%;
 
@@ -134,10 +137,25 @@
     font-family: 'Reckless', 'Georgia', 'Times New Roman', serif !important;
   }
 
-  h1,h2,h3,h4,.h1,.h2,.h3,.h4,[data-typography="heading"],[data-heading]{
-    font-family:var(--heading-font);
-    font-weight:var(--heading-weight);
-    font-style:normal;
+  :where(h1,h2,h3,h4,.h1,.h2,.h3,.h4,[data-typography="heading"],[data-heading]){
+    font-family: var(--font-heading) !important;
+    font-weight: var(--font-heading-weight) !important;
+    font-style: normal !important;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+  :where(h1,h2,h3,h4,.h1,.h2,.h3,.h4,[data-typography="heading"],[data-heading]) *{
+    font-family: inherit !important;
+    font-weight: inherit !important;
+    font-style: inherit !important;
+  }
+  :where(h1,h2,h3,h4,.h1,.h2,.h3,.h4,[data-typography="heading"],[data-heading]) [style*="font-family"]{
+    font-family: inherit !important;
+  }
+  .prose :where(h1,h2,h3,h4),
+  .rich-text :where(h1,h2,h3,h4){
+    font-family: var(--font-heading) !important;
+    font-weight: var(--font-heading-weight) !important;
   }
 
   /* Ensure no mobile breakpoint overrides */

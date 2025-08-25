@@ -48,6 +48,39 @@ export default function FontDebug() {
     document.title = "Font Debug — Reckless";
   }, []);
 
+  // Conflict detector: scans nested nodes inside headings for non-Reckless fonts
+  useEffect(() => {
+    const BOX_ID = 'heading-font-conflicts';
+    const renderConflicts = () => {
+      // cleanup any existing box
+      document.getElementById(BOX_ID)?.remove();
+
+      const hs = document.querySelectorAll('h1,h2,h3,h4,.h1,.h2,.h3,.h4,[data-typography="heading"],[data-heading]');
+      const bad: Array<{ node: string; cls: string; fam: string; wt: string }> = [];
+      hs.forEach((h) => {
+        (h as Element).querySelectorAll('*').forEach((n) => {
+          const cs = getComputedStyle(n as Element);
+          if (!cs.fontFamily.includes('Reckless')) {
+            bad.push({ node: (n as Element).tagName.toLowerCase(), cls: (n as Element).className as string, fam: cs.fontFamily, wt: cs.fontWeight });
+          }
+        });
+      });
+
+      if (bad.length) {
+        const box = document.createElement('div');
+        box.id = BOX_ID;
+        box.style.cssText = 'position:fixed;right:12px;bottom:12px;max-width:360px;background:#111;color:#fff;padding:12px;border-radius:10px;font:12px/1.4 system-ui;z-index:99999;opacity:.95;overflow:auto;max-height:50vh';
+        box.innerHTML = '<div style="font-weight:700;margin-bottom:6px">Heading Font Conflicts</div>'
+          + bad.slice(0, 20).map(b => `<div><code>&lt;${b.node} class="${(b.cls||'').toString().slice(0,80)}"&gt;</code><br><small>${b.fam} • ${b.wt}</small></div>`).join('');
+        if (bad.length > 20) box.innerHTML += `<div style="opacity:.7;margin-top:6px">(+${bad.length - 20} more)</div>`;
+        document.body.appendChild(box);
+      }
+    };
+
+    renderConflicts();
+    return () => { document.getElementById(BOX_ID)?.remove(); };
+  }, [forced]);
+
   return (
     <main className="container mx-auto px-4 py-10">
       <header className="mb-6">
