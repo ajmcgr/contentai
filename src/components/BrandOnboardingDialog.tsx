@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Globe, Sparkles, CheckCircle2 } from "lucide-react";
+import { Loader2, Globe, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react";
 
 interface BrandOnboardingDialogProps {
   open: boolean;
@@ -30,12 +30,19 @@ export function BrandOnboardingDialog({ open, onOpenChange, onComplete }: BrandO
       return;
     }
 
+    // Check authentication first and show helpful dialog
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      toast({
+        title: "Sign In Required",
+        description: "Please verify your email and sign in, or use Google sign-in to scan your website.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsScanning(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        throw new Error('You must be signed in to scan your website. Please sign in and try again.');
-      }
 
       const { data, error } = await supabase.functions.invoke('scan-website', {
         body: { url: websiteUrl }
