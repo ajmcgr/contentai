@@ -25,7 +25,7 @@ export default {
       },
       fontWeight: {
         'reckless-medium': '500',
-        'heading': '600',
+        'heading': '500',
       },
       colors: {
         border: "hsl(var(--border))",

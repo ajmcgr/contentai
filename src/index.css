@@ -67,7 +67,7 @@
     --radius: 0.5rem;
 
     /* Typography tokens */
-    --heading-weight: 600;
+    --heading-weight: 500;
 
     --sidebar-background: 0 0% 98%;
 
@@ -145,22 +145,14 @@
     font-family: 'Reckless', 'Georgia', 'Times New Roman', serif;
   }
 
-  /* Headline weight normalization */
+  /* Lightweight heading normalization */
   h1, h2, h3, h4,
   .h1, .h2, .h3, .h4,
   [data-typography="heading"],
   [data-heading] {
-    font-weight: var(--heading-weight) !important;
-  }
-
-  /* Ensure no mobile breakpoint overrides drop weight */
-  @media (max-width: 767px) {
-    h1, h2, h3, h4,
-    .h1, .h2, .h3, .h4,
-    [data-typography="heading"],
-    [data-heading] {
-      font-weight: var(--heading-weight) !important;
-    }
+    font-weight: var(--heading-weight);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   a:hover {

@@ -9,6 +9,7 @@ export default function TypographyQA() {
           <p className="text-muted-foreground">
             Testing headline font-weight consistency across all breakpoints.
             View at 375px (mobile), 768px (tablet), and 1280px (desktop).
+            All headings should display at font-weight: 500.
           </p>
         </div>
 
@@ -21,19 +22,19 @@ export default function TypographyQA() {
             <CardContent className="space-y-4">
               <div>
                 <h1>H1: This is a main heading</h1>
-                <p className="text-sm text-muted-foreground">Should be font-weight: 600 at all breakpoints</p>
+                <p className="text-sm text-muted-foreground">Should be font-weight: 500 at all breakpoints</p>
               </div>
               <div>
                 <h2>H2: This is a section heading</h2>
-                <p className="text-sm text-muted-foreground">Should be font-weight: 600 at all breakpoints</p>
+                <p className="text-sm text-muted-foreground">Should be font-weight: 500 at all breakpoints</p>
               </div>
               <div>
                 <h3>H3: This is a subsection heading</h3>
-                <p className="text-sm text-muted-foreground">Should be font-weight: 600 at all breakpoints</p>
+                <p className="text-sm text-muted-foreground">Should be font-weight: 500 at all breakpoints</p>
               </div>
               <div>
                 <h4>H4: This is a minor heading</h4>
-                <p className="text-sm text-muted-foreground">Should be font-weight: 600 at all breakpoints</p>
+                <p className="text-sm text-muted-foreground">Should be font-weight: 500 at all breakpoints</p>
               </div>
             </CardContent>
           </Card>
@@ -46,19 +47,19 @@ export default function TypographyQA() {
             <CardContent className="space-y-4">
               <div>
                 <div className="h1 text-4xl">H1 Class: Hero-style heading</div>
-                <p className="text-sm text-muted-foreground">Should be font-weight: 600 at all breakpoints</p>
+                <p className="text-sm text-muted-foreground">Should be font-weight: 500 at all breakpoints</p>
               </div>
               <div>
                 <div className="h2 text-3xl">H2 Class: Section-style heading</div>
-                <p className="text-sm text-muted-foreground">Should be font-weight: 600 at all breakpoints</p>
+                <p className="text-sm text-muted-foreground">Should be font-weight: 500 at all breakpoints</p>
               </div>
               <div>
                 <div className="h3 text-2xl">H3 Class: Subsection-style heading</div>
-                <p className="text-sm text-muted-foreground">Should be font-weight: 600 at all breakpoints</p>
+                <p className="text-sm text-muted-foreground">Should be font-weight: 500 at all breakpoints</p>
               </div>
               <div>
                 <div className="h4 text-xl">H4 Class: Minor heading style</div>
-                <p className="text-sm text-muted-foreground">Should be font-weight: 600 at all breakpoints</p>
+                <p className="text-sm text-muted-foreground">Should be font-weight: 500 at all breakpoints</p>
               </div>
             </CardContent>
           </Card>
@@ -71,11 +72,11 @@ export default function TypographyQA() {
             <CardContent className="space-y-4">
               <div>
                 <div data-typography="heading" className="text-4xl">Data Heading: Large display heading</div>
-                <p className="text-sm text-muted-foreground">Should be font-weight: 600 at all breakpoints</p>
+                <p className="text-sm text-muted-foreground">Should be font-weight: 500 at all breakpoints</p>
               </div>
               <div>
                 <div data-heading className="text-3xl">Data Heading Attr: Medium display heading</div>
-                <p className="text-sm text-muted-foreground">Should be font-weight: 600 at all breakpoints</p>
+                <p className="text-sm text-muted-foreground">Should be font-weight: 500 at all breakpoints</p>
               </div>
             </CardContent>
           </Card>
@@ -88,7 +89,7 @@ export default function TypographyQA() {
             <CardContent className="space-y-4">
               <div>
                 <h2 className="font-heading">Explicit font-heading class</h2>
-                <p className="text-sm text-muted-foreground">Using Tailwind font-heading (600) class</p>
+                <p className="text-sm text-muted-foreground">Using Tailwind font-heading (500) class</p>
               </div>
               <div>
                 <h2 className="font-semibold">Explicit font-semibold class</h2>
@@ -96,11 +97,11 @@ export default function TypographyQA() {
               </div>
               <div>
                 <h2 className="font-medium">Explicit font-medium class</h2>
-                <p className="text-sm text-muted-foreground">Using font-medium (500) class - should be overridden to 600</p>
+                <p className="text-sm text-muted-foreground">Using font-medium (500) class - matches default</p>
               </div>
               <div>
                 <h2 className="font-normal">Explicit font-normal class</h2>
-                <p className="text-sm text-muted-foreground">Using font-normal (400) class - should be overridden to 600</p>
+                <p className="text-sm text-muted-foreground">Using font-normal (400) class - will be normalized to 500</p>
               </div>
             </CardContent>
           </Card>
@@ -112,15 +113,15 @@ export default function TypographyQA() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h2 className="md:font-medium">Desktop only font-medium</h2>
+                <h2 className="font-medium md:font-medium">Desktop font-medium with base</h2>
                 <p className="text-sm text-muted-foreground">
-                  No base weight, medium on desktop - should be consistent 600 everywhere
+                  Has base weight, medium on desktop - should be consistent 500 everywhere
                 </p>
               </div>
               <div>
-                <h2 className="lg:font-semibold">Large screen only font-semibold</h2>
+                <h2 className="font-medium lg:font-medium">Large screen font-medium with base</h2>
                 <p className="text-sm text-muted-foreground">
-                  No base weight, semibold on large - should be consistent 600 everywhere
+                  Has base weight, consistent on large - should be 500 everywhere
                 </p>
               </div>
             </CardContent>
@@ -136,19 +137,19 @@ export default function TypographyQA() {
                 <h1 className="text-4xl md:text-6xl font-reckless text-center mb-4">
                   Hero Section Style Heading
                 </h1>
-                <p className="text-sm text-muted-foreground">Hero-style heading (should be weight 600)</p>
+                <p className="text-sm text-muted-foreground">Hero-style heading (should be weight 500)</p>
               </div>
               <div>
                 <h2 className="text-3xl md:text-4xl font-reckless text-center mb-4">
                   Section Heading Style
                 </h2>
-                <p className="text-sm text-muted-foreground">Section-style heading (should be weight 600)</p>
+                <p className="text-sm text-muted-foreground">Section-style heading (should be weight 500)</p>
               </div>
               <div>
                 <h3 className="text-xl md:text-2xl font-reckless mb-3">
                   Feature Heading Style
                 </h3>
-                <p className="text-sm text-muted-foreground">Feature-style heading (should be weight 600)</p>
+                <p className="text-sm text-muted-foreground">Feature-style heading (should be weight 500)</p>
               </div>
             </CardContent>
           </Card>
@@ -167,9 +168,9 @@ export default function TypographyQA() {
                   <li>1280px (Desktop)</li>
                 </ul>
                 <p className="mt-4"><strong>Expected result:</strong></p>
-                <p>All headings (H1-H4) should display with font-weight: 600 at every breakpoint.</p>
+                <p>All headings (H1-H4) should display with font-weight: 500 at every breakpoint.</p>
                 <p className="mt-4"><strong>How to verify:</strong></p>
-                <p>Use browser dev tools to inspect computed styles. The font-weight should be 600 for all heading elements regardless of screen size.</p>
+                <p>Use browser dev tools to inspect computed styles. The font-weight should be 500 for all heading elements regardless of screen size.</p>
               </div>
             </CardContent>
           </Card>
