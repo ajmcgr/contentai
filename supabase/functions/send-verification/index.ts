@@ -43,6 +43,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const resend = new Resend(RESEND_API_KEY);
+    console.log("send-verification using FROM_EMAIL:", FROM_EMAIL);
+    console.log("RESEND_API_KEY present:", !!RESEND_API_KEY);
     const { email, password, appOrigin }: VerificationEmailRequest = await req.json();
 
     // Determine app origin for redirect
@@ -102,7 +104,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Resend email error:", resp.error);
       // Return a fallback link so the client can proceed without email during setup/testing
       return new Response(
-        JSON.stringify({ ok: false, resend_error: resp.error, fallback_link: actionLink }),
+        JSON.stringify({ ok: false, resend_error: resp.error, fromUsed: FROM_EMAIL, to: email, fallback_link: actionLink }),
         {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
