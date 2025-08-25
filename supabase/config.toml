@@ -3,7 +3,7 @@ project_id = "hmrzmafwvhifjhsoizil"
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "graphql_public"]
+schemas = ["public", "graphql_public"]  
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
@@ -23,7 +23,7 @@ verify_jwt = true
 [functions.cms-integration]
 verify_jwt = false
 
-[functions.generate-images]
+[functions.generate-images]  
 verify_jwt = true
 
 [functions.send-verification]
@@ -41,13 +41,13 @@ verify_jwt = false
 [functions.send-password-reset]
 verify_jwt = false
 
-[functions.get-wp-supabase-secrets]
+[functions.wp-config]
 verify_jwt = true
 
-[functions.update-wp-supabase-secrets]
+[functions.wp-start-connect]
 verify_jwt = true
 
-[functions.get-wp-config]
+[functions.wp-oauth-callback]
 verify_jwt = false
 
 [functions.send-email-with-config]

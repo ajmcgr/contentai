@@ -5,13 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Shield, TestTube, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Shield, TestTube, CheckCircle, XCircle, Copy } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
 interface ConfigData {
   hasClientId: boolean;
   hasClientSecret: boolean;
   clientId: string;
+  redirectUri: string;
   updatedAt: string | null;
   updatedByUserId: string | null;
 }
@@ -57,7 +58,7 @@ export const IntegrationSettings = () => {
 
   const fetchConfigData = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('get-wp-supabase-secrets');
+      const { data, error } = await supabase.functions.invoke('wp-config');
       
       if (error) throw error;
       
@@ -83,7 +84,7 @@ export const IntegrationSettings = () => {
     setSaving(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('update-wp-supabase-secrets', {
+      const { data, error } = await supabase.functions.invoke('wp-config', {
         body: {
           clientId: formData.clientId,
           clientSecret: formData.clientSecret
@@ -120,17 +121,17 @@ export const IntegrationSettings = () => {
     setTesting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('test-wp-supabase-connection');
+      const { data, error } = await supabase.functions.invoke('wp-config');
 
       if (error) throw error;
 
-      if (data.success) {
+      if (data.success && data.hasClientId && data.hasClientSecret) {
         toast({
           title: "Connection Test Successful",
-          description: data.message,
+          description: "WordPress.com OAuth configuration is valid",
         });
       } else {
-        throw new Error(data.error || 'Connection test failed');
+        throw new Error('Configuration incomplete - missing Client ID or Client Secret');
       }
     } catch (error: any) {
       console.error('Connection test error:', error);
@@ -141,6 +142,16 @@ export const IntegrationSettings = () => {
       });
     } finally {
       setTesting(false);
+    }
+  };
+
+  const handleCopyRedirectUri = async () => {
+    if (configData?.redirectUri) {
+      await navigator.clipboard.writeText(configData.redirectUri);
+      toast({
+        title: "Copied!",
+        description: "Redirect URI copied to clipboard",
+      });
     }
   };
 
@@ -195,7 +206,7 @@ export const IntegrationSettings = () => {
           <CardContent>
             <form onSubmit={handleSave} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="clientId">WordPress Supabase Client ID</Label>
+                <Label htmlFor="clientId">WordPress.com Client ID</Label>
                 <Input
                   id="clientId"
                   type="text"
@@ -207,7 +218,7 @@ export const IntegrationSettings = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="clientSecret">WordPress Supabase Client Secret</Label>
+                <Label htmlFor="clientSecret">WordPress.com Client Secret</Label>
                 <Input
                   id="clientSecret"
                   type="password"
@@ -217,6 +228,30 @@ export const IntegrationSettings = () => {
                 />
                 <p className="text-sm text-muted-foreground">
                   Leave blank to keep the current secret unchanged.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="redirectUri">Redirect URI (Read-only)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="redirectUri"
+                    type="text"
+                    value={configData?.redirectUri || 'https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wp-oauth-callback'}
+                    readOnly
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyRedirectUri}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Use this URL as the redirect URI in your WordPress.com app settings.
                 </p>
               </div>
 
