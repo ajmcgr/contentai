@@ -20,9 +20,11 @@ export const SignUp = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Check if user was redirected from Google auth with onboarding flag
+    // Trigger onboarding only when session exists (e.g., after Google OAuth)
     if (searchParams.get('onboarding') === 'true') {
-      setShowOnboarding(true);
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) setShowOnboarding(true);
+      });
     }
   }, [searchParams]);
 

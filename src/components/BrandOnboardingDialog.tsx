@@ -32,6 +32,11 @@ export function BrandOnboardingDialog({ open, onOpenChange, onComplete }: BrandO
 
     setIsScanning(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('You must be signed in to scan your website. Please sign in and try again.');
+      }
+
       const { data, error } = await supabase.functions.invoke('scan-website', {
         body: { url: websiteUrl }
       });
