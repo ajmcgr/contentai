@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Upload, Globe, Clock, Key, Trash2, Check, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { WordPressConnect } from "@/components/WordPressConnect";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -1371,52 +1372,8 @@ const handleDisconnect = async (platform: string) => {
                         <p className="text-muted-foreground">Connect to your favorite CMS and auto-publish your SEO blogs</p>
                         
                         <div className="grid gap-4">
-                          {/* WordPress Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <img 
-                                src="/lovable-uploads/d8fa0a46-f1a4-4e86-a9fa-f2102a039436.png"
-                                alt="WordPress logo"
-                                className="w-10 h-10 object-contain"
-                              />
-                              <div className="flex-1">
-                                <h4 className="font-medium flex items-center gap-2">
-                                  WordPress
-                                  {integrations.wordpress.connected && <Check className="w-4 h-4 text-green-600" />}
-                                </h4>
-                                <p className="text-sm text-muted-foreground">
-                                  Publish your blogs directly to your WordPress site. No plugins or coding required.
-                                </p>
-                                {integrations.wordpress.connected && (
-                                  <p className="text-xs text-green-600 mt-1">
-                                    Connected to: {integrations.wordpress.siteUrl}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            {integrations.wordpress.connected ? (
-                              <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  Manage
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleDisconnect('wordpress')}
-                                >
-                                  Disconnect
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button 
-                                variant="outline"
-                                onClick={() => openConnectionDialog('wordpress')}
-                              >
-                                Connect
-                              </Button>
-                            )}
-                          </div>
+                          {/* WordPress Integration - New OAuth Flow */}
+                          <WordPressConnect />
 
                           {/* Shopify Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg">
