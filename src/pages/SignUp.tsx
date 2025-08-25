@@ -36,25 +36,12 @@ export const SignUp = () => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        }
       });
 
       if (error) throw error;
-
-      // Send verification email using our edge function (only if email confirmation is enabled)
-      if (data?.user && !data.session) {
-        const { data: verifyData, error: verifyError } = await supabase.functions.invoke('send-verification', {
-          body: {
-            email,
-            confirmationUrl: `${window.location.origin}/dashboard`,
-          }
-        });
-
-        if (verifyError) {
-          console.error("Failed to send verification email:", verifyError);
-        } else {
-          console.log("Verification email sent successfully:", verifyData);
-        }
-      }
 
       toast({
         title: "Success!",
