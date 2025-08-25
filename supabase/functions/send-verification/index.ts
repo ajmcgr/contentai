@@ -21,6 +21,7 @@ const corsHeaders = {
 interface VerificationEmailRequest {
   email: string;
   password: string;
+  appOrigin?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -29,14 +30,17 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, password }: VerificationEmailRequest = await req.json();
+    const { email, password, appOrigin }: VerificationEmailRequest = await req.json();
+
+    // Determine app origin for redirect
+    const redirectOrigin = appOrigin || req.headers.get("origin") || (new URL(req.url).origin);
 
     // Generate signup link using admin client (no automatic Supabase email)
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: 'signup',
       email,
       password,
-      options: { redirectTo: `${new URL(req.url).origin}/dashboard` }
+      options: { redirectTo: `${redirectOrigin}/dashboard` }
     });
 
     if (error) {

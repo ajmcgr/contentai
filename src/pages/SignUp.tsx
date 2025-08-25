@@ -37,6 +37,7 @@ export const SignUp = () => {
         body: {
           email,
           password,
+          appOrigin: window.location.origin,
         }
       });
 
