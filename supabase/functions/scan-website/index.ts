@@ -20,13 +20,23 @@ serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { 
+        auth: { 
+          persistSession: false,
+          autoRefreshToken: false 
+        }
+      }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error('No user found');
+    // Extract JWT token from Bearer header
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify and get user from JWT
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    if (authError || !user) {
+      console.error('Auth error:', authError);
+      throw new Error('Authentication failed');
     }
 
     const { url } = await req.json();
