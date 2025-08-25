@@ -775,7 +775,7 @@ async function generateWordPressOAuthUrl(siteUrl: string, userId: string): Promi
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
-    scope: 'auth',
+    scope: 'global',
     state,
   });
 
@@ -939,10 +939,10 @@ async function handleOAuthCallbackPublic(req: Request) {
         <p style="font-size: 0.875rem; margin-top: 1rem;">Redirecting you back...</p>
     </div>
     <script>
-        // Close popup if opened in popup, otherwise redirect
+        // Always notify parent window and close popup
         if (window.opener) {
             window.opener.postMessage({ type: 'wordpress_connected', success: true }, '*');
-            window.close();
+            setTimeout(() => window.close(), 500);
         } else {
             setTimeout(() => {
                 window.location.href = "${appUrl}";

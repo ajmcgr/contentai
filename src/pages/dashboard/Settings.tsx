@@ -751,19 +751,51 @@ export default function Settings() {
       });
 
       // Listen for popup messages
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data.type === 'wordpress_connected' && event.data.success) {
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.data.type === 'wordpress_oauth_callback' && event.data.code && event.data.state) {
+          // Process the OAuth callback
+          try {
+            const { data, error } = await supabase.functions.invoke('cms-integration/oauth-callback', {
+              body: {
+                code: event.data.code,
+                state: event.data.state,
+                siteUrl: connectionDialog.siteUrl
+              }
+            });
+
+            if (error || !data?.success) {
+              throw new Error(data?.error || 'OAuth callback failed');
+            }
+
+            window.removeEventListener('message', handleMessage);
+            popup.close();
+            
+            toast({
+              title: 'WordPress Connected!',
+              description: 'Successfully connected to your WordPress site.',
+            });
+            
+            // Refresh connections and close dialog
+            fetchConnections();
+            setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
+          } catch (error: any) {
+            console.error('OAuth callback error:', error);
+            toast({
+              title: 'Connection Failed',
+              description: error.message || 'Failed to complete WordPress connection',
+              variant: 'destructive',
+            });
+            setConnectionDialog(prev => ({ ...prev, loading: false }));
+          }
+        } else if (event.data.type === 'wordpress_oauth_error') {
           window.removeEventListener('message', handleMessage);
           popup.close();
-          
           toast({
-            title: 'WordPress Connected!',
-            description: 'Successfully connected to your WordPress site.',
+            title: 'OAuth Error',
+            description: event.data.error || 'OAuth authorization failed',
+            variant: 'destructive',
           });
-          
-          // Refresh connections and close dialog
-          fetchConnections();
-          setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
+          setConnectionDialog(prev => ({ ...prev, loading: false }));
         }
       };
 
