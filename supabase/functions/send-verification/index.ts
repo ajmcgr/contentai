@@ -3,12 +3,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-if (!RESEND_API_KEY) {
-  console.error("RESEND_API_KEY environment variable is not set");
-}
-
-const resend = new Resend(RESEND_API_KEY);
 const FROM_EMAIL = Deno.env.get("RESEND_FROM") || "Content AI <onboarding@resend.dev>";
 
 // Create admin client for generating verification tokens
@@ -35,6 +29,20 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Check if RESEND_API_KEY is available
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (!RESEND_API_KEY) {
+      console.error("RESEND_API_KEY environment variable is not set");
+      return new Response(
+        JSON.stringify({ error: "Email service not configured" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const resend = new Resend(RESEND_API_KEY);
     const { email, password, appOrigin }: VerificationEmailRequest = await req.json();
 
     // Determine app origin for redirect
