@@ -67,7 +67,7 @@ export const PlatformsSection = () => {
                   className="h-16 w-auto object-contain"
                 />
               </div>
-              <h3 className="text-lg font-medium mb-2">{platform.name}</h3>
+              <h3 className="text-lg mb-2">{platform.name}</h3>
               <p className="text-sm text-muted-foreground">{platform.description}</p>
             </div>
           ))}

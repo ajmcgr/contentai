@@ -97,7 +97,7 @@ export function BrandOnboardingDialog({ open, onOpenChange, onComplete }: BrandO
         <Sparkles className="w-8 h-8 text-primary" />
       </div>
       <div>
-        <h3 className="text-xl font-reckless font-medium mb-2">Welcome to Content AI!</h3>
+        <h3 className="text-xl font-reckless mb-2">Welcome to Content AI!</h3>
         <p className="text-muted-foreground">
           Let's personalize your experience by learning about your brand. 
           We'll scan your website to automatically set up your brand settings.
@@ -121,7 +121,7 @@ export function BrandOnboardingDialog({ open, onOpenChange, onComplete }: BrandO
         <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
           <Globe className="w-8 h-8 text-primary" />
         </div>
-        <h3 className="text-xl font-reckless font-medium mb-2">Scan Your Website</h3>
+        <h3 className="text-xl font-reckless mb-2">Scan Your Website</h3>
         <p className="text-muted-foreground">
           Enter your website URL and we'll automatically extract your brand information, 
           industry focus, and tone of voice.
@@ -175,7 +175,7 @@ export function BrandOnboardingDialog({ open, onOpenChange, onComplete }: BrandO
       </div>
       
       <div>
-        <h3 className="text-xl font-reckless font-medium mb-2">Brand Setup Complete!</h3>
+        <h3 className="text-xl font-reckless mb-2">Brand Setup Complete!</h3>
         <p className="text-muted-foreground mb-4">
           We've successfully analyzed your website and set up your brand profile.
         </p>
@@ -183,7 +183,7 @@ export function BrandOnboardingDialog({ open, onOpenChange, onComplete }: BrandO
 
       {scannedInfo && (
         <div className="bg-muted/50 rounded-lg p-4 text-left space-y-2">
-          <h4 className="font-medium">What we found:</h4>
+          <h4>What we found:</h4>
           {scannedInfo.brand_name && <p><strong>Brand:</strong> {scannedInfo.brand_name}</p>}
           {scannedInfo.industry && <p><strong>Industry:</strong> {scannedInfo.industry}</p>}
           {scannedInfo.tone_of_voice && <p><strong>Tone:</strong> {scannedInfo.tone_of_voice}</p>}

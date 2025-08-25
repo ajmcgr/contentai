@@ -71,7 +71,7 @@ export const Reviews = () => {
                     />
                   </Avatar>
                   <div>
-                    <h4 className="font-semibold text-gray-900">
+                    <h4 className="text-gray-900">
                       {review.name}
                     </h4>
                     <p className="text-sm text-gray-500">{review.role}</p>

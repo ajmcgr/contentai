@@ -145,7 +145,7 @@
     font-family: 'Reckless', 'Georgia', 'Times New Roman', serif;
   }
 
-  /* Lightweight heading normalization */
+  /* Consistent heading weight across all breakpoints */
   h1, h2, h3, h4,
   .h1, .h2, .h3, .h4,
   [data-typography="heading"],
@@ -153,6 +153,16 @@
     font-weight: var(--heading-weight);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  /* Ensure no mobile breakpoint overrides */
+  @media (max-width: 767px) {
+    h1, h2, h3, h4,
+    .h1, .h2, .h3, .h4,
+    [data-typography="heading"],
+    [data-heading] {
+      font-weight: var(--heading-weight);
+    }
   }
 
   a:hover {
