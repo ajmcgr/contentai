@@ -41,6 +41,15 @@ verify_jwt = false
 [functions.send-password-reset]
 verify_jwt = false
 
+[functions.get-wp-supabase-secrets]
+verify_jwt = true
+
+[functions.update-wp-supabase-secrets]
+verify_jwt = true
+
+[functions.get-wp-config]
+verify_jwt = false
+
 [functions.send-email-with-config]
 verify_jwt = true
 

@@ -766,7 +766,8 @@ async function publishToNotion(article: any, connection: any, options: any) {
 
 // WordPress.com OAuth functions
 async function generateWordPressOAuthUrl(siteUrl: string, userId: string): Promise<string> {
-  const clientId = Deno.env.get('WORDPRESS_CLIENT_ID');
+  // Get client ID from database config instead of environment
+  const { clientId } = await getWpSupabaseSecrets();
   if (!clientId) throw new Error('WordPress.com OAuth not configured');
 
   const redirectUri = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')}/functions/v1/cms-integration/oauth-callback`;
@@ -781,6 +782,34 @@ async function generateWordPressOAuthUrl(siteUrl: string, userId: string): Promi
   });
 
   return `https://public-api.wordpress.com/oauth2/authorize?${params.toString()}`;
+}
+
+// Internal server-only function to get WordPress-Supabase secrets from database
+async function getWpSupabaseSecrets() {
+  const supabaseServiceRole = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  const { data: config, error } = await supabaseServiceRole
+    .from('config_integrations')
+    .select('wp_supabase_client_id, wp_supabase_client_secret')
+    .eq('id', 'global')
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching WP config:', error);
+    throw new Error('Failed to fetch WordPress configuration');
+  }
+
+  if (!config) {
+    throw new Error('WordPress configuration not found');
+  }
+
+  return {
+    clientId: config?.wp_supabase_client_id || '',
+    clientSecret: config?.wp_supabase_client_secret || ''
+  };
 }
 
 async function handleOAuthStart(req: Request, supabaseClient: any, user: any) {
@@ -835,8 +864,7 @@ async function handleOAuthCallbackPublic(req: Request) {
       return new Response(JSON.stringify({ success:false, error:'Invalid state' }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
     }
 
-    const clientId = Deno.env.get('WORDPRESS_CLIENT_ID');
-    const clientSecret = Deno.env.get('WORDPRESS_CLIENT_SECRET');
+    const { clientId, clientSecret } = await getWpSupabaseSecrets();
     if (!clientId || !clientSecret) {
       return new Response(JSON.stringify({ success:false, error:'WordPress.com OAuth credentials not configured' }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
     }
@@ -995,8 +1023,7 @@ async function handleOAuthCallback(req: Request, supabaseClient: any, user: any)
   }
 
   try {
-    const clientId = Deno.env.get('WORDPRESS_CLIENT_ID');
-    const clientSecret = Deno.env.get('WORDPRESS_CLIENT_SECRET');
+    const { clientId, clientSecret } = await getWpSupabaseSecrets();
     
     if (!clientId || !clientSecret) {
       throw new Error('WordPress.com OAuth credentials not configured');

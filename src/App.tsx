@@ -31,6 +31,7 @@ import Settings from "./pages/dashboard/Settings";
 import Account from "./pages/Account";
 import ContentGenerator from "./pages/ContentGenerator";
 import EmailSettings from "./pages/admin/EmailSettings";
+import { IntegrationSettings } from "./pages/admin/IntegrationSettings";
 import HeadlineGenerator from "./pages/tools/HeadlineGenerator";
 import MetaDescriptionGenerator from "./pages/tools/MetaDescriptionGenerator";
 import KeywordResearch from "./pages/tools/KeywordResearch";
@@ -64,6 +65,7 @@ const App = () => (
             <Route path="generator" element={<ContentGenerator />} />
             <Route path="account" element={<Account />} />
             <Route path="admin/email-settings" element={<EmailSettings />} />
+            <Route path="admin/integration-settings" element={<IntegrationSettings />} />
           </Route>
           <Route element={
             <div className="flex flex-col min-h-screen">
