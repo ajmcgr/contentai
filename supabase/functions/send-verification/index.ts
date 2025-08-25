@@ -24,13 +24,15 @@ const handler = async (req: Request): Promise<Response> => {
     const { email, confirmationUrl }: VerificationEmailRequest = await req.json();
 
     const emailResponse = await resend.emails.send({
-      from: "noreply@yourdomain.com",
+      from: "noreply@resend.dev",
       to: email,
       subject: "Verify your email address",
       html: `
-        <h1>Welcome to our platform!</h1>
+        <h1>Welcome to Content AI!</h1>
         <p>Please click the link below to verify your email address:</p>
-        <a href="${confirmationUrl}">Verify Email</a>
+        <a href="${confirmationUrl}" style="display: inline-block; padding: 12px 24px; background-color: #000; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">Verify Email</a>
+        <p>Or copy and paste this link in your browser:</p>
+        <p style="word-break: break-all; color: #666;">${confirmationUrl}</p>
         <p>If you didn't create an account, you can safely ignore this email.</p>
       `,
     });

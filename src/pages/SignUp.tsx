@@ -40,8 +40,8 @@ export const SignUp = () => {
 
       if (error) throw error;
 
-      // Send verification email using our edge function
-      if (data?.user?.confirmation_sent_at) {
+      // Send verification email using our edge function (only if email confirmation is enabled)
+      if (data?.user && !data.session) {
         const { data: verifyData, error: verifyError } = await supabase.functions.invoke('send-verification', {
           body: {
             email,
@@ -51,6 +51,8 @@ export const SignUp = () => {
 
         if (verifyError) {
           console.error("Failed to send verification email:", verifyError);
+        } else {
+          console.log("Verification email sent successfully:", verifyData);
         }
       }
 
