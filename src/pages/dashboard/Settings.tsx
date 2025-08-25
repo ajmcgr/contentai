@@ -28,11 +28,13 @@ export default function Settings() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data: settings } = await supabase
+        const { data: settingsArray } = await supabase
           .from('brand_settings')
           .select('*')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .order('updated_at', { ascending: false });
+        
+        const settings = settingsArray?.[0];
 
         if (settings) {
           setBrandSettings({
