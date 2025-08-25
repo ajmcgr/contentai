@@ -130,29 +130,15 @@ export default function Settings() {
         internal_links: brandSettings.internalLinks ? brandSettings.internalLinks.split(',').map(l => l.trim()).filter(Boolean) : []
       };
 
-      // Check if brand settings already exist
-      const { data: existing } = await supabase
+      // Upsert by user_id to avoid duplicates
+      const { error: upsertError } = await supabase
         .from('brand_settings')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+        .upsert({
+          ...brandData,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
 
-      if (existing) {
-        // Update existing settings
-        const { error } = await supabase
-          .from('brand_settings')
-          .update(brandData)
-          .eq('user_id', user.id);
-        
-        if (error) throw error;
-      } else {
-        // Create new settings
-        const { error } = await supabase
-          .from('brand_settings')
-          .insert(brandData);
-        
-        if (error) throw error;
-      }
+      if (upsertError) throw upsertError;
 
       toast({
         title: "Brand settings saved!",
@@ -434,14 +420,14 @@ export default function Settings() {
         .from('brand-logos')
         .getPublicUrl(fileName);
 
-      // Update brand settings with logo URL
+      // Update brand settings with logo URL (upsert on user_id)
       const { error: updateError } = await supabase
         .from('brand_settings')
         .upsert({
           user_id: user.id,
           logo_url: publicUrl,
           updated_at: new Date().toISOString()
-        });
+        }, { onConflict: 'user_id' });
 
       if (updateError) {
         throw updateError;

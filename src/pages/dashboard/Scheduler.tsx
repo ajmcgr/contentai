@@ -56,6 +56,8 @@ export default function Scheduler() {
           .from('brand_settings')
           .select('tags')
           .eq('user_id', user.id)
+          .order('updated_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
         if (data?.tags && Array.isArray(data.tags) && data.tags.length > 0) {
           setTopics(data.tags as string[]);
