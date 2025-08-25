@@ -63,11 +63,43 @@ export const SignUp = () => {
       // No session yet until they verify; onboarding opens after they return with a session
       setShowOnboarding(false);
     } catch (error: any) {
-      toast({
-        title: "Error signing up",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.warn("send-verification failed, falling back to direct signup", error);
+      try {
+        const redirectUrl = `${window.location.origin}/dashboard`;
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: redirectUrl },
+        });
+
+        if (signUpError) {
+          const alreadyExists = (signUpError as any)?.code === 'user_already_exists' ||
+            (signUpError.message || '').toLowerCase().includes('already');
+          if (alreadyExists) {
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+            if (signInError) throw signInError;
+            toast({ title: "Signed in", description: "Welcome back!" });
+            navigate("/dashboard");
+            return;
+          }
+          throw signUpError;
+        }
+
+        if (signUpData?.session) {
+          toast({ title: "Account created", description: "You're all set!" });
+          navigate("/dashboard");
+          return;
+        }
+
+        // If no session (rare), inform user
+        toast({ title: "Check your email", description: "Please follow the link we sent to continue." });
+      } catch (fallbackErr: any) {
+        toast({
+          title: "Error signing up",
+          description: fallbackErr.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
