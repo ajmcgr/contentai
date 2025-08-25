@@ -752,8 +752,8 @@ export default function Settings() {
 
       // Listen for popup messages
       const handleMessage = async (event: MessageEvent) => {
+        // New flow: popup sends code/state back to parent
         if (event.data.type === 'wordpress_oauth_callback' && event.data.code && event.data.state) {
-          // Process the OAuth callback
           try {
             const { data, error } = await supabase.functions.invoke('cms-integration/oauth-callback', {
               body: {
@@ -769,32 +769,27 @@ export default function Settings() {
 
             window.removeEventListener('message', handleMessage);
             popup.close();
-            
-            toast({
-              title: 'WordPress Connected!',
-              description: 'Successfully connected to your WordPress site.',
-            });
-            
-            // Refresh connections and close dialog
+            toast({ title: 'WordPress Connected!', description: 'Successfully connected to your WordPress site.' });
             fetchConnections();
             setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
           } catch (error: any) {
             console.error('OAuth callback error:', error);
-            toast({
-              title: 'Connection Failed',
-              description: error.message || 'Failed to complete WordPress connection',
-              variant: 'destructive',
-            });
+            toast({ title: 'Connection Failed', description: error.message || 'Failed to complete WordPress connection', variant: 'destructive' });
             setConnectionDialog(prev => ({ ...prev, loading: false }));
           }
-        } else if (event.data.type === 'wordpress_oauth_error') {
+        }
+        // Legacy flow: popup already saved connection and just signals success
+        else if (event.data.type === 'wordpress_connected' && event.data.success) {
           window.removeEventListener('message', handleMessage);
           popup.close();
-          toast({
-            title: 'OAuth Error',
-            description: event.data.error || 'OAuth authorization failed',
-            variant: 'destructive',
-          });
+          toast({ title: 'WordPress Connected!', description: 'Successfully connected to your WordPress site.' });
+          fetchConnections();
+          setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
+        }
+        else if (event.data.type === 'wordpress_oauth_error') {
+          window.removeEventListener('message', handleMessage);
+          popup.close();
+          toast({ title: 'OAuth Error', description: event.data.error || 'OAuth authorization failed', variant: 'destructive' });
           setConnectionDialog(prev => ({ ...prev, loading: false }));
         }
       };

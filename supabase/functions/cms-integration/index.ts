@@ -507,7 +507,8 @@ async function publishToWordPress(article: any, connection: any, options: any) {
       if (response.status === 404) {
         throw new Error(`WordPress.com REST API not found for site ${siteRef}. Ensure the site exists and OAuth connection is valid in Settings → Integrations.`);
       } else if (response.status === 401 || response.status === 403) {
-        throw new Error('WordPress.com authentication failed. Reconnect in Settings → Integrations.');
+        const scope = connection?.config?.scope || 'unknown';
+        throw new Error(`WordPress.com authentication failed (scope: ${scope}). Please disconnect and reconnect WordPress.com in Settings → Integrations to grant the required “global” scope.`);
       }
       throw new Error(`WordPress.com publish failed: ${response.status} ${response.statusText} - ${errorBody}`);
     }
@@ -864,7 +865,21 @@ async function handleOAuthCallbackPublic(req: Request) {
     const adminClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
     const { data: connection, error } = await adminClient
       .from('cms_connections')
-      .upsert({ user_id: userId, platform: 'wordpress', site_url: siteUrl, access_token: accessToken, config: { endpoint: 'https://public-api.wordpress.com/rest/v1.1/', wpcom: true, wpUserId: wpUser.ID, wpUsername: wpUser.username }, is_active: true, last_sync: new Date().toISOString() }, { onConflict: 'user_id,platform,site_url' })
+      .upsert({ 
+        user_id: userId, 
+        platform: 'wordpress', 
+        site_url: siteUrl, 
+        access_token: accessToken, 
+        config: { 
+          endpoint: 'https://public-api.wordpress.com/rest/v1.1/', 
+          wpcom: true, 
+          wpUserId: wpUser.ID, 
+          wpUsername: wpUser.username,
+          scope: tokenData?.scope || null
+        }, 
+        is_active: true, 
+        last_sync: new Date().toISOString() 
+      }, { onConflict: 'user_id,platform,site_url' })
       .select()
       .single();
 
