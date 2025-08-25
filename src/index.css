@@ -58,11 +58,10 @@
     --radius: 0.5rem;
 
     /* Global heading defaults (match trywrite.ai look) */
-    --font-heading: "Reckless", serif;
-    --font-heading-weight: 500;
-    /* Map to design-system tokens */
-    --heading-font: var(--font-heading);
-    --heading-weight: var(--font-heading-weight);
+    --heading-font: "Reckless", serif;
+    --heading-weight: 500;
+    --heading-lh: 1.15;
+    --heading-track: -0.005em;
 
     --sidebar-background: 0 0% 98%;
 
@@ -128,8 +127,12 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
-    font-synthesis-weight:none; font-synthesis-style:none;
-    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-kerning: normal;
+    font-optical-sizing: auto;
+    font-variant-ligatures: common-ligatures contextual;
   }
 
   /* Ensure Reckless font loads properly on all devices */
@@ -137,26 +140,47 @@
     font-family: 'Reckless', 'Georgia', 'Times New Roman', serif !important;
   }
 
-  :where(h1,h2,h3,h4,.h1,.h2,.h3,.h4,[data-typography="heading"],[data-heading]){
-    font-family: var(--font-heading) !important;
-    font-weight: var(--font-heading-weight) !important;
+}
+
+@layer components {
+  :where(h1,h2,h3,h4,
+         .h1,.h2,.h3,.h4,
+         [role="heading"],
+         [data-typography="heading"],
+         [data-heading],
+         .heading,.title,.hero-title,.page-title,.section-title,
+         .prose h1,.prose h2,.prose h3,.prose h4){
+    font-family: var(--heading-font) !important;
+    font-weight: var(--heading-weight) !important;
     font-style: normal !important;
-    line-height: 1.15;
-    letter-spacing: -0.01em;
+    line-height: var(--heading-lh);
+    letter-spacing: var(--heading-track);
+    font-variant-ligatures: common-ligatures contextual;
+    font-kerning: normal;
   }
-  :where(h1,h2,h3,h4,.h1,.h2,.h3,.h4,[data-typography="heading"],[data-heading]) *{
+
+  /* Propagate to nested nodes (links/spans/strong/em) */
+  :where(h1,h2,h3,h4,
+         .h1,.h2,.h3,.h4,
+         [role="heading"],
+         [data-typography="heading"],
+         [data-heading],
+         .heading,.title,.hero-title,.page-title,.section-title,
+         .prose h1,.prose h2,.prose h3,.prose h4) *{
     font-family: inherit !important;
     font-weight: inherit !important;
     font-style: inherit !important;
+    letter-spacing: inherit !important;
   }
-  :where(h1,h2,h3,h4,.h1,.h2,.h3,.h4,[data-typography="heading"],[data-heading]) [style*="font-family"]{
-    font-family: inherit !important;
+
+  /* If a heading truly needs emphasis, allow explicit 600/700 on that component only */
+  .heading-600{ font-weight:600 !important; }
+  .heading-700{ font-weight:700 !important; }
+
+  .no-hover:hover {
+    color: white !important;
   }
-  .prose :where(h1,h2,h3,h4),
-  .rich-text :where(h1,h2,h3,h4){
-    font-family: var(--font-heading) !important;
-    font-weight: var(--font-heading-weight) !important;
-  }
+}
 
   /* Ensure no mobile breakpoint overrides */
   @media (max-width: 767px) {
@@ -186,10 +210,3 @@
     font-family:"Reckless", serif !important;
     font-weight:500 !important;
   }
-}
-
-@layer components {
-  .no-hover:hover {
-    color: white !important;
-  }
-}
