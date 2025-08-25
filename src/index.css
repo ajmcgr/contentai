@@ -1,23 +1,24 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
 
-/* TODO: Replace URLs with exact CDN links from Assets panel upload */
-@font-face {
-  font-family: "Reckless";
-  src: url("{URL_RECKLESS_REGULAR_OTF}") format("opentype"),
-       url("{URL_RECKLESS_REGULAR_TTF}") format("truetype");
-  font-weight: 400; font-style: normal; font-display: swap;
+/* Register Reckless from GitHub (pin to commit for stability) */
+@font-face{
+  font-family:"Reckless";
+  src: url("https://raw.githubusercontent.com/ajmcgr/contentai/70d69b3cae9a9b9216adffc0fd30c117e65daf72/public/Reckless-Regular.woff2") format("woff2"),
+       url("https://raw.githubusercontent.com/ajmcgr/contentai/70d69b3cae9a9b9216adffc0fd30c117e65daf72/public/Reckless-Regular.woff") format("woff");
+  font-weight:400; font-style:normal; font-display:swap;
 }
-@font-face {
-  font-family: "Reckless";
-  src: url("{URL_RECKLESS_MEDIUM_OTF}") format("opentype");
-  font-weight: 500; font-style: normal; font-display: swap;
+@font-face{
+  font-family:"Reckless";
+  src: url("https://raw.githubusercontent.com/ajmcgr/contentai/70d69b3cae9a9b9216adffc0fd30c117e65daf72/public/Reckless-Medium.woff2") format("woff2"),
+       url("https://raw.githubusercontent.com/ajmcgr/contentai/70d69b3cae9a9b9216adffc0fd30c117e65daf72/public/Reckless-Medium.woff") format("woff");
+  font-weight:500; font-style:normal; font-display:swap;
 }
-@font-face {
-  font-family: "Reckless";
-  src: url("{URL_RECKLESS_BOLD_OTF}") format("opentype"),
-       url("{URL_RECKLESS_BOLD_TTF}") format("truetype");
-  font-weight: 700; font-style: normal; font-display: swap;
+@font-face{
+  font-family:"Reckless";
+  src: url("https://raw.githubusercontent.com/ajmcgr/contentai/70d69b3cae9a9b9216adffc0fd30c117e65daf72/public/Reckless-Bold.woff2") format("woff2"),
+       url("https://raw.githubusercontent.com/ajmcgr/contentai/70d69b3cae9a9b9216adffc0fd30c117e65daf72/public/Reckless-Bold.woff") format("woff");
+  font-weight:700; font-style:normal; font-display:swap;
 }
 
 @tailwind base;
@@ -56,9 +57,9 @@
 
     --radius: 0.5rem;
 
-    /* Typography tokens */
-    --heading-font: "Reckless", serif;
-    --heading-weight: 500;
+    /* Global heading defaults (match trywrite.ai look) */
+    --heading-font:"Reckless", serif;
+    --heading-weight:500;
 
     --sidebar-background: 0 0% 98%;
 
@@ -124,11 +125,8 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
-    font-synthesis-weight: none;  /* avoid fake bold */
-    font-synthesis-style: none;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-    font-optical-sizing: auto;
+    font-synthesis-weight:none; font-synthesis-style:none;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   }
 
   /* Ensure Reckless font loads properly on all devices */
@@ -136,14 +134,10 @@
     font-family: 'Reckless', 'Georgia', 'Times New Roman', serif !important;
   }
 
-  /* Apply to all headings (no !important so local opt-ups still work) */
-  h1,h2,h3,h4,
-  .h1,.h2,.h3,.h4,
-  [data-typography="heading"],
-  [data-heading]{
-    font-family: var(--heading-font);
-    font-weight: var(--heading-weight);
-    font-style: normal;
+  h1,h2,h3,h4,.h1,.h2,.h3,.h4,[data-typography="heading"],[data-heading]{
+    font-family:var(--heading-font);
+    font-weight:var(--heading-weight);
+    font-style:normal;
   }
 
   /* Ensure no mobile breakpoint overrides */
