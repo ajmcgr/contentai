@@ -8,7 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
     
     <!-- Preload Reckless fonts for better performance -->
-    <link rel="preload" href="/src/assets/fonts/Reckless-Medium.otf" as="font" type="font/otf" crossorigin>
+    <!-- TODO: Replace {URL_RECKLESS_MEDIUM_OTF} with actual CDN URL from Assets panel -->
+    <link rel="preload" href="{URL_RECKLESS_MEDIUM_OTF}" as="font" type="font/otf" crossorigin>
     
     <title>Content AI — AI Blog Content Writing Assistant</title>
     
@@ -44,6 +45,24 @@
     </script>
     <script src="https://widget.senja.io/widget/77285219-9d5a-4b35-bd39-6e413a1e81e4/platform.js" type="text/javascript" async></script>
     <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="a48ce8f3-735a-4b06-b13c-bcf13695f3fb";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
+    
+    <!-- Debug badge for font loading (remove after QA) -->
+    <script>
+      (async function(){
+        try {
+          if (!("fonts" in document)) return;
+          // Wait for fonts to finish loading
+          await document.fonts.ready;
+          const loaded = document.fonts.check("500 16px Reckless");
+          const h1 = document.querySelector("h1") || document.body;
+          const cs = getComputedStyle(h1);
+          const badge = document.createElement("div");
+          badge.style.cssText = "position:fixed;left:8px;bottom:8px;padding:6px 10px;background:#000;color:#fff;font:12px/1.2 system-ui,sans-serif;border-radius:8px;z-index:99999;opacity:.85";
+          badge.textContent = `Reckless loaded: ${loaded ? "YES" : "NO"} • h1 weight: ${cs.fontWeight} • family: ${cs.fontFamily}`;
+          document.body.appendChild(badge);
+        } catch {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
