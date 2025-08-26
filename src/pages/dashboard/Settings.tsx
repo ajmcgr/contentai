@@ -1433,7 +1433,7 @@ const handleDisconnect = async (platform: string) => {
                           <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
                             <div className="flex items-center gap-3">
                               <img 
-                                src="/lovable-uploads/c661dec1-2ebf-4dad-ac81-56fd058c7266.png"
+                                src="/lovable-uploads/4a03d01f-8a2e-4efb-9cbc-a7fd87e0ce20.png"
                                 alt="Wix logo"
                                 className="w-10 h-10 object-contain"
                               />

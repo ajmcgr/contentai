@@ -17,7 +17,7 @@ export const PlatformsSection = () => {
     },
     {
       name: "Wix",
-      logo: "/lovable-uploads/c661dec1-2ebf-4dad-ac81-56fd058c7266.png",
+      logo: "/lovable-uploads/4a03d01f-8a2e-4efb-9cbc-a7fd87e0ce20.png",
       description: "Publish blogs directly to your Wix site"
     },
     {
