@@ -4,25 +4,31 @@
 /* Register Reckless from Lovable Assets */
 @font-face{
   font-family:"Reckless";
-  src: url("/fonts/reckless/Reckless-Regular.otf") format("opentype"),
-       url("/fonts/reckless/Reckless-Regular.ttf") format("truetype"),
-       url("/fonts/reckless/Reckless-Regular.woff2") format("woff2"),
-       url("/fonts/reckless/Reckless-Regular.woff")  format("woff");
+  src: url('/Reckless-Regular.woff2') format('woff2'),
+       url('/Reckless-Regular.woff') format('woff'),
+       url('/fonts/reckless/Reckless-Regular.woff2') format('woff2'),
+       url('/fonts/reckless/Reckless-Regular.woff') format('woff'),
+       url('/fonts/reckless/Reckless-Regular.otf') format('opentype'),
+       url('/fonts/reckless/Reckless-Regular.ttf') format('truetype');
   font-weight:400; font-style:normal; font-display:swap;
 }
 @font-face{
   font-family:"Reckless";
-  src: url("/fonts/reckless/Reckless-Medium.otf") format("opentype"),
-       url("/fonts/reckless/Reckless-Medium.woff2") format("woff2"),
-       url("/fonts/reckless/Reckless-Medium.woff")  format("woff");
+  src: url('/Reckless-Medium.woff2') format('woff2'),
+       url('/Reckless-Medium.woff') format('woff'),
+       url('/fonts/reckless/Reckless-Medium.woff2') format('woff2'),
+       url('/fonts/reckless/Reckless-Medium.woff') format('woff'),
+       url('/fonts/reckless/Reckless-Medium.otf') format('opentype');
   font-weight:500; font-style:normal; font-display:swap;
 }
 @font-face{
   font-family:"Reckless";
-  src: url("/fonts/reckless/Reckless-Bold.otf")   format("opentype"),
-       url("/fonts/reckless/Reckless-Bold.ttf")   format("truetype"),
-       url("/fonts/reckless/Reckless-Bold.woff2")   format("woff2"),
-       url("/fonts/reckless/Reckless-Bold.woff")    format("woff");
+  src: url('/Reckless-Bold.woff2') format('woff2'),
+       url('/Reckless-Bold.woff') format('woff'),
+       url('/fonts/reckless/Reckless-Bold.woff2') format('woff2'),
+       url('/fonts/reckless/Reckless-Bold.woff') format('woff'),
+       url('/fonts/reckless/Reckless-Bold.otf') format('opentype'),
+       url('/fonts/reckless/Reckless-Bold.ttf') format('truetype');
   font-weight:700; font-style:normal; font-display:swap;
 }
 
