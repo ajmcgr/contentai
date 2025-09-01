@@ -3,8 +3,11 @@ import { useEffect, useState } from "react";
 interface HeadStatus { file: string; status: number | string; type: string | null }
 
 const checkUrls = [
+  "/fonts/reckless/Reckless-Regular.otf",
   "/fonts/reckless/Reckless-Regular.woff2",
+  "/fonts/reckless/Reckless-Medium.otf",
   "/fonts/reckless/Reckless-Medium.woff2",
+  "/fonts/reckless/Reckless-Bold.otf",
   "/fonts/reckless/Reckless-Bold.woff2",
 ];
 
