@@ -63,7 +63,7 @@
     --radius: 0.5rem;
 
     /* Global heading defaults (match trywrite.ai look) */
-    --heading-font: "Reckless", serif;
+    --heading-font: "Reckless";
     --heading-weight: 500;
     --heading-lh: 1.15;
     --heading-track: -0.005em;
@@ -142,7 +142,7 @@
 
   /* Ensure Reckless font loads properly on all devices */
   .font-reckless {
-    font-family: 'Reckless', 'Georgia', 'Times New Roman', serif !important;
+    font-family: 'Reckless' !important;
   }
 
 }
@@ -212,6 +212,6 @@
   body.force-reckless .h4,
   body.force-reckless [data-typography="heading"],
   body.force-reckless [data-heading]{
-    font-family:"Reckless", serif !important;
+    font-family:"Reckless" !important;
     font-weight:500 !important;
   }
