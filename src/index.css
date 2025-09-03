@@ -221,3 +221,10 @@
     font-family:"Reckless" !important;
     font-weight:500 !important;
   }
+
+  /* Footer headings should use Inter */
+  footer :where(h1,h2,h3,h4),
+  .footer-heading {
+    font-family: 'Inter', sans-serif !important;
+  }
+
