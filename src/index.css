@@ -226,5 +226,6 @@
   footer :where(h1,h2,h3,h4),
   .footer-heading {
     font-family: 'Inter', sans-serif !important;
+    letter-spacing: normal !important;
   }
 
