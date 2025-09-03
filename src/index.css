@@ -72,7 +72,7 @@
     --heading-font: "Reckless";
     --heading-weight: 500;
     --heading-lh: 1.15;
-    --heading-track: 0.12px;
+    --heading-track: .005em;
 
     --sidebar-background: 0 0% 98%;
 
