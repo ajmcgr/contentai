@@ -222,9 +222,33 @@ export default function Settings() {
     }
   };
   
-  const handleManageSubscription = () => {
-    // Navigate to billing portal or subscription management
-    window.open('https://billing.stripe.com/p/login', '_blank');
+  const handleManageSubscription = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Please sign in',
+          description: 'You need to be signed in to manage your subscription.',
+          variant: 'destructive',
+        });
+        window.location.href = '/signin';
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('No portal URL received');
+      }
+    } catch (err: any) {
+      console.error('Manage subscription error:', err);
+      toast({
+        title: 'Failed to launch subscription management',
+        description: err?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDeleteAccount = async () => {

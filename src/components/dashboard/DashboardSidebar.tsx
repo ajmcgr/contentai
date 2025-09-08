@@ -98,27 +98,26 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Subscription Action */}
-        <div className="mt-auto p-4 border-t border-border">
-          <SidebarMenuButton asChild className="h-12">
-            <button 
-              onClick={handleSubscriptionAction}
-              disabled={isCreatingPortal}
-              className={`font-medium w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-colors disabled:opacity-50 ${
-                subscribed && planType === 'pro' 
-                  ? 'bg-muted text-muted-foreground hover:bg-muted/80' 
-                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
-              }`}
-            >
-              <Star className="h-5 w-5" />
-              {!isCollapsed && (
-                <span className="ml-3">
-                  {isCreatingPortal ? 'Loading...' : (subscribed && planType === 'pro' ? 'Manage Plan' : 'Upgrade Plan')}
-                </span>
-              )}
-            </button>
-          </SidebarMenuButton>
-        </div>
+        {/* Subscription Action (only for free users) */}
+        {!(subscribed && planType === 'pro') && (
+          <div className="mt-auto p-4 border-t border-border">
+            <SidebarMenuButton asChild className="h-12">
+              <button 
+                onClick={handleSubscriptionAction}
+                disabled={isCreatingPortal}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-colors disabled:opacity-50"
+              >
+                <Star className="h-5 w-5" />
+                {!isCollapsed && (
+                  <span className="ml-3">
+                    {isCreatingPortal ? 'Loading...' : 'Upgrade Plan'}
+                  </span>
+                )}
+              </button>
+            </SidebarMenuButton>
+          </div>
+        )}
+
       </SidebarContent>
     </Sidebar>
   );
