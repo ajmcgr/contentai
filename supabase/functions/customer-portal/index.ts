@@ -15,7 +15,7 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Create supabase client for user authentication
@@ -34,7 +34,7 @@ serve(async (req) => {
     
     if (authError || !user) {
       console.error('Authentication error:', authError);
-      throw new Error('User not authenticated');
+      return new Response(JSON.stringify({ error: 'User not authenticated' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     console.log('Authenticated user:', user.email);
@@ -101,7 +101,7 @@ serve(async (req) => {
     if (!portalResponse.ok) {
       const errorText = await portalResponse.text();
       console.error('Stripe portal error:', errorText);
-      throw new Error(`Failed to create portal session: ${portalResponse.status}`);
+      return new Response(JSON.stringify({ error: 'Stripe portal error', details: errorText }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const portal = await portalResponse.json();

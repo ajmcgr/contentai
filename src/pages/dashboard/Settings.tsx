@@ -234,7 +234,7 @@ export default function Settings() {
         window.location.href = '/signin';
         return;
       }
-      const { data, error } = await supabase.functions.invoke('customer-portal');
+      const { data, error } = await supabase.functions.invoke('customer-portal', { body: {} });
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, '_blank');

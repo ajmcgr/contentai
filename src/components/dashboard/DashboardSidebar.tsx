@@ -43,7 +43,7 @@ export function DashboardSidebar() {
     if (subscribed && planType === 'pro') {
       try {
         setIsCreatingPortal(true);
-        const { data, error } = await supabase.functions.invoke('customer-portal');
+        const { data, error } = await supabase.functions.invoke('customer-portal', { body: {} });
         if (error) throw error;
         if (data?.url) {
           window.open(data.url, '_blank');
