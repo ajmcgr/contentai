@@ -55,7 +55,12 @@ export default function Write() {
     }
   };
 
+  const handleGenerateClick = () => {
+    setShowWarningDialog(true);
+  };
+
   const generatePrompt = async () => {
+    setShowWarningDialog(false);
     setIsGenerating(true);
     try {
       // Get the current session to pass authorization
@@ -323,7 +328,7 @@ export default function Write() {
                       Let Content AI generate compelling article prompts and outlines for you
                     </p>
                     <Button 
-                      onClick={generatePrompt}
+                      onClick={handleGenerateClick}
                       disabled={isGenerating}
                       className="mb-4"
                     >
