@@ -69,6 +69,23 @@ export default function Settings() {
           }));
         }
 
+        // Load publishing settings from content_templates
+        const { data: publishingTemplate } = await supabase
+          .from('content_templates')
+          .select('id, structure')
+          .eq('user_id', user.id)
+          .eq('template_type', 'publishing_settings')
+          .eq('name', 'default')
+          .maybeSingle();
+
+        if (publishingTemplate && (publishingTemplate as any).structure) {
+          const p = (publishingTemplate as any).structure as any;
+          setPublishingSettings(prev => ({
+            ...prev,
+            ...p,
+          }));
+        }
+
         // Load existing profile with avatar
         const { data: profile } = await supabase
           .from('profiles')
@@ -314,6 +331,58 @@ export default function Settings() {
       toast({
         title: 'Error saving publishing settings',
         description: error.message || 'Failed to save publishing settings. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const applySchedulerToDrafts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Authentication required',
+          description: 'Please sign in to apply settings.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!publishingSettings.scheduledDate || !publishingSettings.scheduledTime) {
+        toast({
+          title: 'Missing schedule settings',
+          description: 'Please set both date and time before applying to drafts.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Combine date and time into ISO string
+      const scheduledDateTime = new Date(`${publishingSettings.scheduledDate}T${publishingSettings.scheduledTime}`).toISOString();
+
+      // Update all draft articles with the scheduled time
+      const { data: updatedArticles, error } = await supabase
+        .from('articles')
+        .update({ 
+          status: 'scheduled',
+          published_at: scheduledDateTime
+        })
+        .eq('user_id', user.id)
+        .eq('status', 'draft')
+        .select();
+
+      if (error) throw error;
+
+      const count = updatedArticles?.length || 0;
+      toast({
+        title: 'Scheduler applied successfully!',
+        description: `${count} draft article${count !== 1 ? 's' : ''} scheduled for ${new Date(scheduledDateTime).toLocaleString()}.`,
+      });
+    } catch (error: any) {
+      console.error('Error applying scheduler to drafts:', error);
+      toast({
+        title: 'Error applying scheduler',
+        description: error.message || 'Failed to apply scheduler settings to drafts.',
         variant: 'destructive',
       });
     }
@@ -1802,9 +1871,18 @@ const handleDisconnect = async (platform: string) => {
                                  <SelectItem value="CET">GMT+01:00 (CET)</SelectItem>
                                </SelectContent>
                              </Select>
-                           </div>
+                            </div>
 
-                           <Button onClick={savePublishingSettings}>Save Publishing Settings</Button>
+                            <div className="flex gap-3">
+                              <Button onClick={savePublishingSettings}>Save Publishing Settings</Button>
+                              <Button 
+                                variant="outline" 
+                                onClick={applySchedulerToDrafts}
+                                disabled={!publishingSettings.scheduledDate || !publishingSettings.scheduledTime}
+                              >
+                                Apply to Existing Drafts
+                              </Button>
+                            </div>
                          </div>
                       </div>
                     </CardContent>
