@@ -203,20 +203,77 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Success page
+    // Also ensure a cms_connections entry exists so publishing sees this connection
+    try {
+      if (blogUrl) {
+        const { data: existingConn } = await supabaseServiceRole
+          .from('cms_connections')
+          .select('id')
+          .eq('user_id', stateData.user_id)
+          .eq('platform', 'wordpress')
+          .eq('site_url', blogUrl)
+          .maybeSingle();
+
+        const connectionPayload: any = {
+          user_id: stateData.user_id,
+          platform: 'wordpress',
+          site_url: blogUrl,
+          access_token: tokenData.access_token,
+          api_key: null,
+          is_active: true,
+          config: { wpcom: true, scope: tokenData.scope || 'global', endpoint: 'https://public-api.wordpress.com/rest/v1.1/' },
+          last_sync: new Date().toISOString(),
+        };
+
+        if (existingConn?.id) {
+          await supabaseServiceRole
+            .from('cms_connections')
+            .update(connectionPayload)
+            .eq('id', existingConn.id);
+        } else {
+          await supabaseServiceRole
+            .from('cms_connections')
+            .insert(connectionPayload);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to sync cms_connections for WordPress.com:', e);
+      // Continue; UI will still show WP connected via wp_tokens, and user can reconnect if needed.
+    }
+
+    // Polished minimal success page that auto-closes
     return new Response(`
-      <html>
-        <body>
-          <h1>WordPress Connected Successfully!</h1>
-          <p>Your WordPress.com account has been connected.</p>
-          ${blogUrl ? `<p>Connected site: <a href="${blogUrl}" target="_blank">${blogUrl}</a></p>` : ''}
-          <script>
-            setTimeout(() => {
-              window.close();
-            }, 3000);
-          </script>
-        </body>
-      </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WordPress Connected</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin:0; font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,Arial,sans-serif; display:grid; place-items:center; min-height:100vh; background: #0b0b0c; background: linear-gradient(135deg,#2a2f4a 0%,#161922 100%); color:#fff; }
+    .card { text-align:center; padding: 24px 28px; border-radius: 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+    h1 { font-size: 18px; margin: 0 0 8px; font-weight: 600; }
+    p { margin: 6px 0; opacity: 0.9; font-size: 14px; }
+    .ok { font-size:28px; margin-bottom:8px; }
+    a { color:#9ecbff; text-decoration: underline; }
+    .hint { font-size:12px; opacity:0.75; margin-top:10px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="ok">✅</div>
+    <h1>WordPress Connected</h1>
+    ${blogUrl ? `<p>Site: <a href="${blogUrl}" target="_blank" rel="noopener">${blogUrl}</a></p>` : ''}
+    <p class="hint">This window will close automatically…</p>
+  </div>
+  <script>
+    // Notify the opener (if any) and close quickly
+    try { window.opener && window.opener.postMessage({ type: 'wordpress_connected', success: true, site: ${JSON.stringify(blogUrl)} }, '*'); } catch (e) {}
+    setTimeout(() => window.close(), 800);
+  </script>
+</body>
+</html>
     `, {
       headers: { ...corsHeaders, 'Content-Type': 'text/html' },
     });

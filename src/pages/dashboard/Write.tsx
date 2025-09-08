@@ -195,9 +195,54 @@ export default function Write() {
       try {
         const { data, error } = await supabase.functions.invoke('cms-integration/status', { method: 'GET' });
         if (!error && data?.success) {
-          setConnections(data.connections || []);
-          if ((data.connections || []).length === 1) {
-            setSelectedConnection((data.connections[0] as any).id);
+          const list = data.connections || [];
+          if (list.length > 0) {
+            setConnections(list);
+            if (list.length === 1) setSelectedConnection((list[0] as any).id);
+            return;
+          }
+        }
+
+        // Fallback: if no cms_connections yet, try syncing from wp_tokens (WordPress.com OAuth)
+        const { data: wpToken } = await supabase
+          .from('wp_tokens')
+          .select('access_token, blog_url, scope')
+          .maybeSingle();
+
+        if (wpToken?.access_token && wpToken?.blog_url) {
+          // Create or update a cms_connections record so publish flow can see it
+          const payload: any = {
+            platform: 'wordpress',
+            site_url: wpToken.blog_url,
+            access_token: wpToken.access_token,
+            api_key: null,
+            is_active: true,
+            config: { wpcom: true, scope: wpToken.scope || 'global', endpoint: 'https://public-api.wordpress.com/rest/v1.1/' },
+            last_sync: new Date().toISOString(),
+          };
+          // Check if exists
+          const { data: existing } = await supabase
+            .from('cms_connections')
+            .select('id')
+            .eq('platform', 'wordpress')
+            .eq('site_url', wpToken.blog_url)
+            .maybeSingle();
+
+          if (existing?.id) {
+            await supabase.from('cms_connections').update(payload).eq('id', existing.id);
+          } else {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from('cms_connections').insert({ ...payload, user_id: user.id });
+            }
+          }
+
+          // Refetch connections after sync
+          const { data: afterSync } = await supabase.functions.invoke('cms-integration/status', { method: 'GET' });
+          if (afterSync?.success) {
+            const list2 = afterSync.connections || [];
+            setConnections(list2);
+            if (list2.length === 1) setSelectedConnection((list2[0] as any).id);
           }
         }
       } catch (e) {
