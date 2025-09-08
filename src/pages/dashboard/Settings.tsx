@@ -437,7 +437,9 @@ export default function Settings() {
     language: "en-US",
     specificInstructions: "",
     exclusions: "",
-    imageStyle: ""
+    imageStyle: "",
+    autoGeneration: false,
+    autoGenTime: "09:00"
   });
 
   const [accountSettings, setAccountSettings] = useState({
@@ -1107,6 +1109,50 @@ const handleDisconnect = async (platform: string) => {
                             onCheckedChange={(checked) => setContentSettings(prev => ({ ...prev, useBrandInfo: checked }))}
                           />
                         </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <Label>Automatic Daily Generation</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Automatically generate one article daily based on your topics and settings
+                            </p>
+                          </div>
+                          <Switch
+                            checked={contentSettings.autoGeneration || false}
+                            onCheckedChange={(checked) => setContentSettings(prev => ({ ...prev, autoGeneration: checked }))}
+                          />
+                        </div>
+
+                        {contentSettings.autoGeneration && (
+                          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                              <Clock className="h-4 w-4" />
+                              Generation Schedule
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="autoGenTime">Daily generation time</Label>
+                              <Select
+                                value={contentSettings.autoGenTime || "09:00"}
+                                onValueChange={(value) => setContentSettings(prev => ({ ...prev, autoGenTime: value }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select time" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="06:00">6:00 AM</SelectItem>
+                                  <SelectItem value="09:00">9:00 AM</SelectItem>
+                                  <SelectItem value="12:00">12:00 PM</SelectItem>
+                                  <SelectItem value="15:00">3:00 PM</SelectItem>
+                                  <SelectItem value="18:00">6:00 PM</SelectItem>
+                                  <SelectItem value="21:00">9:00 PM</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Articles will be generated automatically and saved as drafts. You can review and publish them manually.
+                            </p>
+                          </div>
+                        )}
                         <div className="text-sm">
                           {contentSettings.useBrandInfo ? (
                             <span className="text-green-600">Using brand info</span>

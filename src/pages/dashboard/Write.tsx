@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { TrialBanner } from "@/components/TrialBanner";
+import { GenerationWarningDialog } from "@/components/GenerationWarningDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +18,7 @@ export default function Write() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showWarningDialog, setShowWarningDialog] = useState(false);
   const { toast } = useToast();
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [connections, setConnections] = useState<any[]>([]);
@@ -301,19 +303,20 @@ export default function Write() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <DashboardSidebar />
-        
-        <div className="flex-1 flex flex-col">
-          <div className="flex items-center gap-4 p-6">
-            <span className="text-sm text-muted-foreground">
-              Dashboard / Write
-            </span>
-          </div>
+    <>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-background">
+          <DashboardSidebar />
+          
+          <div className="flex-1 flex flex-col">
+            <div className="flex items-center gap-4 p-6">
+              <span className="text-sm text-muted-foreground">
+                Dashboard / Write
+              </span>
+            </div>
 
-          <div className="flex-1 p-6">
-            <TrialBanner />
+            <div className="flex-1 p-6">
+              <TrialBanner />
             
             <Card>
               <CardHeader>
@@ -456,5 +459,12 @@ export default function Write() {
         </div>
       </div>
     </SidebarProvider>
+
+    <GenerationWarningDialog
+      open={showWarningDialog}
+      onOpenChange={setShowWarningDialog}
+      onConfirm={generatePrompt}
+    />
+    </>
   );
 }
