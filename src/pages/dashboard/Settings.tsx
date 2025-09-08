@@ -18,6 +18,7 @@ import { Upload, Globe, Clock, Key, Trash2, Check, ExternalLink } from "lucide-r
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { WordPressConnect } from "@/components/WordPressConnect";
+import { ArticleScheduler } from "@/components/ArticleScheduler";
 
 export default function Settings() {
   const { toast } = useToast();

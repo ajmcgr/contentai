@@ -47,6 +47,7 @@ export type Database = {
           status: string | null
           target_keyword: string | null
           title: string
+          topic_id: string | null
           updated_at: string | null
           user_id: string
           word_count: number | null
@@ -65,6 +66,7 @@ export type Database = {
           status?: string | null
           target_keyword?: string | null
           title: string
+          topic_id?: string | null
           updated_at?: string | null
           user_id: string
           word_count?: number | null
@@ -83,11 +85,20 @@ export type Database = {
           status?: string | null
           target_keyword?: string | null
           title?: string
+          topic_id?: string | null
           updated_at?: string | null
           user_id?: string
           word_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "articles_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brand_settings: {
         Row: {
@@ -396,6 +407,42 @@ export type Database = {
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      topics: {
+        Row: {
+          category: string | null
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          keywords: string[] | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          name?: string
           updated_at?: string
           user_id?: string
         }
