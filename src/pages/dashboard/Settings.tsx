@@ -243,10 +243,11 @@ export default function Settings() {
       }
     } catch (err: any) {
       console.error('Manage subscription error:', err);
+      // Fallback: open Stripe Customer Portal login directly
+      window.open('https://billing.stripe.com/p/login/14AaEZ2Bd06k6KXbCYeAg00', '_blank');
       toast({
-        title: 'Failed to launch subscription management',
-        description: err?.message || 'Please try again.',
-        variant: 'destructive',
+        title: 'Opening Stripe portal',
+        description: 'Using fallback portal link.',
       });
     }
   };

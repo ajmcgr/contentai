@@ -52,7 +52,9 @@ export function DashboardSidebar() {
         }
       } catch (error) {
         console.error('Error creating customer portal:', error);
-        toast({ title: 'Error', description: 'Failed to open subscription management. Please try again.', variant: 'destructive' });
+        // Fallback: open Stripe Customer Portal login directly
+        window.open('https://billing.stripe.com/p/login/14AaEZ2Bd06k6KXbCYeAg00', '_blank');
+        toast({ title: 'Opening Stripe portal', description: 'Using fallback portal link.', });
       } finally {
         setIsCreatingPortal(false);
       }
