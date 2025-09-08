@@ -77,7 +77,7 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
                 <Button 
                   variant="ghost" 
                   className="text-gray-700 gap-1 hover:text-gray-900 hover:bg-gray-100 px-2"
-                  onClick={() => navigate('/dashboard/settings')}
+                  onClick={() => navigate('/dashboard/settings?tab=account')}
                 >
                   <User size={18} />
                   Account

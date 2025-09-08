@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { TrialBanner } from "@/components/TrialBanner";
@@ -22,6 +23,13 @@ import { ArticleScheduler } from "@/components/ArticleScheduler";
 
 export default function Settings() {
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabParam = searchParams.get('tab');
+    return ['brand', 'content', 'account', 'integrations', 'publishing'].includes(tabParam || '') 
+      ? tabParam || 'brand' 
+      : 'brand';
+  });
   
   // Load existing brand settings on component mount
   useEffect(() => {
@@ -956,7 +964,7 @@ const handleDisconnect = async (platform: string) => {
             <div className="max-w-4xl mx-auto">
               <h1 className="text-3xl font-bold mb-8">Settings</h1>
               
-              <Tabs defaultValue="brand" className="space-y-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="brand">Brand</TabsTrigger>
                   <TabsTrigger value="content">Content</TabsTrigger>
