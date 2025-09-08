@@ -82,39 +82,6 @@ export const TrialBanner = () => {
     );
   }
 
-  // Show Pro management banner if user has active subscription
-  if (subscribed && planType === 'pro') {
-    return (
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/20 rounded-full p-2">
-              <Crown className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-foreground">
-                Pro Plan Active
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Unlimited articles, advanced features, and priority support
-              </p>
-            </div>
-          </div>
-          <Button 
-            onClick={handleManageSubscription}
-            disabled={isCreatingPortal}
-            size="sm" 
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Settings className="h-3 w-3" />
-            {isCreatingPortal ? 'Loading...' : 'Manage Plan'}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   // Show trial banner if trial is active and no subscription
   if (isTrialActive && !subscribed) {
     return (

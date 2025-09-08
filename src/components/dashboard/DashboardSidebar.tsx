@@ -1,5 +1,9 @@
 import { FileText, Calendar, Link, Settings, CreditCard, PenTool, Tags, Star } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 import {
   Sidebar,
@@ -25,7 +29,42 @@ const navigationItems = [
 export function DashboardSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const { subscribed, planType } = useSubscription();
+  const { toast } = useToast();
+  const [isCreatingPortal, setIsCreatingPortal] = useState(false);
   const currentPath = location.pathname;
+
+  const handleSubscriptionAction = async () => {
+    if (subscribed && planType === 'pro') {
+      // Handle manage subscription
+      try {
+        setIsCreatingPortal(true);
+        const { data, error } = await supabase.functions.invoke('customer-portal');
+        
+        if (error) {
+          throw error;
+        }
+
+        if (data?.url) {
+          window.open(data.url, '_blank');
+        } else {
+          throw new Error('No portal URL received');
+        }
+      } catch (error) {
+        console.error('Error creating customer portal:', error);
+        toast({
+          title: "Error",
+          description: "Failed to open subscription management. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsCreatingPortal(false);
+      }
+    } else {
+      // Handle upgrade
+      window.open('https://buy.stripe.com/14AaEZ2Bd06k6KXbCYeAg00', '_blank');
+    }
+  };
 
   const isActive = (path: string) => {
     if (path === "/dashboard" && currentPath === "/dashboard") return true;
@@ -64,17 +103,20 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Upgrade Plan */}
+        {/* Subscription Action */}
         <div className="mt-auto p-4 border-t border-border">
           <SidebarMenuButton asChild className="h-12">
             <button 
-              onClick={() => {
-                window.open('https://buy.stripe.com/14AaEZ2Bd06k6KXbCYeAg00', '_blank');
-              }}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-colors"
+              onClick={handleSubscriptionAction}
+              disabled={isCreatingPortal}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md transition-colors disabled:opacity-50"
             >
               <Star className="h-5 w-5" />
-              {!isCollapsed && <span className="ml-3">Upgrade Plan</span>}
+              {!isCollapsed && (
+                <span className="ml-3">
+                  {isCreatingPortal ? 'Loading...' : (subscribed && planType === 'pro' ? 'Manage Plan' : 'Upgrade Plan')}
+                </span>
+              )}
             </button>
           </SidebarMenuButton>
         </div>
