@@ -138,12 +138,55 @@ serve(async (req) => {
       }
     }
 
+    // Download and store images permanently in Supabase Storage
+    const storedImages = [];
+    for (let i = 0; i < allImages.length; i++) {
+      try {
+        const imageUrl = allImages[i].url;
+        const imageResponse = await fetch(imageUrl);
+        
+        if (imageResponse.ok) {
+          const imageBlob = await imageResponse.arrayBuffer();
+          const fileName = `generated-images/${user.id}/${Date.now()}-${i}.png`;
+          
+          // Store in Supabase Storage
+          const { data: uploadData, error: uploadError } = await supabaseClient.storage
+            .from('generated-images')
+            .upload(fileName, imageBlob, {
+              contentType: 'image/png',
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.warn('Failed to upload image to storage:', uploadError);
+            storedImages.push(allImages[i]); // Fallback to original URL
+          } else {
+            // Get public URL
+            const { data: publicUrlData } = supabaseClient.storage
+              .from('generated-images')
+              .getPublicUrl(fileName);
+            
+            storedImages.push({
+              url: publicUrlData.publicUrl,
+              revised_prompt: allImages[i].revised_prompt
+            });
+          }
+        } else {
+          console.warn('Failed to download image from OpenAI');
+          storedImages.push(allImages[i]); // Fallback to original URL
+        }
+      } catch (error) {
+        console.warn('Error processing image:', error);
+        storedImages.push(allImages[i]); // Fallback to original URL
+      }
+    }
+
     // If articleId is provided, update the article with the first image as featured image
-    if (articleId && allImages.length > 0) {
+    if (articleId && storedImages.length > 0) {
       await supabaseClient
         .from('articles')
         .update({
-          featured_image_url: allImages[0].url
+          featured_image_url: storedImages[0].url
         })
         .eq('id', articleId)
         .eq('user_id', user.id);
@@ -155,10 +198,7 @@ serve(async (req) => {
       .update({
         status: 'completed',
         output_data: { 
-          images: allImages.map(img => ({
-            url: img.url,
-            revised_prompt: img.revised_prompt
-          }))
+          images: storedImages
         },
         progress: 100,
         completed_at: new Date().toISOString()
@@ -169,7 +209,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      images: allImages,
+      images: storedImages,
       job_id: job.id
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

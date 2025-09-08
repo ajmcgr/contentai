@@ -33,11 +33,35 @@ serve(async (req) => {
     const { 
       topic, 
       keywords, 
-      tone = 'professional', 
-      wordCount = 1000, 
+      tone, // Will use user settings if not provided
+      wordCount, // Will use user settings if not provided
       template_id,
       includeImages = false 
     } = await req.json();
+
+    // Get user's brand settings and content preferences
+    const { data: brandSettings } = await supabaseClient
+      .from('brand_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    // Get user's content settings from content_templates
+    const { data: contentSettings } = await supabaseClient
+      .from('content_templates')
+      .select('structure')
+      .eq('user_id', user.id)
+      .eq('template_type', 'content_settings')
+      .eq('name', 'default')
+      .maybeSingle();
+
+    // Use user preferences or fallback to defaults
+    const userTone = tone || contentSettings?.structure?.tone || brandSettings?.tone_of_voice || 'professional';
+    const userWordCount = wordCount || contentSettings?.structure?.wordCount || 1000;
+    const targetAudience = brandSettings?.target_audience || 'professionals';
+    const brandName = brandSettings?.brand_name || 'our company';
+    const industry = brandSettings?.industry || 'business';
+    const brandDescription = brandSettings?.description || 'innovative solutions';
 
     console.log('Content generation request:', { topic, keywords, tone, wordCount, template_id });
 
@@ -76,22 +100,39 @@ serve(async (req) => {
     // Generate content with GPT-5
     const keywordString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
     
-    let prompt = `Write a comprehensive, detailed ${wordCount}-word article on "${topic}". This is very important: the article MUST be approximately ${wordCount} words - aim for this target precisely.`;
+    let prompt = `Write a comprehensive, detailed ${userWordCount}-word article on "${topic}" for ${brandName} in the ${industry} industry. This is very important: the article MUST be approximately ${userWordCount} words - aim for this target precisely.
+
+BRAND CONTEXT:
+- Company: ${brandName}
+- Industry: ${industry}
+- Description: ${brandDescription}
+- Target Audience: ${targetAudience}
+- Tone: ${userTone}`;
+
     if (keywordString) {
-      prompt += ` Focus on these keywords: ${keywordString}`;
+      prompt += `
+- Focus Keywords: ${keywordString}`;
     }
-    prompt += ` The tone should be ${tone}.`;
+
+    if (brandSettings?.tags?.length > 0) {
+      prompt += `
+- Relevant Topics: ${brandSettings.tags.join(', ')}`;
+    }
+
+    prompt += `
+
+Write the article specifically for this brand and audience. Make it unique and relevant to their business context.`;
     
     if (template) {
       prompt += ` Follow this structure: ${JSON.stringify(template.structure)}`;
     } else {
       prompt += ` Structure the article with:
-1. Engaging introduction (200-300 words)
+1. Engaging introduction that hooks ${targetAudience} (200-300 words)
 2. Well-organized main sections with subheadings (use H2 and H3 tags)
-3. Detailed explanations with actionable insights and examples
-4. Strong conclusion with key takeaways (150-200 words)
+3. Detailed explanations with actionable insights and real-world examples relevant to ${industry}
+4. Strong conclusion with key takeaways and call-to-action for ${brandName} (150-200 words)
 
-Write in HTML format with proper heading tags (H1, H2, H3). Make it SEO-optimized, engaging, and informative. Include relevant examples and practical advice. Remember: aim for exactly ${wordCount} words.`;
+Write in HTML format with proper heading tags (H1, H2, H3). Make it SEO-optimized, engaging, and informative. Include specific examples relevant to the ${industry} industry. Use a ${userTone} tone throughout. Remember: aim for exactly ${userWordCount} words.`;
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -106,7 +147,7 @@ Write in HTML format with proper heading tags (H1, H2, H3). Make it SEO-optimize
         messages: [
           {
             role: 'system',
-            content: 'You are an expert content writer who creates high-quality, detailed articles. Always write in HTML format with proper heading tags. Focus on meeting the exact word count specified by the user.'
+            content: `You are an expert content writer and SEO specialist who creates high-quality, detailed articles for businesses. Always write in HTML format with proper heading tags. Focus on meeting the exact word count specified. Create unique, brand-specific content that resonates with the target audience and reflects the company's voice and industry expertise.`
           },
           {
             role: 'user',
@@ -137,7 +178,7 @@ Write in HTML format with proper heading tags (H1, H2, H3). Make it SEO-optimize
       .trim() + '...';
 
     // Calculate word count
-    const wordCountActual = generatedContent.split(/\s+/).length;
+    const wordCountActual = generatedContent.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length;
 
     // Generate slug
     const slug = title
