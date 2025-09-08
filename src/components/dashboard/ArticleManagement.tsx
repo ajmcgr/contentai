@@ -15,8 +15,7 @@ const getStatusBadge = (status: string) => {
   const variants = {
     published: "default",
     draft: "secondary", 
-    scheduled: "outline",
-    generated: "destructive"
+    scheduled: "outline"
   } as const;
   
   return (
@@ -110,11 +109,10 @@ export function ArticleManagement() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:grid-cols-none lg:inline-flex">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:grid-cols-none lg:inline-flex">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="draft">Draft</TabsTrigger>
             <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-            <TabsTrigger value="generated">Generated</TabsTrigger>
             <TabsTrigger value="published">Published</TabsTrigger>
           </TabsList>
 
