@@ -53,7 +53,7 @@ const About = () => {
             />
             <div className="text-gray-700">
               <p className="mb-1 text-base font-bold">— Alex MacGregor</p>
-              <p className="mb-2 text-base font-bold">Founder, Write AI</p>
+              <p className="mb-2 text-base font-bold">Founder, Content AI</p>
               <a 
                 href="https://www.linkedin.com/in/alexmacgregor2/" 
                 target="_blank" 
