@@ -44,8 +44,9 @@ serve(async (req) => {
       throw new Error('Stripe secret key not found');
     }
 
-    // Get customer from Stripe
-    const stripeResponse = await fetch('https://api.stripe.com/v1/customers', {
+    // Find Stripe customer by email
+    const searchParams = new URLSearchParams({ email: user.email ?? '', limit: '1' });
+    const stripeResponse = await fetch(`https://api.stripe.com/v1/customers?${searchParams.toString()}` , {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${stripeSecretKey}`,
@@ -54,17 +55,35 @@ serve(async (req) => {
     });
 
     if (!stripeResponse.ok) {
+      const errorText = await stripeResponse.text();
+      console.error('Failed to search customers:', errorText);
       throw new Error('Failed to fetch customers from Stripe');
     }
 
     const customers = await stripeResponse.json();
-    const customer = customers.data.find((c: any) => c.email === user.email);
+    let customer = customers.data && customers.data.length > 0 ? customers.data[0] : null;
 
+    // Create customer if not found
     if (!customer) {
-      throw new Error('No Stripe customer found for this user');
+      const createResp = await fetch('https://api.stripe.com/v1/customers', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${stripeSecretKey}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ email: user.email ?? '' }),
+      });
+
+      if (!createResp.ok) {
+        const errorText = await createResp.text();
+        console.error('Failed to create customer:', errorText);
+        throw new Error('Unable to create Stripe customer');
+      }
+
+      customer = await createResp.json();
     }
 
-    console.log('Found customer:', customer.id);
+    console.log('Using customer:', customer.id);
 
     // Create billing portal session
     const portalResponse = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {

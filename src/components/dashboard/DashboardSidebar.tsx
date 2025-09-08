@@ -29,22 +29,22 @@ const navigationItems = [
 export function DashboardSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
-  const { subscribed, planType } = useSubscription();
+  const { subscribed, planType, user } = useSubscription();
   const { toast } = useToast();
   const [isCreatingPortal, setIsCreatingPortal] = useState(false);
   const currentPath = location.pathname;
 
   const handleSubscriptionAction = async () => {
+    if (!user) {
+      toast({ title: 'Please sign in', description: 'You need to be signed in to manage your subscription.' });
+      window.location.href = '/signin';
+      return;
+    }
     if (subscribed && planType === 'pro') {
-      // Handle manage subscription
       try {
         setIsCreatingPortal(true);
         const { data, error } = await supabase.functions.invoke('customer-portal');
-        
-        if (error) {
-          throw error;
-        }
-
+        if (error) throw error;
         if (data?.url) {
           window.open(data.url, '_blank');
         } else {
@@ -52,16 +52,11 @@ export function DashboardSidebar() {
         }
       } catch (error) {
         console.error('Error creating customer portal:', error);
-        toast({
-          title: "Error",
-          description: "Failed to open subscription management. Please try again.",
-          variant: "destructive",
-        });
+        toast({ title: 'Error', description: 'Failed to open subscription management. Please try again.', variant: 'destructive' });
       } finally {
         setIsCreatingPortal(false);
       }
     } else {
-      // Handle upgrade
       window.open('https://buy.stripe.com/14AaEZ2Bd06k6KXbCYeAg00', '_blank');
     }
   };
