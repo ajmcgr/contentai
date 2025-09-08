@@ -41,9 +41,9 @@ serve(async (req) => {
 
     console.log('Content generation request:', { topic, keywords, tone, wordCount, template_id });
 
-    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!anthropicApiKey) {
-      throw new Error('Anthropic API key not found');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not found');
     }
 
     // Create generation job
@@ -73,38 +73,41 @@ serve(async (req) => {
       template = templateData;
     }
 
-    // Generate content with Claude
+    // Generate content with GPT-5
     const keywordString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
     
-    let prompt = `Write a comprehensive ${wordCount}-word article on "${topic}"`;
+    let prompt = `Write a comprehensive, detailed ${wordCount}-word article on "${topic}". This is very important: the article MUST be approximately ${wordCount} words - aim for this target precisely.`;
     if (keywordString) {
-      prompt += ` focusing on these keywords: ${keywordString}`;
+      prompt += ` Focus on these keywords: ${keywordString}`;
     }
-    prompt += `. The tone should be ${tone}.`;
+    prompt += ` The tone should be ${tone}.`;
     
     if (template) {
       prompt += ` Follow this structure: ${JSON.stringify(template.structure)}`;
     } else {
       prompt += ` Structure the article with:
-1. Engaging introduction
-2. Well-organized main sections with subheadings
-3. Actionable insights and examples
-4. Strong conclusion with key takeaways
+1. Engaging introduction (200-300 words)
+2. Well-organized main sections with subheadings (use H2 and H3 tags)
+3. Detailed explanations with actionable insights and examples
+4. Strong conclusion with key takeaways (150-200 words)
 
-Include proper H1, H2, and H3 headings. Make it SEO-optimized and engaging for readers.`;
+Write in HTML format with proper heading tags (H1, H2, H3). Make it SEO-optimized, engaging, and informative. Include relevant examples and practical advice. Remember: aim for exactly ${wordCount} words.`;
     }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${anthropicApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
+        model: 'gpt-5-2025-08-07',
+        max_completion_tokens: 6000,
         messages: [
+          {
+            role: 'system',
+            content: 'You are an expert content writer who creates high-quality, detailed articles. Always write in HTML format with proper heading tags. Focus on meeting the exact word count specified by the user.'
+          },
           {
             role: 'user',
             content: prompt
@@ -115,16 +118,16 @@ Include proper H1, H2, and H3 headings. Make it SEO-optimized and engaging for r
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Anthropic API error:', errorText);
-      throw new Error(`Anthropic API error: ${response.status}`);
+      console.error('OpenAI API error:', errorText);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const generatedContent = data.content[0].text;
+    const generatedContent = data.choices[0].message.content;
 
     // Extract title from content or generate one
-    const titleMatch = generatedContent.match(/^#\s+(.+)$/m);
-    const title = titleMatch ? titleMatch[1] : `${topic} - Complete Guide`;
+    const titleMatch = generatedContent.match(/<h1[^>]*>(.+?)<\/h1>/i) || generatedContent.match(/^#\s+(.+)$/m);
+    const title = titleMatch ? titleMatch[1].replace(/<[^>]*>/g, '') : `${topic} - Complete Guide`;
 
     // Generate meta description
     const metaDescription = generatedContent
@@ -142,19 +145,41 @@ Include proper H1, H2, and H3 headings. Make it SEO-optimized and engaging for r
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
+    // Generate featured image if includeImages is true
+    let featuredImageUrl = null;
+    if (includeImages) {
+      try {
+        const imageResponse = await supabaseClient.functions.invoke('generate-images', {
+          body: { 
+            prompt: `Professional image representing: ${topic}`,
+            style: 'photorealistic',
+            size: '1024x1024',
+            quantity: 1
+          }
+        });
+        
+        if (imageResponse.data?.success && imageResponse.data.images?.length > 0) {
+          featuredImageUrl = imageResponse.data.images[0].url;
+        }
+      } catch (imageError) {
+        console.warn('Failed to generate featured image:', imageError);
+      }
+    }
+
     // Save article to database
     const { data: article, error: articleError } = await supabaseClient
       .from('articles')
       .insert({
         user_id: user.id,
         title,
-        content: await marked(generatedContent),
+        content: generatedContent, // Already in HTML format
         meta_description: metaDescription,
         keywords: Array.isArray(keywords) ? keywords : [keywords],
         target_keyword: Array.isArray(keywords) ? keywords[0] : keywords,
         word_count: wordCountActual,
         slug: slug,
-        status: 'draft'
+        status: 'draft',
+        featured_image_url: featuredImageUrl
       })
       .select()
       .single();
