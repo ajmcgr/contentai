@@ -1,17 +1,58 @@
-import { Clock, Zap, CheckCircle, Crown } from 'lucide-react';
+import { Clock, Zap, CheckCircle, Crown, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTrialStatus } from '@/hooks/useTrialStatus';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export const TrialBanner = () => {
   const { isTrialActive, articlesCreated, maxTrialArticles, daysRemaining, loading: trialLoading } = useTrialStatus();
   const { subscribed, planType, loading: subscriptionLoading } = useSubscription();
+  const { toast } = useToast();
+  const [showUpgradeBanner, setShowUpgradeBanner] = useState(false);
+  const [isCreatingPortal, setIsCreatingPortal] = useState(false);
+
+  // Check for upgrade success indicator in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('upgrade') === 'success') {
+      setShowUpgradeBanner(true);
+      // Remove the parameter from URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const handleManageSubscription = async () => {
+    try {
+      setIsCreatingPortal(true);
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('No portal URL received');
+      }
+    } catch (error) {
+      console.error('Error creating customer portal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open subscription management. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingPortal(false);
+    }
+  };
 
   if (trialLoading || subscriptionLoading) return null;
 
-  // Show Pro banner if user has active subscription
-  if (subscribed && planType === 'pro') {
+  // Show upgrade success banner if just upgraded
+  if (showUpgradeBanner && subscribed && planType === 'pro') {
     return (
       <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mb-6">
         <div className="flex items-center justify-between">
@@ -21,17 +62,54 @@ export const TrialBanner = () => {
             </div>
             <div>
               <p className="font-medium text-green-800">
-                Pro Plan Active
+                🎉 Welcome to Pro Plan!
               </p>
               <p className="text-sm text-green-600">
+                You now have unlimited articles, advanced features, and priority support
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowUpgradeBanner(false)}
+            className="text-green-600 hover:text-green-700"
+          >
+            ×
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show Pro management banner if user has active subscription
+  if (subscribed && planType === 'pro') {
+    return (
+      <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/20 rounded-full p-2">
+              <Crown className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="font-medium text-foreground">
+                Pro Plan Active
+              </p>
+              <p className="text-sm text-muted-foreground">
                 Unlimited articles, advanced features, and priority support
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-green-600">
-            <CheckCircle className="h-4 w-4" />
-            <span className="text-sm font-medium">Active</span>
-          </div>
+          <Button 
+            onClick={handleManageSubscription}
+            disabled={isCreatingPortal}
+            size="sm" 
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Settings className="h-3 w-3" />
+            {isCreatingPortal ? 'Loading...' : 'Manage Plan'}
+          </Button>
         </div>
       </div>
     );
