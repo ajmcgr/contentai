@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { marked } from 'https://esm.sh/marked@14.1.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -485,7 +486,7 @@ async function publishToWordPress(article: any, connection: any, options: any) {
 
     const postData = {
       title: article.title,
-      content: article.content,
+      content: await marked(article.content),
       excerpt: article.meta_description || '',
       status: options.status || 'draft',
     };
