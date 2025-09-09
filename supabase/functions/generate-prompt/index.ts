@@ -19,36 +19,49 @@ serve(async (req) => {
     let user = null;
     let brandSettings = null;
 
-    // Try to get user if auth header exists
+    // Always try to get user and brand settings if auth header exists
     if (authHeader) {
       console.log('Auth header found, attempting to authenticate user');
-      const supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-        { global: { headers: { Authorization: authHeader } } }
-      );
+      try {
+        const supabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+          { global: { headers: { Authorization: authHeader } } }
+        );
 
-      const { data: userData, error: userError } = await supabaseClient.auth.getUser();
-      
-      if (!userError && userData?.user) {
-        user = userData.user;
-        console.log('User authenticated successfully:', user.id);
+        const { data: userData, error: userError } = await supabaseClient.auth.getUser();
         
-        // Fetch user's brand settings if authenticated
-        const { data: settings, error: brandError } = await supabaseClient
-          .from('brand_settings')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        if (!userError && userData?.user) {
+          user = userData.user;
+          console.log('User authenticated successfully:', user.id);
+          
+          // Fetch user's brand settings if authenticated
+          const { data: settings, error: brandError } = await supabaseClient
+            .from('brand_settings')
+            .select('*')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-        if (brandError) {
-          console.error('Error fetching brand settings:', brandError);
+          if (brandError) {
+            console.error('Error fetching brand settings:', brandError);
+          } else {
+            brandSettings = settings;
+            console.log('Brand settings loaded:', brandSettings ? 'Yes' : 'No');
+            if (brandSettings) {
+              console.log('Brand details:', {
+                name: brandSettings.brand_name,
+                industry: brandSettings.industry,
+                tone: brandSettings.tone_of_voice,
+                hasDescription: !!brandSettings.description,
+                hasTags: brandSettings.tags?.length > 0
+              });
+            }
+          }
         } else {
-          brandSettings = settings;
-          console.log('Brand settings loaded:', !!brandSettings);
+          console.log('Authentication failed:', userError?.message || 'Unknown error');
         }
-      } else {
-        console.log('Authentication failed, proceeding with generic prompt');
+      } catch (authErr) {
+        console.error('Auth attempt failed:', authErr);
       }
     } else {
       console.log('No auth header, proceeding with generic prompt');
@@ -63,53 +76,85 @@ serve(async (req) => {
       console.log('Anthropic API key found');
     }
 
-    // Generate a full blog article based on brand settings
-    let contextPrompt = 'You are an expert content writer and SEO specialist. ';
-    
+    // Generate a comprehensive, brand-aligned blog article
     const brandName = brandSettings?.brand_name || 'our company';
     const industry = brandSettings?.industry || 'business';
     const audience = brandSettings?.target_audience || 'professionals';
     const tone = brandSettings?.tone_of_voice || 'professional';
     const description = brandSettings?.description || 'innovative solutions';
     const topics = brandSettings?.tags?.join(', ') || 'industry trends, best practices';
+    const internalLinks = brandSettings?.internal_links?.join(', ') || '';
 
-    contextPrompt += `Create an exceptional, comprehensive blog article for ${brandName} in the ${industry} industry that showcases their expertise and thought leadership.
+    let contextPrompt = `You are Claude Opus 4, the world's most advanced AI content strategist and copywriter. You're tasked with creating an exceptional, comprehensive blog article that positions ${brandName} as the definitive thought leader in ${industry}.
 
-BRAND PROFILE:
-- Company: ${brandName}
-- Industry: ${industry}
-- Target Audience: ${audience}
-- Brand Voice: ${tone}
-- Company Description: ${description}
-- Core Topics: ${topics}
+🎯 BRAND IDENTITY & VOICE (CRITICAL - Must be reflected throughout):
+• Company: ${brandName}
+• Industry: ${industry}
+• Target Audience: ${audience}
+• Brand Voice: ${tone}
+• Brand Description: ${description}
+• Core Focus Areas: ${topics}`;
 
-CONTENT SPECIFICATIONS:
-- Write a premium-quality article of 1000-1500 words
-- Create an SEO-optimized title that's compelling and under 60 characters
-- Naturally integrate 8-12 relevant industry keywords throughout the content
-- Include 4-5 strategic internal link opportunities [format: [anchor text](internal-link-suggestion)]
-- Add 3-4 authoritative external references [format: [source name](https://example.com)]
-- Suggest 3-4 professional images with detailed descriptions [format: ![Alt text](detailed-image-description)]
-- Use sophisticated markdown formatting with clear hierarchy (##, ###, ####)
-- Include data-driven insights, actionable strategies, and real-world examples
-- Add expert tips and industry best practices
-- End with a compelling call-to-action that drives engagement for ${brandName}
+    if (internalLinks) {
+      contextPrompt += `
+• Internal Link Opportunities: ${internalLinks}`;
+    }
 
-QUALITY STANDARDS:
-- Demonstrate deep industry knowledge and authority
-- Write with clarity and precision in ${tone} tone
-- Ensure every paragraph adds genuine value
-- Include specific, actionable advice
-- Use compelling storytelling elements where appropriate
-- Make the content shareable and memorable
+    contextPrompt += `
+
+📝 CONTENT EXCELLENCE REQUIREMENTS:
+• Length: 1000-1500 words of premium-quality content
+• SEO Title: Under 60 characters, compelling, keyword-optimized
+• Voice & Tone: Consistently ${tone} throughout, reflecting ${brandName}'s personality
+• Expertise Level: Demonstrate deep ${industry} knowledge and authority
+• Value Delivery: Every paragraph must provide genuine, actionable insights
+
+🏗️ CONTENT STRUCTURE:
+1. **Compelling H1 Title** (Include primary keyword, under 60 chars)
+2. **Engaging Introduction** (250-300 words)
+   - Hook with industry statistic or compelling question
+   - Establish ${brandName}'s credibility
+   - Preview article value
+3. **4-6 Main Content Sections** (H2 headings)
+   - Each 200-300 words
+   - Start with data/statistics
+   - Include actionable strategies
+   - Use H3 subheadings for complex topics
+4. **Expert Insights Section**
+   - Real-world examples and case studies
+   - Industry best practices
+   - Professional tips
+5. **Strong Conclusion** (200-250 words)
+   - Summarize key takeaways
+   - Reinforce ${brandName}'s expertise
+   - Compelling call-to-action
+
+🎨 FORMATTING & ENHANCEMENT:
+• Rich markdown: **bold**, *italic*, > blockquotes, - lists
+• Strategic keyword integration (8-12 keywords, 1-2% density)
+• 4-5 internal link suggestions: [anchor text](internal-page-suggestion)
+• 3-4 external references: [Source Name](https://example.com)
+• 3-4 image suggestions: ![Professional alt text](detailed-image-description)
+• Data-driven insights with specific statistics
+• Compelling storytelling elements
+
+🎯 BRAND ALIGNMENT CHECKLIST:
+✅ Does this sound like ${brandName}?
+✅ Is the ${tone} voice consistent throughout?
+✅ Are we showcasing ${industry} expertise?
+✅ Will ${audience} find this valuable?
+✅ Does this reinforce our brand description: "${description}"?
 
 OUTPUT FORMAT:
-Title: [Compelling SEO-optimized title]
+Title: [Your compelling SEO-optimized title here]
 
-[Exceptional article content with sophisticated markdown formatting, natural keyword integration, strategic link placement, and professional image suggestions]
+[Your exceptional article content with sophisticated formatting and strategic enhancements]
 
-Keywords strategically used: [list 8-12 keywords naturally incorporated]
-Target audience value: [explain how this specifically serves ${audience}]`;
+---
+Keywords Used: [List 8-12 strategically integrated keywords]
+Brand Alignment: [Brief note on how this serves ${audience} and reflects ${brandName}'s expertise]
+
+Create content that doesn't just inform but positions ${brandName} as the go-to authority in ${industry}, driving engagement and establishing thought leadership.`;
 
     try {
       console.log('Making request to Anthropic API...');
