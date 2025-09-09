@@ -70,10 +70,16 @@ serve(async (req) => {
     console.log('Generating AI prompt for user:', user?.id || 'anonymous');
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!anthropicApiKey) {
-      console.warn('ANTHROPIC_API_KEY not set – will return graceful fallback');
+      console.warn('ANTHROPIC_API_KEY not set – Anthropic primary disabled');
     } else {
       console.log('Anthropic API key found');
+    }
+    if (!openAIApiKey) {
+      console.warn('OPENAI_API_KEY not set – OpenAI fallback disabled');
+    } else {
+      console.log('OpenAI API key found (fallback enabled)');
     }
 
     // Generate a comprehensive, brand-aligned blog article
@@ -208,60 +214,77 @@ Create content that doesn't just inform but positions ${brandName} as the go-to 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (aiError) {
-      console.error('AI generation failed, returning graceful fallback:', aiError);
+      console.error('AI generation failed on Anthropic, attempting OpenAI fallback:', aiError);
       const brandName = brandSettings?.brand_name || 'your brand';
       const tone = brandSettings?.tone_of_voice || 'professional';
       const industry = brandSettings?.industry || 'your industry';
 
-      const fallbackTitle = `5 Proven Strategies to Transform Your ${industry} Business`;
-      const fallbackBody = `## Introduction
+      // Try OpenAI fallback if configured
+      try {
+        const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+        if (openAIApiKey) {
+          console.log('Calling OpenAI Chat Completions fallback...');
+          const oaRes = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openAIApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              max_tokens: 1800,
+              temperature: 0.7,
+              messages: [
+                { role: 'system', content: 'You are a world-class content strategist and copywriter. Follow instructions precisely and return high-quality markdown.' },
+                { role: 'user', content: contextPrompt }
+              ],
+            }),
+          });
 
-In today's competitive ${industry} landscape, businesses need more than just good intentions to succeed. They need proven strategies that deliver measurable results.
+          console.log('OpenAI response status:', oaRes.status);
+          if (!oaRes.ok) {
+            const errTxt = await oaRes.text();
+            console.error('OpenAI error response:', errTxt);
+            throw new Error(`OpenAI API error: ${oaRes.status} - ${errTxt}`);
+          }
 
-## 1. Optimize Your Customer Experience
+          const oaData = await oaRes.json();
+          const oaText = oaData?.choices?.[0]?.message?.content ?? '';
+          const titleMatch = oaText.match(/Title:\s*(.+)/i);
+          const title = titleMatch ? titleMatch[1].trim() : "AI-Generated Article Idea";
+          const content = oaText.replace(/Title:\s*.+\n?/i, '').trim();
 
-Focus on understanding your customers' pain points and addressing them systematically. Research shows that companies prioritizing customer experience see 60% higher profits.
+          console.log('OpenAI fallback succeeded');
+          return new Response(JSON.stringify({
+            success: true,
+            title,
+            content,
+            fullResponse: oaText,
+            brandBased: !!brandSettings,
+            provider: 'openai'
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } else {
+          console.warn('OPENAI_API_KEY not available; skipping OpenAI fallback');
+        }
+      } catch (openAiErr) {
+        console.error('OpenAI fallback failed:', openAiErr);
+      }
 
-**Action Steps:**
-- Conduct regular customer feedback surveys
-- Map your customer journey
-- Implement feedback loops
+      // Final graceful fallback with variation so it doesn't repeat
+      const intros = [
+        `In today's competitive ${industry} landscape, ${brandName} teams need proven, ${tone} strategies that drive measurable outcomes.`,
+        `The ${industry} space is evolving fast. ${brandName} can win by applying ${tone} playbooks that compound over time.`,
+        `Sustainable growth in ${industry} comes from disciplined execution. Here are ${tone} strategies that work.`,
+      ];
+      const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+      const n = 4 + Math.floor(Math.random() * 3);
+      const fallbackTitle = `${n} ${tone.charAt(0).toUpperCase() + tone.slice(1)} Strategies to Elevate Your ${industry} Results`;
+      const extra5 = n > 4 ? `\n\n## 5. Level Up Distribution\n- Choose two channels and go deep\n- Collaborate with adjacent brands\n- Track contribution to pipeline, not just clicks\n` : '';
+      const extra6 = n > 5 ? `\n## 6. Invest in Platform Foundations\n- Clean data, clear taxonomy, consistent tracking\n- Document systems to reduce single points of failure\n- Monitor leading indicators, not lagging ones\n` : '';
 
-[Learn more about customer experience optimization](customer-experience-guide)
-
-## 2. Leverage Data-Driven Decision Making
-
-Use analytics to guide your business decisions rather than relying on gut feelings alone.
-
-**Key Metrics to Track:**
-- Customer acquisition cost
-- Lifetime value
-- Conversion rates
-- Customer satisfaction scores
-
-![Analytics Dashboard](business-analytics-dashboard)
-
-## 3. Invest in Team Development
-
-Your team is your greatest asset. Companies that invest in employee development see 11% greater profitability.
-
-## 4. Embrace Digital Transformation
-
-Stay competitive by adopting new technologies and processes that streamline operations.
-
-[Read about digital transformation trends](https://example.com/digital-trends)
-
-## 5. Build Strategic Partnerships
-
-Collaborate with complementary businesses to expand your reach and capabilities.
-
-![Partnership Network](business-partnerships-diagram)
-
-## Conclusion
-
-Implementing these five strategies can significantly impact your ${industry} business growth. Start with one area and gradually expand your efforts.
-
-**Keywords used: ${industry} business, customer experience, data-driven decisions, digital transformation, strategic partnerships, business growth**`;
+      const fallbackBody = `## Introduction\n\n${pick(intros)}\n\n## 1. Clarify Outcomes, Then Work Backwards\n- Define one north-star metric\n- Align initiatives to measurable outcomes\n- Review weekly and prune distractions\n\n## 2. Make Customer Insights a Habit\n- Run 5-10 interviews per month\n- Instrument key journeys and remove friction\n- Turn insights into small, shippable experiments\n\n## 3. Operationalize Content That Converts\n- Build topic clusters around revenue keywords\n- Repurpose top posts across formats\n- Refresh and internally link quarterly\n\n## 4. Compound Through Enablement\n- Create repeatable playbooks\n- Standardize templates and QA checklists\n- Automate handoffs to reduce cycle time\n${extra5}${extra6}## Conclusion\n\nAdopt one strategy this week, measure impact, and iterate. Consistency beats intensity for ${industry} teams.\n\n**Keywords used:** ${industry} strategy, ${industry} growth, customer insights, content operations, enablement, distribution${n>4?', platform foundations':''}`;
 
       return new Response(JSON.stringify({
         success: true,
@@ -269,7 +292,8 @@ Implementing these five strategies can significantly impact your ${industry} bus
         content: fallbackBody,
         fullResponse: `Title: ${fallbackTitle}\n\n${fallbackBody}`,
         brandBased: !!brandSettings,
-        fallback: true
+        fallback: true,
+        provider: 'fallback'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
