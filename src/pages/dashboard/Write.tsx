@@ -73,6 +73,11 @@ export default function Write() {
       }
 
       const { data, error } = await supabase.functions.invoke('generate-prompt', {
+        body: {
+          seed: Date.now(),
+          topicHint: title?.trim() || undefined,
+          avoidPhrases: content?.slice(0, 300) || undefined,
+        },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },

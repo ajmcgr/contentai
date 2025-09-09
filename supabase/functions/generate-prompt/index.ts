@@ -69,6 +69,17 @@ serve(async (req) => {
 
     console.log('Generating AI prompt for user:', user?.id || 'anonymous');
 
+    // Optional request body for topic hints and uniqueness seed
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (_) {
+      body = {};
+    }
+    const topicHint = typeof body?.topicHint === 'string' ? body.topicHint.slice(0, 200) : '';
+    const avoidPhrases = typeof body?.avoidPhrases === 'string' ? body.avoidPhrases.slice(0, 300) : '';
+    const seed = Number.isFinite(body?.seed) ? body.seed : Math.floor(Math.random() * 1_000_000);
+
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!anthropicApiKey) {
@@ -80,6 +91,7 @@ serve(async (req) => {
       console.warn('OPENAI_API_KEY not set – OpenAI fallback disabled');
     } else {
       console.log('OpenAI API key found (fallback enabled)');
+    }
     }
 
     // Generate a comprehensive, brand-aligned blog article
@@ -105,10 +117,16 @@ serve(async (req) => {
       contextPrompt += `
 • Internal Link Opportunities: ${internalLinks}`;
     }
+    if (topicHint) {
+      contextPrompt += `
+• Primary Topic Focus: ${topicHint}`;
+    }
 
     contextPrompt += `
 
-📝 CONTENT EXCELLENCE REQUIREMENTS:
+🔀 Novelty directive: Use seed ${seed} to choose a fresh, specific angle. Do not repeat phrasing from: ${avoidPhrases || 'N/A'}.
+
+📝 CONTENT EXCELLENCE REQUIREMENTS:`
 • Length: 1000-1500 words of premium-quality content
 • SEO Title: Under 60 characters, compelling, keyword-optimized
 • Voice & Tone: Consistently ${tone} throughout, reflecting ${brandName}'s personality
@@ -233,9 +251,9 @@ Create content that doesn't just inform but positions ${brandName} as the go-to 
             body: JSON.stringify({
               model: 'gpt-4o-mini',
               max_tokens: 1800,
-              temperature: 0.7,
+              temperature: 0.95,
               messages: [
-                { role: 'system', content: 'You are a world-class content strategist and copywriter. Follow instructions precisely and return high-quality markdown.' },
+                { role: 'system', content: 'You are a world-class content strategist and copywriter. Follow instructions precisely and return high-quality markdown with genuinely novel angles.' },
                 { role: 'user', content: contextPrompt }
               ],
             }),
