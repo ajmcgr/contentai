@@ -65,11 +65,6 @@ serve(async (req) => {
 
     console.log('Content generation request:', { topic, keywords, tone, wordCount, template_id });
 
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not found');
-    }
-
     // Create generation job
     const { data: job, error: jobError } = await supabaseClient
       .from('generation_jobs')
@@ -97,58 +92,76 @@ serve(async (req) => {
       template = templateData;
     }
 
-    // Generate content with GPT-5
+    // Generate content with Claude 4 for better quality
     const keywordString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
     
-    let prompt = `Write a comprehensive, detailed ${userWordCount}-word article on "${topic}" for ${brandName} in the ${industry} industry. This is very important: the article MUST be approximately ${userWordCount} words - aim for this target precisely.
+    let prompt = `You are writing an exceptional ${userWordCount}-word article for ${brandName}, a ${industry} company. This article must be outstanding quality - engaging, authoritative, and perfectly tailored to their brand.
 
-BRAND CONTEXT:
-- Company: ${brandName}
+BRAND IDENTITY & CONTEXT:
+- Company Name: ${brandName}
 - Industry: ${industry}
-- Description: ${brandDescription}
+- Company Description: ${brandDescription}
 - Target Audience: ${targetAudience}
-- Tone: ${userTone}`;
+- Brand Voice & Tone: ${userTone}
+- Article Topic: "${topic}"`;
 
     if (keywordString) {
       prompt += `
-- Focus Keywords: ${keywordString}`;
+- SEO Keywords to integrate naturally: ${keywordString}`;
     }
 
     if (brandSettings?.tags?.length > 0) {
       prompt += `
-- Relevant Topics: ${brandSettings.tags.join(', ')}`;
+- Brand Focus Areas: ${brandSettings.tags.join(', ')}`;
     }
 
     prompt += `
 
-Write the article specifically for this brand and audience. Make it unique and relevant to their business context.`;
+CONTENT REQUIREMENTS:
+- Write EXACTLY ${userWordCount} words (this is critical - count carefully)
+- Use HTML format with semantic heading structure (H1, H2, H3)
+- Create compelling, original content that showcases ${brandName}'s expertise
+- Include actionable insights and real-world examples from the ${industry} industry
+- Naturally integrate the SEO keywords without keyword stuffing
+- Write in ${userTone} tone while maintaining professionalism and authority
+- Make every paragraph valuable - no filler content
+- Include specific data points, statistics, or industry insights where relevant
+- End with a strong call-to-action that drives engagement for ${brandName}
+
+STRUCTURE GUIDELINES:`;
     
     if (template) {
-      prompt += ` Follow this structure: ${JSON.stringify(template.structure)}`;
+      prompt += ` Follow this exact structure: ${JSON.stringify(template.structure)}`;
     } else {
-      prompt += ` Structure the article with:
-1. Engaging introduction that hooks ${targetAudience} (200-300 words)
-2. Well-organized main sections with subheadings (use H2 and H3 tags)
-3. Detailed explanations with actionable insights and real-world examples relevant to ${industry}
-4. Strong conclusion with key takeaways and call-to-action for ${brandName} (150-200 words)
+      prompt += `
+1. Compelling H1 title that includes the main keyword
+2. Engaging introduction (200-250 words) that hooks ${targetAudience} and establishes ${brandName}'s credibility
+3. 3-5 main sections with descriptive H2 headings
+4. Use H3 subheadings to break down complex topics
+5. Strong conclusion (150-200 words) with clear next steps and ${brandName} call-to-action
 
-Write in HTML format with proper heading tags (H1, H2, H3). Make it SEO-optimized, engaging, and informative. Include specific examples relevant to the ${industry} industry. Use a ${userTone} tone throughout. Remember: aim for exactly ${userWordCount} words.`;
+OUTPUT FORMAT: Pure HTML with proper semantic structure. Start with <h1> for the title.
+
+Remember: This article represents ${brandName}'s expertise and thought leadership in ${industry}. Make it exceptional quality that their ${targetAudience} will find genuinely valuable and want to share.`;
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Use Claude 4 for superior content quality
+    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!anthropicApiKey) {
+      throw new Error('Anthropic API key not found');
+    }
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${anthropicApiKey}`,
         'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
-        max_completion_tokens: 6000,
+        model: 'claude-opus-4-20250514',
+        max_tokens: 8000,
         messages: [
-          {
-            role: 'system',
-            content: `You are an expert content writer and SEO specialist who creates high-quality, detailed articles for businesses. Always write in HTML format with proper heading tags. Focus on meeting the exact word count specified. Create unique, brand-specific content that resonates with the target audience and reflects the company's voice and industry expertise.`
-          },
           {
             role: 'user',
             content: prompt
@@ -159,12 +172,12 @@ Write in HTML format with proper heading tags (H1, H2, H3). Make it SEO-optimize
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error('Anthropic API error:', errorText);
+      throw new Error(`Anthropic API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const generatedContent = data.choices[0].message.content;
+    const generatedContent = data.content?.[0]?.text || '';
 
     // Extract title from content or generate one
     const titleMatch = generatedContent.match(/<h1[^>]*>(.+?)<\/h1>/i) || generatedContent.match(/^#\s+(.+)$/m);

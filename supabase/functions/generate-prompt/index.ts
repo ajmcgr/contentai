@@ -73,30 +73,43 @@ serve(async (req) => {
     const description = brandSettings?.description || 'innovative solutions';
     const topics = brandSettings?.tags?.join(', ') || 'industry trends, best practices';
 
-    contextPrompt += `Write a complete, high-quality blog article for ${brandName} in the ${industry} industry.
+    contextPrompt += `Create an exceptional, comprehensive blog article for ${brandName} in the ${industry} industry that showcases their expertise and thought leadership.
 
-TARGET AUDIENCE: ${audience}
-TONE: ${tone}
-COMPANY DESCRIPTION: ${description}
-RELEVANT TOPICS: ${topics}
+BRAND PROFILE:
+- Company: ${brandName}
+- Industry: ${industry}
+- Target Audience: ${audience}
+- Brand Voice: ${tone}
+- Company Description: ${description}
+- Core Topics: ${topics}
 
-REQUIREMENTS:
-- Write a complete article of 800-1200 words
-- Include an SEO-optimized title (under 60 characters)
-- Add 5-8 relevant keywords naturally throughout
-- Include 3-4 internal link suggestions [use format: [anchor text](internal-link-suggestion)]
-- Add 2-3 external link references [use format: [source name](https://example.com)]
-- Suggest 2-3 relevant images with descriptions [use format: ![Alt text](image-description)]
-- Use proper markdown formatting with headers (##, ###)
-- Include actionable tips and insights
-- Add a compelling conclusion with call-to-action
+CONTENT SPECIFICATIONS:
+- Write a premium-quality article of 1000-1500 words
+- Create an SEO-optimized title that's compelling and under 60 characters
+- Naturally integrate 8-12 relevant industry keywords throughout the content
+- Include 4-5 strategic internal link opportunities [format: [anchor text](internal-link-suggestion)]
+- Add 3-4 authoritative external references [format: [source name](https://example.com)]
+- Suggest 3-4 professional images with detailed descriptions [format: ![Alt text](detailed-image-description)]
+- Use sophisticated markdown formatting with clear hierarchy (##, ###, ####)
+- Include data-driven insights, actionable strategies, and real-world examples
+- Add expert tips and industry best practices
+- End with a compelling call-to-action that drives engagement for ${brandName}
 
-FORMAT:
-Title: [SEO-optimized title]
+QUALITY STANDARDS:
+- Demonstrate deep industry knowledge and authority
+- Write with clarity and precision in ${tone} tone
+- Ensure every paragraph adds genuine value
+- Include specific, actionable advice
+- Use compelling storytelling elements where appropriate
+- Make the content shareable and memorable
 
-[Full article content with proper markdown formatting, keywords, links, and image suggestions]
+OUTPUT FORMAT:
+Title: [Compelling SEO-optimized title]
 
-Keywords used: [list the 5-8 keywords you naturally incorporated]`;
+[Exceptional article content with sophisticated markdown formatting, natural keyword integration, strategic link placement, and professional image suggestions]
+
+Keywords strategically used: [list 8-12 keywords naturally incorporated]
+Target audience value: [explain how this specifically serves ${audience}]`;
 
     try {
       console.log('Making request to Anthropic API...');
@@ -108,8 +121,8 @@ Keywords used: [list the 5-8 keywords you naturally incorporated]`;
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 4000,
+          model: 'claude-opus-4-20250514',
+          max_tokens: 8000,
           messages: [
             {
               role: 'user',
