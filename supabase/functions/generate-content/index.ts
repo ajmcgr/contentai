@@ -92,57 +92,92 @@ serve(async (req) => {
       template = templateData;
     }
 
-    // Generate content with Claude 4 for better quality
+    // Generate premium content with Claude Opus 4 - the most capable model
     const keywordString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
     
-    let prompt = `You are writing an exceptional ${userWordCount}-word article for ${brandName}, a ${industry} company. This article must be outstanding quality - engaging, authoritative, and perfectly tailored to their brand.
+    let prompt = `You are an elite content strategist and master copywriter creating premium-quality content for ${brandName}. This will be a comprehensive, expertly-crafted ${userWordCount}-word article that positions ${brandName} as the definitive authority in ${industry}.
 
-BRAND IDENTITY & CONTEXT:
-- Company Name: ${brandName}
-- Industry: ${industry}
-- Company Description: ${brandDescription}
-- Target Audience: ${targetAudience}
-- Brand Voice & Tone: ${userTone}
-- Article Topic: "${topic}"`;
+BRAND IDENTITY (CRITICAL - Must be reflected throughout):
+🏢 Company: ${brandName}
+🎯 Industry: ${industry} 
+📝 Brand Description: ${brandDescription}
+👥 Target Audience: ${targetAudience}
+🗣️ Brand Voice & Tone: ${userTone}
+📰 Article Topic: "${topic}"`;
 
     if (keywordString) {
       prompt += `
-- SEO Keywords to integrate naturally: ${keywordString}`;
+🔍 Priority SEO Keywords: ${keywordString}`;
     }
 
     if (brandSettings?.tags?.length > 0) {
       prompt += `
-- Brand Focus Areas: ${brandSettings.tags.join(', ')}`;
+🎨 Brand Focus Areas: ${brandSettings.tags.join(', ')}`;
+    }
+
+    if (brandSettings?.internal_links?.length > 0) {
+      prompt += `
+🔗 Internal Link Opportunities: ${brandSettings.internal_links.join(', ')}`;
     }
 
     prompt += `
 
-CONTENT REQUIREMENTS:
-- Write EXACTLY ${userWordCount} words (this is critical - count carefully)
-- Use HTML format with semantic heading structure (H1, H2, H3)
-- Create compelling, original content that showcases ${brandName}'s expertise
-- Include actionable insights and real-world examples from the ${industry} industry
-- Naturally integrate the SEO keywords without keyword stuffing
-- Write in ${userTone} tone while maintaining professionalism and authority
-- Make every paragraph valuable - no filler content
-- Include specific data points, statistics, or industry insights where relevant
-- End with a strong call-to-action that drives engagement for ${brandName}
+CONTENT EXCELLENCE STANDARDS:
+✅ EXACTLY ${userWordCount} words (verify final count)
+✅ HTML format with semantic structure (H1, H2, H3, H4)
+✅ Demonstrate deep ${industry} expertise and thought leadership
+✅ Include 3-5 data-driven insights with specific statistics
+✅ Provide 5-7 actionable strategies readers can implement immediately
+✅ Naturally weave SEO keywords throughout (density: 1-2%)
+✅ Maintain consistent ${userTone} voice that reflects ${brandName}'s personality
+✅ Include real-world examples and case studies from ${industry}
+✅ Add expert tips and industry best practices
+✅ Strong, compelling call-to-action that drives ${brandName} engagement
 
-STRUCTURE GUIDELINES:`;
+PREMIUM ARTICLE STRUCTURE:`;
     
     if (template) {
       prompt += ` Follow this exact structure: ${JSON.stringify(template.structure)}`;
     } else {
       prompt += `
-1. Compelling H1 title that includes the main keyword
-2. Engaging introduction (200-250 words) that hooks ${targetAudience} and establishes ${brandName}'s credibility
-3. 3-5 main sections with descriptive H2 headings
-4. Use H3 subheadings to break down complex topics
-5. Strong conclusion (150-200 words) with clear next steps and ${brandName} call-to-action
 
-OUTPUT FORMAT: Pure HTML with proper semantic structure. Start with <h1> for the title.
+1. 📍 COMPELLING H1 TITLE
+   - Include primary keyword naturally
+   - Promise clear value to ${targetAudience}
+   - Under 60 characters for SEO
 
-Remember: This article represents ${brandName}'s expertise and thought leadership in ${industry}. Make it exceptional quality that their ${targetAudience} will find genuinely valuable and want to share.`;
+2. 🎯 POWERFUL INTRODUCTION (250-300 words)
+   - Hook with industry statistic or compelling question
+   - Establish ${brandName}'s authority and credibility
+   - Preview the value readers will gain
+   - Include primary keyword in first paragraph
+
+3. 💡 MAIN CONTENT SECTIONS (4-6 H2 sections)
+   - Each section: 200-300 words
+   - Start each with data/statistic
+   - Include actionable strategies
+   - Use H3 subheadings for complex topics
+   - Integrate keywords naturally
+
+4. 🏆 EXPERT INSIGHTS & CASE STUDIES
+   - Include 2-3 real-world examples
+   - Add industry-specific best practices
+   - Quote relevant statistics and research
+
+5. 📈 STRONG CONCLUSION (200-250 words)
+   - Summarize key takeaways
+   - Reinforce ${brandName}'s expertise
+   - Clear, compelling call-to-action
+   - Encourage engagement (contact, consultation, etc.)
+
+OUTPUT REQUIREMENTS:
+🔧 Pure HTML with semantic structure (start with <h1>)
+🎨 Rich formatting: bold, italic, lists, blockquotes
+📊 Include specific metrics and data points
+🔗 Suggest internal link opportunities where relevant
+💬 Write in authentic ${userTone} voice throughout
+
+QUALITY CHECK: This article should position ${brandName} as the go-to expert in ${industry}, providing immense value to ${targetAudience} while subtly showcasing ${brandName}'s solutions and expertise.`;
     }
 
     // Use Claude 4 for superior content quality
