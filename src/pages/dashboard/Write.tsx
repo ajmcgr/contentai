@@ -61,7 +61,7 @@ export default function Write() {
     setShowWarningDialog(true);
   };
 
-  const generatePrompt = async () => {
+  const generatePrompt = async (opts?: { useTitleAsTopic?: boolean }) => {
     setShowWarningDialog(false);
     setIsGenerating(true);
     try {
@@ -72,12 +72,15 @@ export default function Write() {
         throw new Error('Please sign in to generate AI articles');
       }
 
+      const useTitleAsTopic = !!opts?.useTitleAsTopic && !!title?.trim();
+      const requestBody = {
+        seed: Date.now(),
+        topicHint: useTitleAsTopic ? title.trim() : undefined,
+        avoidPhrases: [title, content].filter(Boolean).join(' ').slice(0, 600) || undefined,
+      };
+
       const { data, error } = await supabase.functions.invoke('generate-prompt', {
-        body: {
-          seed: Date.now(),
-          topicHint: title?.trim() || undefined,
-          avoidPhrases: content?.slice(0, 300) || undefined,
-        },
+        body: requestBody,
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -385,7 +388,7 @@ export default function Write() {
                   {!isGenerating && (title || content) && (
                     <Button 
                       variant="outline" 
-                      onClick={generatePrompt}
+                      onClick={() => generatePrompt({ useTitleAsTopic: false })}
                       disabled={isGenerating}
                     >
                       {isGenerating ? (
@@ -465,10 +468,10 @@ export default function Write() {
       </div>
     </SidebarProvider>
 
-    <GenerationWarningDialog
+      <GenerationWarningDialog
       open={showWarningDialog}
       onOpenChange={setShowWarningDialog}
-      onConfirm={generatePrompt}
+      onConfirm={() => generatePrompt({ useTitleAsTopic: Boolean(title?.trim()) })}
     />
     </>
   );
