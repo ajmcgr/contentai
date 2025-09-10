@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 export const PricingSection = () => {
   return (
-    <div className="py-20 bg-gray-50">
+    <div className="py-20" style={{ backgroundColor: 'hsl(var(--section-white))' }}>
       <div className="max-w-5xl mx-auto px-6">
         <h2 className="text-4xl font-reckless text-center mb-12">Simple, Transparent Pricing</h2>
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">

@@ -2,7 +2,7 @@ import { Globe, Edit3, Hash, Globe2, Users, Headphones } from "lucide-react";
 
 export const AdditionalFeaturesSection = () => {
   return (
-    <div className="py-20 bg-gray-50">
+    <div className="py-20" style={{ backgroundColor: 'hsl(var(--section-white))' }}>
       <div className="max-w-4xl mx-auto px-6">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="text-center p-6">

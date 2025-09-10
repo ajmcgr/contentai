@@ -15,12 +15,12 @@ export const ComparisonSection = () => {
   ];
 
   return (
-    <div className="py-16 md:py-20 bg-muted/30">
+    <div className="py-16 md:py-20" style={{ backgroundColor: 'hsl(var(--comparison-bg))' }}>
       <div className="max-w-5xl mx-auto px-4 md:px-6">
-        <h2 className="text-3xl md:text-4xl font-reckless text-center mb-4 md:mb-8">
+        <h2 className="text-3xl md:text-4xl font-reckless text-center mb-4 md:mb-8 text-white">
           Why Choose Us Over ChatGPT?
         </h2>
-        <p className="text-base md:text-lg text-muted-foreground text-center max-w-2xl mx-auto mb-8 md:mb-12">
+        <p className="text-base md:text-lg text-white/80 text-center max-w-2xl mx-auto mb-8 md:mb-12">
           See how our specialized blog content platform compares to generic AI tools
         </p>
         
