@@ -40,10 +40,14 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
 
   const checkSubscriptionStatus = async () => {
     try {
+      console.log('[SubscriptionContext] Starting checkSubscriptionStatus');
       setSubscriptionStatus(prev => ({ ...prev, loading: true }));
       
       const { data: { user: currentUser } } = await supabase.auth.getUser();
+      console.log('[SubscriptionContext] Got user:', currentUser?.id);
+      
       if (!currentUser) {
+        console.log('[SubscriptionContext] No user found, setting free plan');
         setSubscriptionStatus({
           subscribed: false,
           planType: 'free',
@@ -54,7 +58,9 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       }
 
       // Check subscription status via edge function
+      console.log('[SubscriptionContext] Calling verify-payment function');
       const { data, error } = await supabase.functions.invoke('verify-payment');
+      console.log('[SubscriptionContext] verify-payment response:', { data, error });
       
       if (error) {
         console.error('Error checking subscription:', error);
@@ -67,6 +73,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         return;
       }
 
+      console.log('[SubscriptionContext] Setting subscription status:', data);
       setSubscriptionStatus({
         subscribed: data.subscribed || false,
         planType: data.plan_type || 'free',
