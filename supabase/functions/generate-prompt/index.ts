@@ -82,6 +82,9 @@ serve(async (req) => {
 
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY') || '';
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     if (!anthropicApiKey) {
       console.warn('ANTHROPIC_API_KEY not set – Anthropic primary disabled');
     } else {
@@ -92,6 +95,11 @@ serve(async (req) => {
     } else {
       console.log('OpenAI API key found (fallback enabled)');
     }
+    if (!perplexityApiKey) {
+      console.warn('PERPLEXITY_API_KEY not set – external backlink discovery disabled');
+    } else {
+      console.log('Perplexity API key found');
+    }
 
     // Generate a comprehensive, brand-aligned blog article
     const brandName = brandSettings?.brand_name || 'our company';
@@ -101,6 +109,40 @@ serve(async (req) => {
     const description = brandSettings?.description || 'innovative solutions';
     const topics = brandSettings?.tags?.join(', ') || 'industry trends, best practices';
     const internalLinks = brandSettings?.internal_links?.join(', ') || '';
+
+    // Discover authoritative external URLs with Perplexity
+    let relevantUrls: string[] = [];
+    try {
+      if (perplexityApiKey) {
+        const query = `${topicHint || topics} ${industry} resources articles guides ${new Date().getUTCFullYear()}`.slice(0, 200);
+        const pxRes = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${perplexityApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.1-sonar-small-128k-online',
+            messages: [
+              { role: 'system', content: 'Return only high-quality, relevant URLs—one per line. No commentary.' },
+              { role: 'user', content: query }
+            ],
+            temperature: 0.2,
+            max_tokens: 500,
+            return_images: false,
+            return_related_questions: false,
+            search_recency_filter: 'month'
+          }),
+        });
+        if (pxRes.ok) {
+          const pxJson = await pxRes.json();
+          const urlsText = pxJson?.choices?.[0]?.message?.content || '';
+          relevantUrls = urlsText.split('\n').map((l: string) => l.trim()).filter((l: string) => /^https?:\/\//.test(l)).slice(0, 3);
+        }
+      }
+    } catch (e) {
+      console.warn('Perplexity URL discovery failed:', e);
+    }
 
     let contextPrompt = `You are Claude Opus 4, the world's most advanced AI content strategist and copywriter. You're tasked with creating an exceptional, comprehensive blog article that positions ${brandName} as the definitive thought leader in ${industry}.
 
@@ -177,7 +219,32 @@ Title: [Your compelling SEO-optimized title here]
 Keywords Used: [List 8-12 strategically integrated keywords]
 Brand Alignment: [Brief note on how this serves ${audience} and reflects ${brandName}'s expertise]
 
-Create content that doesn't just inform but positions ${brandName} as the go-to authority in ${industry}, driving engagement and establishing thought leadership.`;
+    Create content that doesn't just inform but positions ${brandName} as the go-to authority in ${industry}, driving engagement and establishing thought leadership.`;
+
+    // Override with refined prompt enforcing real backlinks and no boilerplate
+    contextPrompt = `You are a world-class content strategist. Generate a premium-quality 1200-1600 word article for ${brandName} in ${industry}.
+
+BRAND:
+- Name: ${brandName}
+- Industry: ${industry}
+- Audience: ${audience}
+- Voice: ${tone}
+- Focus: ${topics}
+
+TOPIC: ${topicHint || 'Choose a high-value angle within the focus areas'}
+
+REQUIREMENTS:
+- Use rich markdown with H1 title, H2/H3 structure, lists, and quotes
+- Include specific recent statistics with source attribution
+- NO meta sections like 'Keywords Used' or 'Brand Alignment'
+- NO placeholder text or example.com links
+${relevantUrls.length > 0 ? `- Include 2-3 natural backlinks using ONLY these URLs: ${relevantUrls.join(', ')}. Use descriptive anchor text.` : '- If no relevant URLs available, do not add external links.'}
+
+OUTPUT FORMAT:
+Title: [Compelling SEO title under 60 chars]
+
+[Body markdown starts here]
+`;
 
     try {
       console.log('Making request to Anthropic API...');
@@ -238,13 +305,62 @@ Create content that doesn't just inform but positions ${brandName} as the go-to 
         .replace(/^\s*#\s+.+\n?/, '')
         .trim();
 
-      const title = extractedTitle || "New Article";
-      const content = extractedContent;
+      // Clean and enhance content (remove boilerplate, ensure backlinks, add image)
+      const removeSection = (source: string, heading: string) => {
+        const regex = new RegExp(`(^|\n)#{1,6}\\s*${heading}[\\s\\S]*?(?=\n#{1,6}\\s|$)`, 'gi');
+        return source.replace(regex, '\n');
+      };
+
+      let clean = content;
+      clean = removeSection(clean, 'Keywords Used');
+      clean = removeSection(clean, 'Brand Alignment');
+      clean = clean.replace(/.*This article demonstrates[^\n]*\n?/gi, '');
+      clean = clean.replace(/.*positions our company as[^\n]*\n?/gi, '');
+
+      try {
+        const linkMatches = clean.match(/\[[^\]]+\]\(https?:\/\/[^)]+\)/g) || [];
+        if (relevantUrls.length > 0 && linkMatches.length < 2) {
+          const linksToAdd = relevantUrls.slice(0, 3);
+          const list = linksToAdd.map((u) => `- [${u.replace(/^https?:\/\//, '').split('/')[0]}](${u})`).join("\n");
+          clean += `\n\n## Further reading\n${list}\n`;
+        }
+      } catch (_) {}
+
+      let finalContent = clean;
+      try {
+        if (openAIApiKey && supabaseUrl && serviceRoleKey) {
+          const imagePrompt = `A professional, high-quality image representing: ${title}. Style: ${industry} related, clean, modern, suitable for business content.`;
+          const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${openAIApiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'gpt-image-1', prompt: imagePrompt, n: 1, size: '1024x1024', quality: 'high', response_format: 'b64_json' })
+          });
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json();
+            const b64 = imageData?.data?.[0]?.b64_json as string | undefined;
+            if (b64) {
+              const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+              const fileName = `editor-generated/${user?.id || 'anonymous'}/${Date.now()}.png`;
+              const admin = createClient(supabaseUrl, serviceRoleKey);
+              const { error: uploadError } = await admin.storage
+                .from('generated-images')
+                .upload(fileName, bytes, { contentType: 'image/png', upsert: false });
+              if (!uploadError) {
+                const { data: publicUrlData } = admin.storage.from('generated-images').getPublicUrl(fileName);
+                const imageUrl = publicUrlData.publicUrl;
+                finalContent = `![${title} — featured image](${imageUrl})\n\n${clean}`;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Image generation failed:', err);
+      }
 
       return new Response(JSON.stringify({
         success: true,
         title,
-        content,
+        content: finalContent,
         fullResponse: generatedContent,
         brandBased: !!brandSettings
       }), {
@@ -307,11 +423,61 @@ Create content that doesn't just inform but positions ${brandName} as the go-to 
             .replace(/^\s*#\s+.+\n?/, '')
             .trim();
 
+          // Clean and enhance content in OpenAI fallback
+          const removeSection = (source: string, heading: string) => {
+            const regex = new RegExp(`(^|\n)#{1,6}\\s*${heading}[\\s\\S]*?(?=\n#{1,6}\\s|$)`, 'gi');
+            return source.replace(regex, '\n');
+          };
+          let clean = content;
+          clean = removeSection(clean, 'Keywords Used');
+          clean = removeSection(clean, 'Brand Alignment');
+          clean = clean.replace(/.*This article demonstrates[^\n]*\n?/gi, '');
+          clean = clean.replace(/.*positions our company as[^\n]*\n?/gi, '');
+          try {
+            const linkMatches = clean.match(/\[[^\]]+\]\(https?:\/\/[^)]+\)/g) || [];
+            if (relevantUrls.length > 0 && linkMatches.length < 2) {
+              const linksToAdd = relevantUrls.slice(0, 3);
+              const list = linksToAdd.map((u) => `- [${u.replace(/^https?:\/\//, '').split('/')[0]}](${u})`).join("\n");
+              clean += `\n\n## Further reading\n${list}\n`;
+            }
+          } catch (_) {}
+
+          let finalContent = clean;
+          try {
+            if (openAIApiKey && supabaseUrl && serviceRoleKey) {
+              const imagePrompt = `A professional, high-quality image representing: ${title}. Style: ${industry} related, clean, modern, suitable for business content.`;
+              const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${openAIApiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'gpt-image-1', prompt: imagePrompt, n: 1, size: '1024x1024', quality: 'high', response_format: 'b64_json' })
+              });
+              if (imageResponse.ok) {
+                const imageData = await imageResponse.json();
+                const b64 = imageData?.data?.[0]?.b64_json as string | undefined;
+                if (b64) {
+                  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+                  const fileName = `editor-generated/${user?.id || 'anonymous'}/${Date.now()}.png`;
+                  const admin = createClient(supabaseUrl, serviceRoleKey);
+                  const { error: uploadError } = await admin.storage
+                    .from('generated-images')
+                    .upload(fileName, bytes, { contentType: 'image/png', upsert: false });
+                  if (!uploadError) {
+                    const { data: publicUrlData } = admin.storage.from('generated-images').getPublicUrl(fileName);
+                    const imageUrl = publicUrlData.publicUrl;
+                    finalContent = `![${title} — featured image](${imageUrl})\n\n${clean}`;
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('Image generation failed (fallback path):', err);
+          }
+
           console.log('OpenAI fallback succeeded');
           return new Response(JSON.stringify({
             success: true,
             title,
-            content,
+            content: finalContent,
             fullResponse: oaText,
             brandBased: !!brandSettings,
             provider: 'openai'
