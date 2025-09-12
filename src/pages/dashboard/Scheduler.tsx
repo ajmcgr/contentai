@@ -52,15 +52,20 @@ export default function Scheduler() {
           setTopics(['Content strategy', 'SEO tips', 'Industry news']);
           return;
         }
-        const { data } = await supabase
-          .from('brand_settings')
-          .select('tags')
+        const { data, error } = await supabase
+          .from('topics')
+          .select('name')
           .eq('user_id', user.id)
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (data?.tags && Array.isArray(data.tags) && data.tags.length > 0) {
-          setTopics(data.tags as string[]);
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error('Error fetching topics:', error);
+          setTopics(['Content strategy', 'SEO tips', 'Industry news']);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          setTopics(data.map(topic => topic.name));
         } else {
           setTopics(['Content strategy', 'SEO tips', 'Industry news']);
         }

@@ -19,7 +19,7 @@ import {
 
 const navigationItems = [
   { title: "Write", url: "/dashboard/write", icon: PenTool },
-  { title: "Article", url: "/dashboard", icon: FileText },
+  { title: "Articles", url: "/dashboard", icon: FileText },
   { title: "Topics", url: "/dashboard/topics", icon: Tags },
   { title: "Scheduler", url: "/dashboard/scheduler", icon: Calendar },
   { title: "Backlinks", url: "/dashboard/backlinks", icon: Link },
