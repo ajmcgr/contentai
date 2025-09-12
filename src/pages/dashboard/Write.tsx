@@ -388,7 +388,7 @@ export default function Write() {
                   {!isGenerating && (title || content) && (
                     <Button 
                       variant="outline" 
-                      onClick={() => generatePrompt({ useTitleAsTopic: false })}
+                      onClick={handleGenerateClick}
                       disabled={isGenerating}
                     >
                       {isGenerating ? (
