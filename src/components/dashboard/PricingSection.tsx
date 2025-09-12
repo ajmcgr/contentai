@@ -19,7 +19,7 @@ export const PricingSection = () => {
             <div className="space-y-3 mb-6">
               <div className="flex items-start gap-3">
                 <Check className="text-primary w-5 h-5 mt-0.5 flex-shrink-0" />
-                <span>50 Articles per month</span>
+                <span>3 Articles per month</span>
               </div>
               <div className="flex items-start gap-3">
                 <Check className="text-primary w-5 h-5 mt-0.5 flex-shrink-0" />
