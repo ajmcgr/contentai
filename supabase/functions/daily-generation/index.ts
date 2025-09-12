@@ -285,6 +285,7 @@ Title: [Compelling SEO title under 60 chars]
 
       // Generate and add featured image
       try {
+        console.log(`Generating image for article: ${title}`);
         const imagePrompt = `A professional, high-quality image representing: ${title}. Style: ${industry} related, clean, modern, suitable for business content.`;
         
         const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
@@ -298,16 +299,21 @@ Title: [Compelling SEO title under 60 chars]
             prompt: imagePrompt,
             n: 1,
             size: '1024x1024',
-            quality: 'high'
+            quality: 'high',
+            output_format: 'png'
           }),
         });
 
         if (imageResponse.ok) {
           const imageData = await imageResponse.json();
+          console.log('Image generation response received:', { success: true, hasData: !!imageData.data });
+          
           if (imageData.data && imageData.data[0]) {
-            // Get the base64 image data and convert to blob for storage
-            const base64Data = imageData.data[0].b64_json;
-            if (base64Data) {
+            // gpt-image-1 returns base64 data directly, not in b64_json field
+            const base64Data = imageData.data[0].b64_json || imageData.data[0].revised_prompt ? null : imageData.data[0];
+            
+            if (base64Data && typeof base64Data === 'string') {
+              console.log('Converting base64 to blob for storage');
               const imageBlob = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
               const fileName = `auto-generated/${userId}/${Date.now()}.png`;
               
@@ -320,6 +326,7 @@ Title: [Compelling SEO title under 60 chars]
                 });
 
               if (!uploadError) {
+                console.log('Image uploaded successfully:', fileName);
                 // Get public URL and update article
                 const { data: publicUrlData } = admin.storage
                   .from('generated-images')
@@ -329,12 +336,23 @@ Title: [Compelling SEO title under 60 chars]
                   .from('articles')
                   .update({ featured_image_url: publicUrlData.publicUrl })
                   .eq('id', article.id);
+                
+                console.log('Article updated with image URL:', publicUrlData.publicUrl);
+              } else {
+                console.error('Storage upload error:', uploadError);
               }
+            } else {
+              console.warn('No valid base64 data found in response:', imageData.data[0]);
             }
+          } else {
+            console.warn('No image data in response');
           }
+        } else {
+          const errorText = await imageResponse.text();
+          console.error('Image generation failed:', imageResponse.status, errorText);
         }
       } catch (imageError) {
-        console.warn('Failed to generate image for article:', imageError);
+        console.error('Failed to generate image for article:', imageError);
         // Continue without image - don't fail the entire process
       }
 
