@@ -201,6 +201,7 @@ REQUIREMENTS:
 - Keep the voice consistently ${tone}
 - DO NOT include any placeholder images or example.com links
 - DO NOT suggest image uploads or external image links
+- Do NOT include meta sections like 'Keywords Used', 'Brand Alignment', or any marketing boilerplate (e.g., 'This article demonstrates our expertise')
 ${relevantUrls.length > 0 ? `- IMPORTANT: Include 2-3 natural backlinks using these authoritative URLs: ${relevantUrls.join(", ")}. Format as: [relevant anchor text](URL)` : "- Focus on valuable content without external links"}
 
 OUTPUT FORMAT:
@@ -265,6 +266,31 @@ Title: [Compelling SEO title under 60 chars]
         .replace(/^\s*#\s+.+\n?/, "")
         .trim();
 
+      // Remove unwanted meta sections
+      const removeSection = (source: string, heading: string) => {
+        const regex = new RegExp(`(^|\n)#{1,6}\\s*${heading}[\\s\\S]*?(?=\n#{1,6}\\s|$)`, "gi");
+        return source.replace(regex, "\n");
+      };
+      body = removeSection(body, "Keywords Used");
+      body = removeSection(body, "Brand Alignment");
+
+      // Remove boilerplate marketing lines
+      body = body.replace(/.*This article demonstrates[^\n]*\n?/gi, "");
+      body = body.replace(/.*positions our company as[^\n]*\n?/gi, "");
+
+      // Ensure backlinks exist (fallback insertion)
+      try {
+        const linkMatches = body.match(/\[[^\]]+\]\(https?:\/\/[^)]+\)/g) || [];
+        if (relevantUrls.length > 0 && linkMatches.length < 2) {
+          const linksToAdd = relevantUrls.slice(0, 3);
+          const list = linksToAdd.map((u) => `- [${u.replace(/^https?:\\/\\\//,'').split('/')[0]}](${u})`).join("\n");
+          body += `\n\n## Further reading\n${list}\n`;
+        }
+      } catch (e) {
+        console.warn('Failed to inject fallback backlinks:', e);
+      }
+
+
       // Insert article with appropriate status based on user preference
       const articleStatus = shouldAutoPublish ? "published" : "draft";
       const publishedAt = shouldAutoPublish ? new Date().toISOString() : null;
@@ -300,7 +326,8 @@ Title: [Compelling SEO title under 60 chars]
             n: 1,
             size: '1024x1024',
             quality: 'high',
-            output_format: 'png'
+            output_format: 'png',
+            response_format: 'b64_json'
           }),
         });
 
@@ -309,18 +336,24 @@ Title: [Compelling SEO title under 60 chars]
           console.log('Image generation response received:', { success: true, hasData: !!imageData.data });
           
           if (imageData.data && imageData.data[0]) {
-            // gpt-image-1 returns base64 data directly, not in b64_json field
-            const base64Data = imageData.data[0].b64_json || imageData.data[0].revised_prompt ? null : imageData.data[0];
-            
-            if (base64Data && typeof base64Data === 'string') {
+            const b64 = imageData?.data?.[0]?.b64_json as string | undefined;
+            let imageBytes: Uint8Array | null = null;
+            if (b64) {
               console.log('Converting base64 to blob for storage');
-              const imageBlob = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+              imageBytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+            } else if (imageData?.data?.[0]?.url) {
+              console.log('Downloading image from URL for storage');
+              const urlResp = await fetch(imageData.data[0].url);
+              const arr = new Uint8Array(await urlResp.arrayBuffer());
+              imageBytes = arr;
+            }
+
+            if (imageBytes) {
               const fileName = `auto-generated/${userId}/${Date.now()}.png`;
-              
               // Store in Supabase Storage
-              const { data: uploadData, error: uploadError } = await admin.storage
+              const { error: uploadError } = await admin.storage
                 .from('generated-images')
-                .upload(fileName, imageBlob, {
+                .upload(fileName, imageBytes, {
                   contentType: 'image/png',
                   upsert: false
                 });
@@ -331,18 +364,21 @@ Title: [Compelling SEO title under 60 chars]
                 const { data: publicUrlData } = admin.storage
                   .from('generated-images')
                   .getPublicUrl(fileName);
-                
+
+                const imageUrl = publicUrlData.publicUrl;
+                const imageMarkdown = `![${title} — featured image](${imageUrl})`;
+                const updatedContent = `${imageMarkdown}\n\n${body}`;
                 await admin
                   .from('articles')
-                  .update({ featured_image_url: publicUrlData.publicUrl })
+                  .update({ featured_image_url: imageUrl, content: updatedContent })
                   .eq('id', article.id);
-                
-                console.log('Article updated with image URL:', publicUrlData.publicUrl);
+
+                console.log('Article updated with image URL and embedded image');
               } else {
                 console.error('Storage upload error:', uploadError);
               }
             } else {
-              console.warn('No valid base64 data found in response:', imageData.data[0]);
+              console.warn('No image bytes available from generation response');
             }
           } else {
             console.warn('No image data in response');
