@@ -559,6 +559,10 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: boolean
       }
+      trigger_daily_generation: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
