@@ -64,3 +64,6 @@ verify_jwt = false
 
 [functions.generate-prompt]
 verify_jwt = true
+
+[functions.daily-generation]
+verify_jwt = false
