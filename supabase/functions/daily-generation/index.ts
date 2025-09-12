@@ -144,7 +144,6 @@ BRAND:
 - Audience: ${audience}
 - Tone: ${tone}
 - Focus Areas: ${tagList.join(", ") || "general insights"}
-${internalLinksList.length ? `- Internal Links: ${internalLinksList.join(", ")}` : ""}
 
 TOPIC: ${topic}
 
@@ -154,6 +153,7 @@ REQUIREMENTS:
 - Provide actionable steps and real-world examples
 - Strong conclusion with call-to-action for ${brandName}
 - Keep the voice consistently ${tone}
+${internalLinksList.length ? `- IMPORTANT: Include 2-3 natural backlinks from these URLs: ${internalLinksList.join(", ")}. Format as: [relevant anchor text](URL)` : ""}
 
 OUTPUT FORMAT:
 Title: [Compelling SEO title under 60 chars]
@@ -234,6 +234,61 @@ Title: [Compelling SEO title under 60 chars]
         .single();
 
       if (articleErr) throw articleErr;
+
+      // Generate and add featured image
+      try {
+        const imagePrompt = `A professional, high-quality image representing: ${title}. Style: ${industry} related, clean, modern, suitable for business content.`;
+        
+        const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-image-1',
+            prompt: imagePrompt,
+            n: 1,
+            size: '1024x1024',
+            quality: 'high'
+          }),
+        });
+
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.json();
+          if (imageData.data && imageData.data[0]) {
+            // Get the base64 image data and convert to blob for storage
+            const base64Data = imageData.data[0].b64_json;
+            if (base64Data) {
+              const imageBlob = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+              const fileName = `auto-generated/${userId}/${Date.now()}.png`;
+              
+              // Store in Supabase Storage
+              const { data: uploadData, error: uploadError } = await admin.storage
+                .from('generated-images')
+                .upload(fileName, imageBlob, {
+                  contentType: 'image/png',
+                  upsert: false
+                });
+
+              if (!uploadError) {
+                // Get public URL and update article
+                const { data: publicUrlData } = admin.storage
+                  .from('generated-images')
+                  .getPublicUrl(fileName);
+                
+                await admin
+                  .from('articles')
+                  .update({ featured_image_url: publicUrlData.publicUrl })
+                  .eq('id', article.id);
+              }
+            }
+          }
+        }
+      } catch (imageError) {
+        console.warn('Failed to generate image for article:', imageError);
+        // Continue without image - don't fail the entire process
+      }
 
       // Update job status
       if (jobId) {
