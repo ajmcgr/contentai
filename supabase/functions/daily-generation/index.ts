@@ -149,11 +149,13 @@ TOPIC: ${topic}
 
 REQUIREMENTS:
 - Rich markdown with H1 title, H2/H3 sections, lists, and quotes
-- Include specific statistics and references
+- Include specific statistics and references from reputable sources
 - Provide actionable steps and real-world examples
 - Strong conclusion with call-to-action for ${brandName}
 - Keep the voice consistently ${tone}
-${internalLinksList.length ? `- IMPORTANT: Include 2-3 natural backlinks from these URLs: ${internalLinksList.join(", ")}. Format as: [relevant anchor text](URL)` : ""}
+- DO NOT include any placeholder images or example.com links
+- DO NOT suggest image uploads or external image links
+${internalLinksList.length ? `- IMPORTANT: Include 2-3 natural backlinks using ONLY these exact URLs: ${internalLinksList.join(", ")}. Format as: [relevant anchor text](URL)` : "- Focus on valuable content without external links"}
 
 OUTPUT FORMAT:
 Title: [Compelling SEO title under 60 chars]
