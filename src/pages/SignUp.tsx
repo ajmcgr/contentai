@@ -95,7 +95,7 @@ export const SignUp = () => {
       const { error: emailError } = await supabase.functions.invoke('send-email-with-config', {
         body: {
           to: email,
-          subject: "Verify your TryContent account",
+          subject: "Welcome to Content AI",
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h1 style="color: #333; text-align: center;">Welcome to TryContent!</h1>
