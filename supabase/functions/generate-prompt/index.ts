@@ -126,12 +126,12 @@ serve(async (req) => {
 
 🔀 Novelty directive: Use seed ${seed} to choose a fresh, specific angle. Do not repeat phrasing from: ${avoidPhrases || 'N/A'}.
 
-📝 CONTENT EXCELLENCE REQUIREMENTS:`
-• Length: 1000-1500 words of premium-quality content
-• SEO Title: Under 60 characters, compelling, keyword-optimized
-• Voice & Tone: Consistently ${tone} throughout, reflecting ${brandName}'s personality
-• Expertise Level: Demonstrate deep ${industry} knowledge and authority
-• Value Delivery: Every paragraph must provide genuine, actionable insights
+📝 CONTENT EXCELLENCE REQUIREMENTS:
+- Length: 1000-1500 words of premium-quality content
+- SEO Title: Under 60 characters, compelling, keyword-optimized
+- Voice & Tone: Consistently ${tone} throughout, reflecting ${brandName}'s personality
+- Expertise Level: Demonstrate deep ${industry} knowledge and authority
+- Value Delivery: Every paragraph must provide genuine, actionable insights
 
 🏗️ CONTENT STRUCTURE:
 1. **Compelling H1 Title** (Include primary keyword, under 60 chars)
@@ -154,13 +154,13 @@ serve(async (req) => {
    - Compelling call-to-action
 
 🎨 FORMATTING & ENHANCEMENT:
-• Rich markdown: **bold**, *italic*, > blockquotes, - lists
-• Strategic keyword integration (8-12 keywords, 1-2% density)
-• 4-5 internal link suggestions: [anchor text](internal-page-suggestion)
-• 3-4 external references: [Source Name](https://example.com)
-• 3-4 image suggestions: ![Professional alt text](detailed-image-description)
-• Data-driven insights with specific statistics
-• Compelling storytelling elements
+- Rich markdown: **bold**, *italic*, > blockquotes, - lists
+- Strategic keyword integration (8-12 keywords, 1-2% density)
+- 4-5 internal link suggestions: [anchor text](internal-page-suggestion)
+- 3-4 external references: [Source Name](https://example.com)
+- 3-4 image suggestions: ![Professional alt text](detailed-image-description)
+- Data-driven insights with specific statistics
+- Compelling storytelling elements
 
 🎯 BRAND ALIGNMENT CHECKLIST:
 ✅ Does this sound like ${brandName}?
