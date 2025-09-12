@@ -30,6 +30,7 @@ serve(async (req) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
   const openAIApiKey = Deno.env.get("OPENAI_API_KEY") ?? "";
+  const perplexityApiKey = Deno.env.get("PERPLEXITY_API_KEY") ?? "";
 
   if (!supabaseUrl || !serviceRoleKey) {
     console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars");
@@ -134,6 +135,51 @@ serve(async (req) => {
       const wordCount = articleLength === "short" ? 1000 : articleLength === "long" ? 1800 : 1400;
       const shouldAutoPublish = s.autoPublish === true;
 
+      // Fetch relevant URLs using Perplexity API
+      let relevantUrls: string[] = [];
+      try {
+        if (perplexityApiKey) {
+          const searchQuery = `${topic} ${industry} resources articles guides 2024`;
+          const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${perplexityApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'llama-3.1-sonar-small-128k-online',
+              messages: [
+                {
+                  role: 'system',
+                  content: 'Find 3-5 high-quality, authoritative URLs related to the search query. Return only the URLs, one per line, without any additional text or formatting.'
+                },
+                {
+                  role: 'user',
+                  content: searchQuery
+                }
+              ],
+              temperature: 0.2,
+              max_tokens: 500,
+              return_images: false,
+              return_related_questions: false,
+              search_recency_filter: 'month'
+            }),
+          });
+
+          if (perplexityResponse.ok) {
+            const perplexityData = await perplexityResponse.json();
+            const urlsText = perplexityData?.choices?.[0]?.message?.content || "";
+            relevantUrls = urlsText
+              .split('\n')
+              .filter((line: string) => line.trim().startsWith('http'))
+              .slice(0, 3); // Limit to 3 URLs
+          }
+        }
+      } catch (urlError) {
+        console.warn('Failed to fetch relevant URLs:', urlError);
+        // Continue without external URLs
+      }
+
       // Build a strong prompt (markdown output)
       let contextPrompt = `You are an elite content strategist. Generate a premium-quality ${wordCount}-word article for ${brandName} in ${industry}.
 
@@ -155,7 +201,7 @@ REQUIREMENTS:
 - Keep the voice consistently ${tone}
 - DO NOT include any placeholder images or example.com links
 - DO NOT suggest image uploads or external image links
-${internalLinksList.length ? `- IMPORTANT: Include 2-3 natural backlinks using ONLY these exact URLs: ${internalLinksList.join(", ")}. Format as: [relevant anchor text](URL)` : "- Focus on valuable content without external links"}
+${relevantUrls.length > 0 ? `- IMPORTANT: Include 2-3 natural backlinks using these authoritative URLs: ${relevantUrls.join(", ")}. Format as: [relevant anchor text](URL)` : "- Focus on valuable content without external links"}
 
 OUTPUT FORMAT:
 Title: [Compelling SEO title under 60 chars]
