@@ -92,7 +92,6 @@ serve(async (req) => {
     } else {
       console.log('OpenAI API key found (fallback enabled)');
     }
-    }
 
     // Generate a comprehensive, brand-aligned blog article
     const brandName = brandSettings?.brand_name || 'our company';
