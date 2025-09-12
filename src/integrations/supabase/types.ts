@@ -319,6 +319,36 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_usage: {
+        Row: {
+          articles_created: number
+          created_at: string
+          id: string
+          max_articles: number
+          month_year: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          articles_created?: number
+          created_at?: string
+          id?: string
+          max_articles?: number
+          month_year: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          articles_created?: number
+          created_at?: string
+          id?: string
+          max_articles?: number
+          month_year?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       oauth_states: {
         Row: {
           expires_at: string
@@ -540,6 +570,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_create_article: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
       cleanup_expired_oauth_states: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -549,6 +583,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      increment_monthly_usage: {
+        Args: { user_uuid: string }
         Returns: boolean
       }
       increment_trial_articles: {

@@ -97,6 +97,29 @@ serve(async (req) => {
         continue;
       }
 
+      // Check if user can create more articles (monthly limit check)
+      let canCreate = false;
+      try {
+        const { data: canCreateResult, error: limitError } = await admin.rpc('can_create_article', {
+          user_uuid: userId
+        });
+        if (limitError) {
+          console.error('Error checking monthly limit for user:', userId, limitError);
+          results.push({ userId, skipped: true, reason: "limit_check_failed", error: limitError.message });
+          continue;
+        }
+        canCreate = canCreateResult;
+      } catch (limitErr) {
+        console.error('Monthly limit check failed for user:', userId, limitErr);
+        results.push({ userId, skipped: true, reason: "limit_check_error" });
+        continue;
+      }
+
+      if (!canCreate) {
+        results.push({ userId, skipped: true, reason: "monthly_limit_reached" });
+        continue;
+      }
+
       // Insert job record (best-effort)
       let jobId: string | null = null;
       try {
@@ -398,6 +421,15 @@ Title: [Compelling SEO title under 60 chars]
           .from("generation_jobs")
           .update({ status: "completed", output_data: { article_id: article.id } })
           .eq("id", jobId);
+      }
+
+      // Increment monthly usage counter
+      try {
+        await admin.rpc('increment_monthly_usage', {
+          user_uuid: userId
+        });
+      } catch (usageErr) {
+        console.warn('Failed to increment monthly usage for user:', userId, usageErr);
       }
 
       results.push({ userId, generated: true, articleId: article.id });

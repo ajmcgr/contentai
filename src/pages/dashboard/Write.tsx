@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { TrialBanner } from "@/components/TrialBanner";
+import { MonthlyUsageBanner } from "@/components/MonthlyUsageBanner";
 import { GenerationWarningDialog } from "@/components/GenerationWarningDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -148,6 +149,27 @@ export default function Write() {
         return;
       }
 
+      // Check if user can create article (monthly limit check)
+      if (!editingId) {
+        const { data: canCreate, error: limitError } = await supabase.rpc('can_create_article', {
+          user_uuid: user.id
+        });
+
+        if (limitError) {
+          console.error('Error checking article limit:', limitError);
+          throw new Error('Failed to check article creation limits');
+        }
+
+        if (!canCreate) {
+          toast({
+            title: "Monthly limit reached",
+            description: "You've reached your monthly limit of 50 articles. Upgrade to Pro for unlimited articles.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       if (editingId) {
         // Update existing article - format content for storage
         const formattedContent = editorMode === "wysiwyg" ? formatForWordPress(content) : content;
@@ -182,6 +204,11 @@ export default function Write() {
 
         if (error) throw error;
         if (inserted?.id) setEditingId(inserted.id);
+
+        // Increment monthly usage counter
+        await supabase.rpc('increment_monthly_usage', {
+          user_uuid: user.id
+        });
 
         toast({
           title: "Draft saved!",
@@ -283,6 +310,16 @@ export default function Write() {
       if (!articleId) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('Please sign in to publish');
+
+        // Check if user can create article (monthly limit check)
+        const { data: canCreate, error: limitError } = await supabase.rpc('can_create_article', {
+          user_uuid: user.id
+        });
+
+        if (limitError || !canCreate) {
+          throw new Error('Monthly limit reached. Upgrade to Pro for unlimited articles.');
+        }
+
         const formattedContent = editorMode === "wysiwyg" ? formatForWordPress(content) : content;
         const { data: inserted, error } = await supabase
           .from('articles')
@@ -292,6 +329,11 @@ export default function Write() {
         if (error) throw error;
         articleId = inserted?.id as string;
         setEditingId(articleId || null);
+
+        // Increment monthly usage counter
+        await supabase.rpc('increment_monthly_usage', {
+          user_uuid: user.id
+        });
       }
 
       const { data, error } = await supabase.functions.invoke('cms-integration/publish', {
@@ -331,6 +373,7 @@ export default function Write() {
 
             <div className="flex-1 p-6">
               <TrialBanner />
+              <MonthlyUsageBanner />
             
             <Card>
               <CardHeader>
