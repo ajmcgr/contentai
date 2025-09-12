@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-// Dynamic import to avoid SSR issues
-let ReactQuill: any = null;
-if (typeof window !== 'undefined') {
-  ReactQuill = require('react-quill').default;
-  require('react-quill/dist/quill.snow.css');
-}
-
 interface WysiwygEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -23,11 +16,26 @@ export const WysiwygEditor = ({
   className,
   readOnly = false 
 }: WysiwygEditorProps) => {
-  const [isClient, setIsClient] = useState(false);
+  const [ReactQuill, setReactQuill] = useState<any>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const quillRef = useRef<any>(null);
 
   useEffect(() => {
-    setIsClient(true);
+    // Dynamic import for client-side only
+    const loadQuill = async () => {
+      try {
+        const { default: QuillComponent } = await import('react-quill');
+        await import('react-quill/dist/quill.snow.css');
+        setReactQuill(() => QuillComponent);
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Failed to load ReactQuill:', error);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      loadQuill();
+    }
   }, []);
 
   // Enhanced toolbar with WordPress-compatible formatting options
@@ -81,7 +89,7 @@ export const WysiwygEditor = ({
     onChange(processedContent);
   };
 
-  if (!isClient || !ReactQuill) {
+  if (!isLoaded || !ReactQuill) {
     // Fallback for server-side rendering or while loading
     return (
       <div className={cn("min-h-[300px] border rounded-md p-3 bg-background", className)}>
