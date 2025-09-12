@@ -132,6 +132,7 @@ serve(async (req) => {
       const topic = tagList.length > 0 ? pick(tagList) : `Latest ${industry} insights`;
       const articleLength = (s.articleLength as string) || "medium";
       const wordCount = articleLength === "short" ? 1000 : articleLength === "long" ? 1800 : 1400;
+      const shouldAutoPublish = s.autoPublish === true;
 
       // Build a strong prompt (markdown output)
       let contextPrompt = `You are an elite content strategist. Generate a premium-quality ${wordCount}-word article for ${brandName} in ${industry}.
@@ -216,14 +217,18 @@ Title: [Compelling SEO title under 60 chars]
         .replace(/^\s*#\s+.+\n?/, "")
         .trim();
 
-      // Insert article as draft
+      // Insert article with appropriate status based on user preference
+      const articleStatus = shouldAutoPublish ? "published" : "draft";
+      const publishedAt = shouldAutoPublish ? new Date().toISOString() : null;
+      
       const { data: article, error: articleErr } = await admin
         .from("articles")
         .insert({
           user_id: userId,
           title,
           content: body,
-          status: "draft",
+          status: articleStatus,
+          published_at: publishedAt,
         })
         .select()
         .single();

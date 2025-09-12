@@ -447,7 +447,8 @@ export default function Settings() {
     exclusions: "",
     imageStyle: "",
     autoGeneration: false,
-    autoGenTime: "09:00"
+    autoGenTime: "09:00",
+    autoPublish: false
   });
 
   const [accountSettings, setAccountSettings] = useState({
@@ -1155,11 +1156,26 @@ const handleDisconnect = async (platform: string) => {
                                   <SelectItem value="21:00">9:00 PM</SelectItem>
                                 </SelectContent>
                               </Select>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              Articles will be generated automatically and saved as drafts. You can review and publish them manually.
-                            </p>
-                          </div>
+                             </div>
+                             <div className="flex items-center justify-between">
+                               <div className="space-y-1">
+                                 <Label>Auto-publish articles</Label>
+                                 <p className="text-xs text-muted-foreground">
+                                   When enabled, generated articles will be published automatically. When disabled, they'll be saved as drafts for review.
+                                 </p>
+                               </div>
+                               <Switch
+                                 checked={contentSettings.autoPublish || false}
+                                 onCheckedChange={(checked) => setContentSettings(prev => ({ ...prev, autoPublish: checked }))}
+                               />
+                             </div>
+                             <p className="text-xs text-muted-foreground">
+                               {contentSettings.autoPublish 
+                                 ? "Articles will be generated and published automatically." 
+                                 : "Articles will be generated automatically and saved as drafts. You can review and publish them manually."
+                               }
+                             </p>
+                           </div>
                         )}
                         <div className="text-sm">
                           {contentSettings.useBrandInfo ? (
