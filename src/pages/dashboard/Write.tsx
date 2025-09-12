@@ -9,8 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, RefreshCw } from "lucide-react";
+import { Sparkles, RefreshCw, Eye, Code } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { WysiwygEditor, formatForWordPress, stripHtml } from "@/components/WysiwygEditor";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Write() {
   const [title, setTitle] = useState("");
@@ -24,6 +26,7 @@ export default function Write() {
   const [connections, setConnections] = useState<any[]>([]);
   const [selectedConnection, setSelectedConnection] = useState<string>("");
   const [publishing, setPublishing] = useState(false);
+  const [editorMode, setEditorMode] = useState<"wysiwyg" | "markdown">("wysiwyg");
 
   // Check for edit mode on load
   useEffect(() => {
@@ -146,12 +149,13 @@ export default function Write() {
       }
 
       if (editingId) {
-        // Update existing article
+        // Update existing article - format content for storage
+        const formattedContent = editorMode === "wysiwyg" ? formatForWordPress(content) : content;
         const { error } = await supabase
           .from('articles')
           .update({
             title: title.trim(),
-            content: content.trim(),
+            content: formattedContent.trim(),
             updated_at: new Date().toISOString(),
           })
           .eq('id', editingId);
@@ -163,12 +167,13 @@ export default function Write() {
           description: "Your article has been updated successfully.",
         });
       } else {
-        // Create new article
+        // Create new article - format content for storage
+        const formattedContent = editorMode === "wysiwyg" ? formatForWordPress(content) : content;
         const { data: inserted, error } = await supabase
           .from('articles')
           .insert({
             title: title.trim(),
-            content: content.trim(),
+            content: formattedContent.trim(),
             status: 'draft',
             user_id: user.id,
           })
@@ -278,9 +283,10 @@ export default function Write() {
       if (!articleId) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('Please sign in to publish');
+        const formattedContent = editorMode === "wysiwyg" ? formatForWordPress(content) : content;
         const { data: inserted, error } = await supabase
           .from('articles')
-          .insert({ title: title.trim(), content: content.trim(), status: 'draft', user_id: user.id })
+          .insert({ title: title.trim(), content: formattedContent.trim(), status: 'draft', user_id: user.id })
           .select('id')
           .single();
         if (error) throw error;
@@ -370,13 +376,37 @@ export default function Write() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Content</label>
-                  <Textarea 
-                    placeholder="Start writing your article..." 
-                    className="min-h-[300px]"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                  />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium">Content</label>
+                    <Tabs value={editorMode} onValueChange={(value) => setEditorMode(value as "wysiwyg" | "markdown")} className="w-auto">
+                      <TabsList className="grid w-fit grid-cols-2 h-8">
+                        <TabsTrigger value="wysiwyg" className="text-xs">
+                          <Eye className="w-3 h-3 mr-1" />
+                          Rich Text
+                        </TabsTrigger>
+                        <TabsTrigger value="markdown" className="text-xs">
+                          <Code className="w-3 h-3 mr-1" />
+                          Markdown
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                  
+                  {editorMode === "wysiwyg" ? (
+                    <WysiwygEditor
+                      value={content}
+                      onChange={setContent}
+                      placeholder="Start writing your article..."
+                      className="min-h-[300px]"
+                    />
+                  ) : (
+                    <Textarea 
+                      placeholder="Start writing your article in Markdown..." 
+                      className="min-h-[300px]"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                    />
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button 
@@ -407,12 +437,17 @@ export default function Write() {
                   <Button 
                     variant="outline" 
                     onClick={() => {
-                      const blob = new Blob([`# ${title}\n\n${content}`], { type: 'text/markdown' });
+                      const previewContent = editorMode === "wysiwyg" 
+                        ? `<h1>${title}</h1>\n\n${content}` 
+                        : `# ${title}\n\n${content}`;
+                      const mimeType = editorMode === "wysiwyg" ? 'text/html' : 'text/markdown';
+                      const blob = new Blob([previewContent], { type: mimeType });
                       const url = URL.createObjectURL(blob);
                       window.open(url, '_blank');
                       URL.revokeObjectURL(url);
                     }}
                   >
+                    <Eye className="w-4 h-4 mr-2" />
                     Preview
                   </Button>
                   <Button variant="secondary" onClick={() => setIsPublishOpen(true)}>Publish</Button>
