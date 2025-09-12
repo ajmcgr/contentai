@@ -80,13 +80,13 @@ export const PricingSection = () => {
             <div className="text-center mb-6">
               <h3 className="text-2xl font-reckless mb-4">Pro</h3>
               <p className="text-4xl font-bold mb-2">$49<span className="text-xl text-gray-500">/month</span></p>
-              <p className="text-gray-600">Unlimited articles, automated publishing</p>
+              <p className="text-gray-600">50 articles per month, automated publishing</p>
             </div>
             
             <div className="space-y-3 mb-6">
               <div className="flex items-start gap-3">
                 <Check className="text-primary w-5 h-5 mt-0.5 flex-shrink-0" />
-                <span><strong>Unlimited Articles</strong> generated and published on autopilot</span>
+                <span><strong>50 Articles per month</strong> generated and published on autopilot</span>
               </div>
               <div className="flex items-start gap-3">
                 <Check className="text-primary w-5 h-5 mt-0.5 flex-shrink-0" />
