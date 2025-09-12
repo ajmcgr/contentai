@@ -283,7 +283,7 @@ Title: [Compelling SEO title under 60 chars]
         const linkMatches = body.match(/\[[^\]]+\]\(https?:\/\/[^)]+\)/g) || [];
         if (relevantUrls.length > 0 && linkMatches.length < 2) {
           const linksToAdd = relevantUrls.slice(0, 3);
-          const list = linksToAdd.map((u) => `- [${u.replace(/^https?:\\/\\\//,'').split('/')[0]}](${u})`).join("\n");
+          const list = linksToAdd.map((u) => `- [${u.replace(/^https?:\/\//, '').split('/')[0]}](${u})`).join("\n");
           body += `\n\n## Further reading\n${list}\n`;
         }
       } catch (e) {
