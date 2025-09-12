@@ -213,14 +213,34 @@ Create content that doesn't just inform but positions ${brandName} as the go-to 
 
       console.log('Personalized AI prompt generated successfully');
 
-      // Parse the generated content to extract title and content
-      const titleMatch = generatedContent.match(/Title:\s*(.+)/i);
-      const title = titleMatch ? titleMatch[1].trim() : "AI-Generated Article Idea";
-      
-      // Remove the title from content and clean it up
-      const content = generatedContent
-        .replace(/Title:\s*.+\n?/i, '')
+      // Parse the generated content to extract title and content (robust)
+      let extractedTitle = '';
+      let extractedContent = generatedContent;
+
+      // Normalize common sections like a leading "body:" label
+      extractedContent = extractedContent.replace(/^\s*body:\s*/i, '');
+
+      // Try explicit "Title:" format (case-insensitive)
+      const t1 = generatedContent.match(/^\s*Title:\s*(.+)$/im);
+      // Try Markdown H1 as title
+      const t2 = generatedContent.match(/^\s*#\s+(.+)\s*$/m);
+
+      extractedTitle = t1?.[1]?.trim() || t2?.[1]?.trim() || '';
+
+      // If the extracted title looks generic, prefer the H1 heading
+      const isGeneric = /ai[-\s]?generated article (idea|title)/i.test(extractedTitle || '');
+      if ((!extractedTitle || isGeneric) && t2?.[1]) {
+        extractedTitle = t2[1].trim();
+      }
+
+      // Remove title line ("Title:" or first H1) from content
+      extractedContent = extractedContent
+        .replace(/^\s*Title:\s*.+\n?/im, '')
+        .replace(/^\s*#\s+.+\n?/, '')
         .trim();
+
+      const title = extractedTitle || "New Article";
+      const content = extractedContent;
 
       return new Response(JSON.stringify({
         success: true,
@@ -268,9 +288,25 @@ Create content that doesn't just inform but positions ${brandName} as the go-to 
 
           const oaData = await oaRes.json();
           const oaText = oaData?.choices?.[0]?.message?.content ?? '';
-          const titleMatch = oaText.match(/Title:\s*(.+)/i);
-          const title = titleMatch ? titleMatch[1].trim() : "AI-Generated Article Idea";
-          const content = oaText.replace(/Title:\s*.+\n?/i, '').trim();
+
+          // Parse title/content robustly
+          let extractedTitle = '';
+          let extractedContent = oaText.replace(/^\s*body:\s*/i, '');
+
+          const t1 = oaText.match(/^\s*Title:\s*(.+)$/im);
+          const t2 = oaText.match(/^\s*#\s+(.+)\s*$/m);
+
+          extractedTitle = t1?.[1]?.trim() || t2?.[1]?.trim() || '';
+          const isGeneric = /ai[-\s]?generated article (idea|title)/i.test(extractedTitle || '');
+          if ((!extractedTitle || isGeneric) && t2?.[1]) {
+            extractedTitle = t2[1].trim();
+          }
+
+          const title = extractedTitle || "New Article";
+          const content = extractedContent
+            .replace(/^\s*Title:\s*.+\n?/im, '')
+            .replace(/^\s*#\s+.+\n?/, '')
+            .trim();
 
           console.log('OpenAI fallback succeeded');
           return new Response(JSON.stringify({
