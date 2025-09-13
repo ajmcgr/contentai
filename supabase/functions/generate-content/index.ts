@@ -219,10 +219,31 @@ QUALITY CHECK: This article should position ${brandName} as the go-to expert in 
     const data = await response.json();
     let generatedContent = data.content?.[0]?.text || '';
 
-    // Convert markdown to HTML if needed (fallback for mixed content)
+    // Clean up content and ensure proper HTML formatting
+    generatedContent = generatedContent
+      .replace(/```html/g, '')
+      .replace(/```/g, '')
+      .trim();
+    
+    // Convert any remaining markdown to HTML if needed
     if (generatedContent.includes('##') || generatedContent.includes('**') || generatedContent.includes('*')) {
       generatedContent = await marked(generatedContent);
     }
+    
+    // Ensure proper paragraph spacing and formatting
+    generatedContent = generatedContent
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^(?!<)/gm, '<p>')
+      .replace(/(?!>)$/gm, '</p>')
+      .replace(/<p><h/g, '<h')
+      .replace(/<\/h([1-6])><\/p>/g, '</h$1>')
+      .replace(/<p><\/p>/g, '')
+      .replace(/<p><ul>/g, '<ul>')
+      .replace(/<\/ul><\/p>/g, '</ul>')
+      .replace(/<p><ol>/g, '<ol>')
+      .replace(/<\/ol><\/p>/g, '</ol>')
+      .replace(/<p><blockquote>/g, '<blockquote>')
+      .replace(/<\/blockquote><\/p>/g, '</blockquote>');
 
     // Extract title from content or generate one
     const titleMatch = generatedContent.match(/<h1[^>]*>(.+?)<\/h1>/i) || generatedContent.match(/^#\s+(.+)$/m);
