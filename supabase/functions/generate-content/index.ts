@@ -393,14 +393,10 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
     let generatedContent = data.content?.[0]?.text || '';
 
     console.log('Processing generated content...');
+    console.log('Images available:', allImages.length);
+    console.log('Related posts available:', relatedPosts.length);
 
-    // Insert images at specific positions (25% and 65% through content)
-    generatedContent = insertImagesInContent(generatedContent, allImages.slice(0, 2));
-
-    // Insert internal links (2-4 links naturally distributed)
-    generatedContent = insertInternalLinks(generatedContent, relatedPosts);
-
-    // Extract metadata from YAML front-matter
+    // Extract metadata from YAML front-matter first
     const titleMatch = generatedContent.match(/^---\s*\ntitle:\s*["']?([^"'\n]+)["']?\s*\n/m);
     const title = titleMatch ? titleMatch[1] : `${topic} - Complete Guide`;
     
@@ -410,14 +406,47 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
     const descMatch = generatedContent.match(/description:\s*["']?([^"'\n]+)["']?\s*\n/);
     const metaDescription = descMatch ? descMatch[1] : title.substring(0, 150);
 
-    // Convert markdown to HTML for storage
-    const htmlContent = convertMarkdownToHtml(generatedContent);
+    // Remove YAML front-matter to get clean markdown body
+    let markdownBody = generatedContent.replace(/^---[\s\S]*?---\n/, '');
     
-    // Calculate word count
-    const wordCountActual = generatedContent.replace(/[---\n\r]/g, ' ').split(/\s+/).filter(word => word.length > 0).length;
+    console.log('Original markdown body length:', markdownBody.length);
+
+    // STEP 1: Insert exactly 2 images at 25% and 65% positions
+    console.log('Inserting images...');
+    markdownBody = insertImagesInContent(markdownBody, allImages.slice(0, 2));
+    console.log('After image insertion, markdown length:', markdownBody.length);
+
+    // STEP 2: Insert 2-4 internal links naturally distributed
+    console.log('Inserting internal links...');
+    markdownBody = insertInternalLinks(markdownBody, relatedPosts);
+    console.log('After links insertion, markdown length:', markdownBody.length);
+
+    // Convert markdown to HTML using basic conversion
+    const htmlContent = markdownBody
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*)\*/gim, '<em>$1</em>')
+      .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a href="$2">$1</a>')
+      .replace(/!\[([^\]]*)\]\(([^\)]*)\)/gim, '<img alt="$1" src="$2" style="max-width: 100%; height: auto;" />')
+      .replace(/\n/gim, '<br>');
+    
+    console.log('Final HTML content length:', htmlContent.length);
+    
+    // Calculate word count from markdown (excluding images and links)
+    const wordCountActual = markdownBody.replace(/!\[.*?\]\(.*?\)/g, '').replace(/\[.*?\]\(.*?\)/g, '').split(/\s+/).filter(word => word.length > 0).length;
 
     // Set featured image from first image
     const featuredImageUrl = allImages[0]?.url || null;
+
+    console.log('Final article stats:', {
+      title,
+      wordCount: wordCountActual,
+      imagesInserted: (markdownBody.match(/!\[.*?\]\(.*?\)/g) || []).length,
+      linksInserted: (markdownBody.match(/\[.*?\]\(\/blog\/.*?\)/g) || []).length,
+      featuredImage: !!featuredImageUrl
+    });
 
     console.log('Saving article to database...');
     const { data: article, error: articleError } = await supabaseClient
