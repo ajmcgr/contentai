@@ -14,6 +14,7 @@ import { Sparkles, RefreshCw, Eye, Code } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { WysiwygEditor, formatForWordPress, stripHtml } from "@/components/WysiwygEditor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LoadingDialog } from "@/components/LoadingDialog";
 
 export default function Write() {
   const [title, setTitle] = useState("");
@@ -545,6 +546,8 @@ export default function Write() {
         </div>
       </div>
     </SidebarProvider>
+
+      <LoadingDialog open={isGenerating} title="Generating your article" description="Adding backlinks and images..." />
 
       <GenerationWarningDialog
       open={showWarningDialog}

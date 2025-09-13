@@ -185,6 +185,52 @@ BACKLINKS: Include authoritative external links to recent industry reports, stud
 QUALITY CHECK: This article should position ${brandName} as the go-to expert in ${industry}, providing immense value to ${targetAudience} while subtly showcasing ${brandName}'s solutions and expertise.`;
     }
 
+    // Enrich with external sources via Perplexity for backlinks
+    let externalSources: Array<{ url: string; title?: string }> = [];
+    const perplexityKey = Deno.env.get('PERPLEXITY_API_KEY');
+    if (perplexityKey) {
+      try {
+        const px = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${perplexityKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.1-sonar-small-128k-online',
+            messages: [
+              { role: 'system', content: 'Be precise and concise. Return only JSON.' },
+              { role: 'user', content: `Find 5 authoritative, recent sources with URLs for: ${topic}. Respond as JSON array of { url, title }.` }
+            ],
+            temperature: 0.2,
+            top_p: 0.9,
+            max_tokens: 600,
+            return_images: false,
+            return_related_questions: false,
+            search_recency_filter: 'year'
+          }),
+        });
+        const pxData = await px.json();
+        const raw = pxData?.choices?.[0]?.message?.content || pxData?.choices?.[0]?.message?.[0]?.content || '';
+        const jsonStart = String(raw).indexOf('[');
+        const jsonEnd = String(raw).lastIndexOf(']');
+        if (jsonStart !== -1 && jsonEnd !== -1) {
+          externalSources = JSON.parse(String(raw).slice(jsonStart, jsonEnd + 1)).filter((s: any) => s?.url);
+        }
+      } catch (_e) {
+        console.warn('Perplexity enrichment failed');
+      }
+    }
+
+    // If sources found, augment prompt to force backlinks
+    if (externalSources.length) {
+      prompt += `
+
+EXTERNAL SOURCES (use at least 3 as backlinks in the body with descriptive anchor text):
+${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).join('\n')}
+`;
+    }
+
     // Use Claude 4 for superior content quality
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicApiKey) {
@@ -283,6 +329,16 @@ QUALITY CHECK: This article should position ${brandName} as the go-to expert in 
         }
       } catch (imageError) {
         console.warn('Failed to generate featured image:', imageError);
+      }
+    }
+
+    if (featuredImageUrl) {
+      const imgTag = `<img src="${featuredImageUrl}" alt="${topic} featured image" style="width:100%;max-width:800px;height:auto;margin:24px 0;border-radius:8px;" />`;
+      const h1Match = generatedContent.match(/<h1[^>]*>.*?<\/h1>/i);
+      if (h1Match) {
+        generatedContent = generatedContent.replace(h1Match[0], `${h1Match[0]}\n${imgTag}`);
+      } else {
+        generatedContent = imgTag + generatedContent;
       }
     }
 

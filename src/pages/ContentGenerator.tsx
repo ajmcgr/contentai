@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Wand2, FileText, Image, Share, Search } from 'lucide-react';
+import { LoadingDialog } from '@/components/LoadingDialog';
 
 interface Article {
   id: string;
@@ -20,6 +21,7 @@ interface Article {
   status: string;
   word_count: number;
   created_at: string;
+  featured_image_url?: string;
 }
 
 interface KeywordData {
@@ -100,7 +102,8 @@ export default function ContentGenerator() {
           topic,
           keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
           tone,
-          wordCount
+          wordCount,
+          includeImages: true,
         }
       });
 
@@ -148,7 +151,8 @@ export default function ContentGenerator() {
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
-      <div className="mb-8">
+      <LoadingDialog open={isGenerating} title="Generating your article" description="Adding backlinks and images..." />
+      <div className="mb-8 animate-enter">
         <h1 className="text-3xl font-bold mb-2">AI Content Generator</h1>
         <p className="text-muted-foreground">
           Create high-quality articles with AI-powered keyword research and image generation
@@ -291,6 +295,14 @@ export default function ContentGenerator() {
                       Word count: {article.word_count} | Status: {article.status}
                     </div>
                   </div>
+                  {article.featured_image_url && (
+                    <img
+                      src={article.featured_image_url}
+                      alt={`${topic || article.title} featured image`}
+                      className="rounded-md w-full max-h-96 object-cover mb-4"
+                      loading="lazy"
+                    />
+                  )}
                   <div 
                     className="prose prose-sm max-h-96 overflow-y-auto border rounded p-4"
                     dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br>') }}
