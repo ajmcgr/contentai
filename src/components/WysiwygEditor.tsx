@@ -103,7 +103,8 @@ export const WysiwygEditor = ({
       <style dangerouslySetInnerHTML={{
         __html: `
           .wysiwyg-wrapper .ql-editor {
-            min-height: 300px;
+            min-height: 400px;
+            height: calc(100vh - 200px);
             font-family: inherit;
             font-size: 14px;
             line-height: 1.6;
@@ -204,7 +205,8 @@ export const WysiwygEditor = ({
         modules={modules}
         formats={formats}
         style={{
-          height: '300px',
+          height: 'calc(100vh - 200px)',
+          minHeight: '400px',
           marginBottom: '42px' // Account for toolbar height
         }}
       />
