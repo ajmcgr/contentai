@@ -8,6 +8,74 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helpers for images and internal links per pipeline
+async function fetchUnsplashImages(query: string, count = 3): Promise<{url: string, alt: string}[]> {
+  const key = Deno.env.get('UNSPLASH_ACCESS_KEY');
+  if (!key) return [];
+  try {
+    const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&orientation=landscape&per_page=${count}` ,{
+      headers: { Authorization: `Client-ID ${key}` }
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.results || []).map((p: any) => ({ url: p.urls.regular, alt: p.alt_description || p.description || query }));
+  } catch { return []; }
+}
+
+async function getRelatedPostsByTagsAndKeywords(supabase: any, userId: string, topic: string, k: number): Promise<Array<{slug:string,title:string,keywords:string[]}>> {
+  const { data: articles } = await supabase
+    .from('articles')
+    .select('slug,title,keywords')
+    .eq('user_id', userId)
+    .limit(20);
+  if (!articles) return [];
+  const words = topic.toLowerCase().split(/\W+/).filter(Boolean);
+  const scored = articles.map((a: any) => {
+    let score = 0;
+    words.forEach(w => { if (a.title?.toLowerCase().includes(w)) score += 1; });
+    (a.keywords || []).forEach((kw: string) => { if (words.includes(String(kw).toLowerCase())) score += 2; });
+    return { ...a, score };
+  }).filter((a:any)=>a.score>0).sort((a:any,b:any)=>b.score-a.score).slice(0,k);
+  return scored;
+}
+
+function insertImagesInMarkdown(md: string, images: {url:string,alt:string}[]): string {
+  const lines = md.split('\n');
+  const positions = [0.25, 0.65].map(p => Math.floor(lines.length * p));
+  const ensureSlot = (idx: number, img?: {url:string,alt:string}) => {
+    let i = idx; while (i < lines.length && (lines[i].startsWith('#') || lines[i].trim()==='')) i++;
+    const block = img ? `![${img.alt}](${img.url})` : `> [image could not be fetched]`;
+    lines.splice(Math.min(i, lines.length), 0, '', block, '');
+  };
+  ensureSlot(positions[0], images[0]);
+  ensureSlot(positions[1]+3, images[1]);
+  return lines.join('\n');
+}
+
+function insertInternalLinksInMarkdown(md: string, posts: Array<{slug:string}>): string {
+  if (!posts?.length) return md;
+  const lines = md.split('\n');
+  let idx = 0; const maxLinks = Math.min(4, Math.max(2, posts.length)); let last = -10;
+  for (let i=0;i<lines.length && idx<maxLinks;i++) {
+    const line = lines[i];
+    if (!line || line.startsWith('#') || line.trim()==='' || (i-last)<6) continue;
+    const sentences = line.split('. ');
+    for (let s=0;s<sentences.length && idx<maxLinks;s++) {
+      const sentence = sentences[s];
+      if (sentence.length < 70 || /\[[^\]]+\]\([^\)]+\)/.test(sentence)) continue;
+      const words = sentence.split(' ');
+      const start = Math.max(1, Math.floor(words.length*0.3));
+      const end = Math.min(words.length-1, start+4);
+      const anchor = words.slice(start,end).join(' ').replace(/[.,!?;:]$/, '');
+      const slug = posts[idx++].slug;
+      sentences[s] = `${words.slice(0,start).join(' ')} [${anchor}](/blog/${slug}) ${words.slice(end).join(' ')}`;
+      lines[i] = sentences.join('. ');
+      last = i; break;
+    }
+  }
+  return lines.join('\n');
+}
+
 // Convert markdown to proper HTML with enhanced formatting
 async function convertMarkdownToHtml(markdown: string): Promise<string> {
   // Configure marked for rich HTML output
@@ -356,45 +424,39 @@ Title: [Compelling SEO title under 60 chars]
         }
       } catch (_) {}
 
-      let finalContent = clean;
-      try {
-        if (openAIApiKey && supabaseUrl && serviceRoleKey) {
-          const imagePrompt = `A professional, high-quality image representing: ${title}. Style: ${industry} related, clean, modern, suitable for business content.`;
-          const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${openAIApiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: 'gpt-image-1', prompt: imagePrompt, n: 1, size: '1024x1024', quality: 'high', response_format: 'b64_json' })
-          });
-          if (imageResponse.ok) {
-            const imageData = await imageResponse.json();
-            const b64 = imageData?.data?.[0]?.b64_json as string | undefined;
-            if (b64) {
-              const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-              const fileName = `editor-generated/${user?.id || 'anonymous'}/${Date.now()}.png`;
-              const admin = createClient(supabaseUrl, serviceRoleKey);
-              const { error: uploadError } = await admin.storage
-                .from('generated-images')
-                .upload(fileName, bytes, { contentType: 'image/png', upsert: false });
-              if (!uploadError) {
-                const { data: publicUrlData } = admin.storage.from('generated-images').getPublicUrl(fileName);
-                const imageUrl = publicUrlData.publicUrl;
-                finalContent = `![${title} — featured image](${imageUrl})\n\n${clean}`;
-              }
-            }
-          }
+      // Build exactly 2 images using Unsplash, then insert at 25% and ~65%
+      const queries = [title, topicHint || industry, `${industry} strategy`];
+      const imgs: {url:string,alt:string}[] = [];
+      for (const q of queries) {
+        if (imgs.length >= 2) break;
+        const found = await fetchUnsplashImages(q, 3);
+        for (const f of found) {
+          if (imgs.length >= 2) break;
+          if (!imgs.some(i => i.url === f.url)) imgs.push(f);
         }
-      } catch (err) {
-        console.warn('Image generation failed:', err);
       }
+      while (imgs.length < 2) imgs.push({ url: '', alt: '' }); // placeholders handled by inserter
 
-      // Ensure at least one image exists (fallback to Unsplash if none)
-      if (!/!\[.*\]\(.*\)/.test(finalContent)) {
-        const q = encodeURIComponent(extractedTitle || topicHint || 'business');
-        finalContent = `![${extractedTitle || 'Featured image'}](https://source.unsplash.com/featured/1024x576/?${q})\n\n${finalContent}`;
+      let finalContent = insertImagesInMarkdown(clean, imgs);
+
+      // Internal links: 2–4 posts based on title/topic
+      let linkedContent = finalContent;
+      try {
+        if (user && Deno.env.get('SUPABASE_URL') && Deno.env.get('SUPABASE_ANON_KEY')) {
+          const supa = createClient(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_ANON_KEY')!,
+            { global: { headers: { Authorization: authHeader || '' } } }
+          );
+          const related = await getRelatedPostsByTagsAndKeywords(supa, user.id, title, 6);
+          linkedContent = insertInternalLinksInMarkdown(finalContent, related.slice(0, 4));
+        }
+      } catch (e) {
+        console.warn('Internal linking failed:', e);
       }
 
       // Convert markdown to HTML for proper WYSIWYG display
-      const htmlContent = await convertMarkdownToHtml(finalContent);
+      const htmlContent = await convertMarkdownToHtml(linkedContent);
       
       return new Response(JSON.stringify({
         success: true,
@@ -481,36 +543,33 @@ Title: [Compelling SEO title under 60 chars]
             }
           } catch (_) {}
 
-          let finalContent = clean;
-          try {
-            if (openAIApiKey && supabaseUrl && serviceRoleKey) {
-              const imagePrompt = `A professional, high-quality image representing: ${title}. Style: ${industry} related, clean, modern, suitable for business content.`;
-              const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${openAIApiKey}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: 'gpt-image-1', prompt: imagePrompt, n: 1, size: '1024x1024', quality: 'high', response_format: 'b64_json' })
-              });
-              if (imageResponse.ok) {
-                const imageData = await imageResponse.json();
-                const b64 = imageData?.data?.[0]?.b64_json as string | undefined;
-                if (b64) {
-                  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-                  const fileName = `editor-generated/${user?.id || 'anonymous'}/${Date.now()}.png`;
-                  const admin = createClient(supabaseUrl, serviceRoleKey);
-                  const { error: uploadError } = await admin.storage
-                    .from('generated-images')
-                    .upload(fileName, bytes, { contentType: 'image/png', upsert: false });
-                  if (!uploadError) {
-                    const { data: publicUrlData } = admin.storage.from('generated-images').getPublicUrl(fileName);
-                    const imageUrl = publicUrlData.publicUrl;
-                    finalContent = `![${title} — featured image](${imageUrl})\n\n${clean}`;
-                  }
-                }
-              }
+          // Build exactly 2 images via Unsplash and insert
+          const q2 = [title, industry];
+          const imgs2: {url:string,alt:string}[] = [];
+          for (const q of q2) {
+            if (imgs2.length >= 2) break;
+            const found = await fetchUnsplashImages(q, 3);
+            for (const f of found) {
+              if (imgs2.length >= 2) break;
+              if (!imgs2.some(i => i.url === f.url)) imgs2.push(f);
             }
-          } catch (err) {
-            console.warn('Image generation failed (fallback path):', err);
           }
+          while (imgs2.length < 2) imgs2.push({ url: '', alt: '' });
+
+          let finalContent = insertImagesInMarkdown(clean, imgs2);
+
+          // Internal links in fallback
+          try {
+            if (user && Deno.env.get('SUPABASE_URL') && Deno.env.get('SUPABASE_ANON_KEY')) {
+              const supa = createClient(
+                Deno.env.get('SUPABASE_URL')!,
+                Deno.env.get('SUPABASE_ANON_KEY')!,
+                { global: { headers: { Authorization: authHeader || '' } } }
+              );
+              const related = await getRelatedPostsByTagsAndKeywords(supa, user.id, title, 6);
+              finalContent = insertInternalLinksInMarkdown(finalContent, related.slice(0, 4));
+            }
+          } catch (e) { console.warn('Internal linking failed (fallback):', e); }
 
           console.log('OpenAI fallback succeeded');
           

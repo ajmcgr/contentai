@@ -1,8 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { marked } from 'https://esm.sh/marked@14.1.3';
-import { insertImagesInContent, insertInternalLinks, convertMarkdownToHtml } from './helpers.ts';
+
+// Helper functions for the blog generation pipeline
 
 // Helper functions for the blog generation pipeline
 async function fetchUnsplashImages(query: string, count = 3): Promise<{url: string, alt: string}[]> {
@@ -48,7 +48,6 @@ async function getRelatedPostsByTagsAndKeywords(supabase: any, userId: string, t
       .from('articles')
       .select('id, title, slug, keywords, meta_description')
       .eq('user_id', userId)
-      .eq('status', 'published')
       .limit(20);
 
     if (!articles || articles.length === 0) return [];
@@ -96,6 +95,54 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+function insertImagesInContent(content: string, images: {url: string, alt: string}[]): string {
+  const lines = content.split('\n');
+  const targets = [0.25, 0.65].map(p => Math.floor(lines.length * p));
+  let used = 0;
+
+  const insertAt = (pos: number, img?: {url: string, alt: string}) => {
+    let i = pos;
+    while (i < lines.length && (lines[i].startsWith('#') || lines[i].trim() === '')) i++;
+    const block = img ? `![${img.alt}](${img.url})` : `> [image could not be fetched]`;
+    lines.splice(Math.min(i, lines.length), 0, '', block, '');
+  };
+
+  insertAt(targets[0], images[used]); used++;
+  insertAt(targets[1] + 3, images[used]);
+
+  return lines.join('\n');
+}
+
+function insertInternalLinks(content: string, relatedPosts: Array<{ slug: string }>): string {
+  if (!relatedPosts?.length) return content;
+  const lines = content.split('\n');
+  let idx = 0; const maxLinks = Math.min(4, relatedPosts.length);
+  let last = -10;
+
+  for (let i = 0; i < lines.length && idx < maxLinks; i++) {
+    const line = lines[i];
+    if (!line || line.startsWith('#') || line.trim() === '' || (i - last) < 6) continue;
+    const sentences = line.split('. ');
+    for (let s = 0; s < sentences.length && idx < maxLinks; s++) {
+      const sentence = sentences[s];
+      if (sentence.length < 60 || /\[(.*?)\]\((.*?)\)/.test(sentence)) continue;
+      const words = sentence.split(' ');
+      if (words.length < 7) continue;
+      const start = Math.max(1, Math.floor(words.length * 0.25));
+      const end = Math.min(words.length - 1, start + 4);
+      const anchor = words.slice(start, end).join(' ').replace(/[.,!?;:]$/, '');
+      const slug = relatedPosts[idx++].slug;
+      sentences[s] = `${words.slice(0, start).join(' ')} [${anchor}](/blog/${slug}) ${words.slice(end).join(' ')}`;
+      lines[i] = sentences.join('. ');
+      last = i;
+      break;
+    }
+  }
+
+  return lines.join('\n');
+}
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
