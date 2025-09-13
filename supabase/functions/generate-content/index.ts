@@ -2,6 +2,95 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { marked } from 'https://esm.sh/marked@14.1.3';
+import { insertImagesInContent, insertInternalLinks, convertMarkdownToHtml } from './helpers.ts';
+
+// Helper functions for the blog generation pipeline
+async function fetchUnsplashImages(query: string, count = 3): Promise<{url: string, alt: string}[]> {
+  const unsplashKey = Deno.env.get('UNSPLASH_ACCESS_KEY');
+  if (!unsplashKey) {
+    console.warn('Unsplash API key not configured');
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&orientation=landscape&per_page=${count}`,
+      {
+        headers: {
+          'Authorization': `Client-ID ${unsplashKey}`
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Unsplash API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.results.map((photo: any) => ({
+      url: photo.urls.regular,
+      alt: photo.alt_description || photo.description || `Image related to ${query}`
+    }));
+  } catch (error) {
+    console.error('Unsplash fetch failed:', error);
+    return [];
+  }
+}
+
+async function getRelatedPostsByEmbedding(supabase: any, topic: string, k: number): Promise<any[]> {
+  // Placeholder for vector similarity search when available
+  return [];
+}
+
+async function getRelatedPostsByTagsAndKeywords(supabase: any, userId: string, topic: string, keywords: string[], k: number): Promise<any[]> {
+  try {
+    const { data: articles } = await supabase
+      .from('articles')
+      .select('id, title, slug, keywords, meta_description')
+      .eq('user_id', userId)
+      .eq('status', 'published')
+      .limit(20);
+
+    if (!articles || articles.length === 0) return [];
+
+    // Score articles based on keyword and topic overlap
+    const scored = articles.map((article: any) => {
+      let score = 0;
+      const articleKeywords = article.keywords || [];
+      
+      // Check keyword overlap
+      keywords.forEach(keyword => {
+        if (articleKeywords.some((ak: string) => ak.toLowerCase().includes(keyword.toLowerCase()))) {
+          score += 3;
+        }
+        if (article.title.toLowerCase().includes(keyword.toLowerCase())) {
+          score += 2;
+        }
+        if (article.meta_description?.toLowerCase().includes(keyword.toLowerCase())) {
+          score += 1;
+        }
+      });
+
+      // Check topic overlap in title
+      const topicWords = topic.toLowerCase().split(' ').filter(word => word.length > 3);
+      topicWords.forEach(word => {
+        if (article.title.toLowerCase().includes(word)) {
+          score += 1;
+        }
+      });
+
+      return { ...article, score };
+    })
+    .filter(article => article.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, k);
+
+    return scored;
+  } catch (error) {
+    console.error('Error fetching related posts:', error);
+    return [];
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -92,98 +181,88 @@ serve(async (req) => {
       template = templateData;
     }
 
-    // Generate premium content with Claude Opus 4 - the most capable model
-    const keywordString = Array.isArray(keywords) ? keywords.join(', ') : keywords;
+    // Get related posts for internal linking
+    console.log('Fetching related posts for internal linking...');
+    const relatedPosts = await getRelatedPostsByTagsAndKeywords(supabaseClient, user.id, topic, keywords || [], 4);
+    console.log(`Found ${relatedPosts.length} related posts for internal linking`);
+
+    // Fetch images from Unsplash
+    console.log('Fetching images from Unsplash...');
+    const imageQueries = [topic, ...(keywords || []).slice(0, 2)];
+    const allImages: {url: string, alt: string}[] = [];
     
-    let prompt = `You are an elite content strategist and master copywriter creating premium-quality content for ${brandName}. This will be a comprehensive, expertly-crafted ${userWordCount}-word article that positions ${brandName} as the definitive authority in ${industry}.
-
-CRITICAL: Output ONLY in clean HTML format (no markdown). Use proper HTML tags: <h1>, <h2>, <h3>, <p>, <ul>, <ol>, <li>, <blockquote>, <strong>, <em>, <a href="">, etc.
-
-BRAND IDENTITY (CRITICAL - Must be reflected throughout):
-🏢 Company: ${brandName}
-🎯 Industry: ${industry} 
-📝 Brand Description: ${brandDescription}
-👥 Target Audience: ${targetAudience}
-🗣️ Brand Voice & Tone: ${userTone}
-📰 Article Topic: "${topic}"`;
-
-    if (keywordString) {
-      prompt += `
-🔍 Priority SEO Keywords: ${keywordString}`;
+    for (const query of imageQueries) {
+      const images = await fetchUnsplashImages(query, 2);
+      allImages.push(...images);
+      if (allImages.length >= 2) break;
     }
 
-    if (brandSettings?.tags?.length > 0) {
-      prompt += `
-🎨 Brand Focus Areas: ${brandSettings.tags.join(', ')}`;
+    // Fallback if no images found
+    if (allImages.length === 0) {
+      const fallbackQuery = encodeURIComponent(topic);
+      allImages.push(
+        {
+          url: `https://source.unsplash.com/featured/1024x576/?${fallbackQuery}`,
+          alt: `Featured image for ${topic}`
+        },
+        {
+          url: `https://source.unsplash.com/featured/1024x576/?business`,
+          alt: 'Business related image'
+        }
+      );
     }
 
-    if (brandSettings?.internal_links?.length > 0) {
-      prompt += `
-🔗 Internal Link Opportunities: ${brandSettings.internal_links.join(', ')}`;
-    }
+    console.log(`Using ${allImages.length} images for article`);
 
-    prompt += `
-
-CONTENT EXCELLENCE STANDARDS:
-✅ EXACTLY ${userWordCount} words (verify final count)
-✅ HTML format with semantic structure (H1, H2, H3, H4)
-✅ Demonstrate deep ${industry} expertise and thought leadership
-✅ Include 3-5 data-driven insights with specific statistics
-✅ Provide 5-7 actionable strategies readers can implement immediately
-✅ Naturally weave SEO keywords throughout (density: 1-2%)
-✅ Maintain consistent ${userTone} voice that reflects ${brandName}'s personality
-✅ Include real-world examples and case studies from ${industry}
-✅ Add expert tips and industry best practices
-✅ Strong, compelling call-to-action that drives ${brandName} engagement
-
-PREMIUM ARTICLE STRUCTURE:`;
+    // Generate content following the exact pipeline
+    const keywordString = Array.isArray(keywords) ? keywords.join(', ') : keywords || '';
     
-    if (template) {
-      prompt += ` Follow this exact structure: ${JSON.stringify(template.structure)}`;
-    } else {
-      prompt += `
+    let prompt = `You are an expert content writer creating a blog article following this EXACT pipeline:
 
-1. 📍 COMPELLING H1 TITLE
-   - Include primary keyword naturally
-   - Promise clear value to ${targetAudience}
-   - Under 60 characters for SEO
+INPUTS:
+- Topic: ${topic}
+- Keywords: ${keywordString}
+- Word Count: ${userWordCount}
 
-2. 🎯 POWERFUL INTRODUCTION (250-300 words)
-   - Hook with industry statistic or compelling question
-   - Establish ${brandName}'s authority and credibility
-   - Preview the value readers will gain
-   - Include primary keyword in first paragraph
+RULES - FOLLOW EXACTLY:
+1. Content format: YAML front-matter + Markdown body
+2. Insert exactly 2 images: I will add these after generation
+3. Insert 2-4 internal links: I will add these after generation  
+4. SEO: H1 includes primary keyword once, subheads every 200-300 words
+5. Style: Clear, specific, contrarian where useful, short paragraphs
 
-3. 💡 MAIN CONTENT SECTIONS (4-6 H2 sections)
-   - Each section: 200-300 words
-   - Start each with data/statistic
-   - Include actionable strategies
-   - Use H3 subheadings for complex topics
-   - Integrate keywords naturally
+OUTPUT SHAPE REQUIRED:
+---
+title: "Article Title Here"
+slug: "kebab-case-slug"
+tags: ["tag1", "tag2", "tag3"]
+description: "Meta description under 150 chars"
+cover_image: "${allImages[0]?.url || ''}"
+---
 
-4. 🏆 EXPERT INSIGHTS & CASE STUDIES
-   - Include 2-3 real-world examples
-   - Add industry-specific best practices
-   - Quote relevant statistics and research
+# Article Title
 
-5. 📈 STRONG CONCLUSION (200-250 words)
-   - Summarize key takeaways
-   - Reinforce ${brandName}'s expertise
-   - Clear, compelling call-to-action
-   - Encourage engagement (contact, consultation, etc.)
+Content body in Markdown format with proper H2 and H3 subheadings every 200-300 words.
 
-OUTPUT REQUIREMENTS:
-🔧 Pure HTML with semantic structure (start with <h1>)
-🎨 Rich formatting: <strong>bold</strong>, <em>italic</em>, <ul><li>lists</li></ul>, <blockquote>quotes</blockquote>
-📊 Include specific metrics and data points with proper formatting
-🔗 Include 3-5 external backlinks to authoritative sources using <a href="URL">descriptive anchor text</a>
-🖼️ Suggest 2-3 relevant images using proper alt attributes
-💬 Write in authentic ${userTone} voice throughout
+BRAND CONTEXT:
+- Brand: ${brandName}
+- Industry: ${industry} 
+- Tone: ${userTone}
+- Target Audience: ${targetAudience}
+- Brand Description: ${brandDescription}
 
-BACKLINKS: Include authoritative external links to recent industry reports, studies, or expert sources. Use descriptive anchor text like "according to recent research by [Source]" or "industry experts at [Organization] report".
+REQUIREMENTS:
+- Exactly ${userWordCount} words
+- Include primary keyword in H1 title once
+- Use H2/H3 subheadings every 200-300 words  
+- Create engaging, valuable content
+- No AI disclaimers or filler
+- Clear, specific writing style
+- Short paragraphs and bullets where appropriate
+- Meta description under 150 characters
+- 3-5 relevant tags
 
-QUALITY CHECK: This article should position ${brandName} as the go-to expert in ${industry}, providing immense value to ${targetAudience} while subtly showcasing ${brandName}'s solutions and expertise.`;
-    }
+Generate the article about: ${topic}`;
 
     // Enrich with external sources via Perplexity for backlinks
     let externalSources: Array<{ url: string; title?: string }> = [];
@@ -231,12 +310,13 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
 `;
     }
 
-    // Use Claude 4 for superior content quality
+    // Generate content using Claude
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!anthropicApiKey) {
       throw new Error('Anthropic API key not found');
     }
 
+    console.log('Generating content with Claude...');
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -245,8 +325,8 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-20250514',
-        max_tokens: 8000,
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4000,
         messages: [
           {
             role: 'user',
@@ -265,90 +345,40 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
     const data = await response.json();
     let generatedContent = data.content?.[0]?.text || '';
 
-    // Clean up content and ensure proper HTML formatting
-    generatedContent = generatedContent
-      .replace(/```html/g, '')
-      .replace(/```/g, '')
-      .trim();
+    console.log('Processing generated content...');
+
+    // Insert images at specific positions (25% and 65% through content)
+    generatedContent = insertImagesInContent(generatedContent, allImages.slice(0, 2));
+
+    // Insert internal links (2-4 links naturally distributed)
+    generatedContent = insertInternalLinks(generatedContent, relatedPosts);
+
+    // Extract metadata from YAML front-matter
+    const titleMatch = generatedContent.match(/^---\s*\ntitle:\s*["']?([^"'\n]+)["']?\s*\n/m);
+    const title = titleMatch ? titleMatch[1] : `${topic} - Complete Guide`;
     
-    // Convert any remaining markdown to HTML if needed
-    if (generatedContent.includes('##') || generatedContent.includes('**') || generatedContent.includes('*')) {
-      generatedContent = await marked(generatedContent);
-    }
+    const slugMatch = generatedContent.match(/slug:\s*["']?([^"'\n]+)["']?\s*\n/);
+    const slug = slugMatch ? slugMatch[1] : title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '');
     
-    // Ensure proper paragraph spacing and formatting
-    generatedContent = generatedContent
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/^(?!<)/gm, '<p>')
-      .replace(/(?!>)$/gm, '</p>')
-      .replace(/<p><h/g, '<h')
-      .replace(/<\/h([1-6])><\/p>/g, '</h$1>')
-      .replace(/<p><\/p>/g, '')
-      .replace(/<p><ul>/g, '<ul>')
-      .replace(/<\/ul><\/p>/g, '</ul>')
-      .replace(/<p><ol>/g, '<ol>')
-      .replace(/<\/ol><\/p>/g, '</ol>')
-      .replace(/<p><blockquote>/g, '<blockquote>')
-      .replace(/<\/blockquote><\/p>/g, '</blockquote>');
+    const descMatch = generatedContent.match(/description:\s*["']?([^"'\n]+)["']?\s*\n/);
+    const metaDescription = descMatch ? descMatch[1] : title.substring(0, 150);
 
-    // Extract title from content or generate one
-    const titleMatch = generatedContent.match(/<h1[^>]*>(.+?)<\/h1>/i) || generatedContent.match(/^#\s+(.+)$/m);
-    const title = titleMatch ? titleMatch[1].replace(/<[^>]*>/g, '') : `${topic} - Complete Guide`;
-
-    // Generate meta description
-    const metaDescription = generatedContent
-      .replace(/#+\s/g, '')
-      .substring(0, 160)
-      .replace(/\n/g, ' ')
-      .trim() + '...';
-
+    // Convert markdown to HTML for storage
+    const htmlContent = convertMarkdownToHtml(generatedContent);
+    
     // Calculate word count
-    const wordCountActual = generatedContent.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length;
+    const wordCountActual = generatedContent.replace(/[---\n\r]/g, ' ').split(/\s+/).filter(word => word.length > 0).length;
 
-    // Generate slug
-    const slug = title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
+    // Set featured image from first image
+    const featuredImageUrl = allImages[0]?.url || null;
 
-    // Generate featured image if includeImages is true
-    let featuredImageUrl = null;
-    if (includeImages) {
-      try {
-        const imageResponse = await supabaseClient.functions.invoke('generate-images', {
-          body: { 
-            prompt: `Professional image representing: ${topic}`,
-            style: 'photorealistic',
-            size: '1024x1024',
-            quantity: 1
-          }
-        });
-        
-        if (imageResponse.data?.success && imageResponse.data.images?.length > 0) {
-          featuredImageUrl = imageResponse.data.images[0].url;
-        }
-      } catch (imageError) {
-        console.warn('Failed to generate featured image:', imageError);
-      }
-    }
-
-    if (featuredImageUrl) {
-      const imgTag = `<img src="${featuredImageUrl}" alt="${topic} featured image" style="width:100%;max-width:800px;height:auto;margin:24px 0;border-radius:8px;" />`;
-      const h1Match = generatedContent.match(/<h1[^>]*>.*?<\/h1>/i);
-      if (h1Match) {
-        generatedContent = generatedContent.replace(h1Match[0], `${h1Match[0]}\n${imgTag}`);
-      } else {
-        generatedContent = imgTag + generatedContent;
-      }
-    }
-
-    // Save article to database
+    console.log('Saving article to database...');
     const { data: article, error: articleError } = await supabaseClient
       .from('articles')
       .insert({
         user_id: user.id,
         title,
-        content: generatedContent, // Already in HTML format
+        content: htmlContent,
         meta_description: metaDescription,
         keywords: Array.isArray(keywords) ? keywords : [keywords],
         target_keyword: Array.isArray(keywords) ? keywords[0] : keywords,
@@ -375,12 +405,14 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
       })
       .eq('id', job.id);
 
-    console.log('Content generation completed successfully');
+    console.log('Content generation completed successfully with images and internal links');
 
     return new Response(JSON.stringify({
       success: true,
       article,
-      job_id: job.id
+      job_id: job.id,
+      images_count: allImages.length,
+      internal_links_count: relatedPosts.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
