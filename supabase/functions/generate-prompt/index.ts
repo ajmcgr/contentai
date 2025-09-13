@@ -424,22 +424,23 @@ Title: [Compelling SEO title under 60 chars]
         }
       } catch (_) {}
 
-      // Build exactly 2 images using Unsplash, then insert at 25% and ~65%
-      const queries = [title, topicHint || industry, `${industry} strategy`];
+      // Build exactly 2 images using Unsplash, leveraging title + top H2s for relevance, then insert at 25% and ~65%
+      const h2Matches = Array.from(clean.matchAll(/^##\s+(.+)$/gim)).map(m => m[1]).slice(0, 2);
+      const queries = [title, topicHint || industry, `${industry} strategy`, ...h2Matches.map(h => `${h} ${industry}`)];
       const imgs: {url:string,alt:string}[] = [];
       for (const q of queries) {
         if (imgs.length >= 2) break;
-        const found = await fetchUnsplashImages(q, 3);
+        const found = await fetchUnsplashImages(q, 6);
         for (const f of found) {
           if (imgs.length >= 2) break;
-          if (!imgs.some(i => i.url === f.url)) imgs.push(f);
+          if (!imgs.some(i => i.url === f.url)) imgs.push({ url: f.url, alt: f.alt || `${title} - ${q}` });
         }
       }
       while (imgs.length < 2) imgs.push({ url: '', alt: '' }); // placeholders handled by inserter
 
       let finalContent = insertImagesInMarkdown(clean, imgs);
 
-      // Internal links: 2–4 posts based on title/topic
+      // Internal links: 2–4 posts based on title/topic, with guaranteed fallback
       let linkedContent = finalContent;
       try {
         if (user && Deno.env.get('SUPABASE_URL') && Deno.env.get('SUPABASE_ANON_KEY')) {
@@ -450,6 +451,41 @@ Title: [Compelling SEO title under 60 chars]
           );
           const related = await getRelatedPostsByTagsAndKeywords(supa, user.id, title, 6);
           linkedContent = insertInternalLinksInMarkdown(finalContent, related.slice(0, 4));
+
+          // Ensure at least 2 internal links; append Related reading if needed
+          const internalCount = (linkedContent.match(/\[[^\]]+\]\(\/[^^)]+\)/g) || []).length;
+          if (internalCount < 2) {
+            const extraLinks: string[] = [];
+            // Prefer related posts
+            if (related?.length) {
+              for (const r of related.slice(0, Math.max(2, 4))) {
+                extraLinks.push(`- [${(r.title || r.slug).replace(/-/g, ' ')}](/blog/${r.slug})`);
+              }
+            }
+            // Then brand-defined internal links
+            const brandLinks = Array.isArray(brandSettings?.internal_links) ? brandSettings.internal_links.filter(Boolean) : [];
+            for (const url of brandLinks) {
+              if (extraLinks.length >= 4) break;
+              try {
+                const u = String(url);
+                const readable = u.replace(/^https?:\/\/(www\.)?/, '').replace(/[-_]/g, ' ');
+                extraLinks.push(`- [${readable}](${u})`);
+              } catch {}
+            }
+            // Finally default internal pages
+            const defaults = [
+              { path: '/about', label: 'About us' },
+              { path: '/pricing', label: 'Pricing' },
+              { path: '/help-center', label: 'Help Center' },
+            ];
+            for (const d of defaults) {
+              if (extraLinks.length >= Math.max(2, 4)) break;
+              extraLinks.push(`- [${d.label}](${d.path})`);
+            }
+            if (extraLinks.length) {
+              linkedContent += `\n\n## Related reading\n${extraLinks.slice(0, 4).join('\n')}\n`;
+            }
+          }
         }
       } catch (e) {
         console.warn('Internal linking failed:', e);
@@ -543,22 +579,23 @@ Title: [Compelling SEO title under 60 chars]
             }
           } catch (_) {}
 
-          // Build exactly 2 images via Unsplash and insert
-          const q2 = [title, industry];
+          // Build exactly 2 images via Unsplash (title + top H2s) and insert
+          const h2Matches2 = Array.from(clean.matchAll(/^##\s+(.+)$/gim)).map(m => m[1]).slice(0, 2);
+          const q2 = [title, industry, ...h2Matches2.map(h => `${h} ${industry}`)];
           const imgs2: {url:string,alt:string}[] = [];
           for (const q of q2) {
             if (imgs2.length >= 2) break;
-            const found = await fetchUnsplashImages(q, 3);
+            const found = await fetchUnsplashImages(q, 6);
             for (const f of found) {
               if (imgs2.length >= 2) break;
-              if (!imgs2.some(i => i.url === f.url)) imgs2.push(f);
+              if (!imgs2.some(i => i.url === f.url)) imgs2.push({ url: f.url, alt: f.alt || `${title} - ${q}` });
             }
           }
           while (imgs2.length < 2) imgs2.push({ url: '', alt: '' });
 
           let finalContent = insertImagesInMarkdown(clean, imgs2);
 
-          // Internal links in fallback
+          // Internal links in fallback with guaranteed related block
           try {
             if (user && Deno.env.get('SUPABASE_URL') && Deno.env.get('SUPABASE_ANON_KEY')) {
               const supa = createClient(
@@ -568,6 +605,37 @@ Title: [Compelling SEO title under 60 chars]
               );
               const related = await getRelatedPostsByTagsAndKeywords(supa, user.id, title, 6);
               finalContent = insertInternalLinksInMarkdown(finalContent, related.slice(0, 4));
+
+              const internalCount2 = (finalContent.match(/\[[^\]]+\]\(\/[^^)]+\)/g) || []).length;
+              if (internalCount2 < 2) {
+                const extraLinks: string[] = [];
+                if (related?.length) {
+                  for (const r of related.slice(0, Math.max(2, 4))) {
+                    extraLinks.push(`- [${(r.title || r.slug).replace(/-/g, ' ')}](/blog/${r.slug})`);
+                  }
+                }
+                const brandLinks = Array.isArray(brandSettings?.internal_links) ? brandSettings.internal_links.filter(Boolean) : [];
+                for (const url of brandLinks) {
+                  if (extraLinks.length >= 4) break;
+                  try {
+                    const u = String(url);
+                    const readable = u.replace(/^https?:\/\/(www\.)?/, '').replace(/[-_]/g, ' ');
+                    extraLinks.push(`- [${readable}](${u})`);
+                  } catch {}
+                }
+                const defaults = [
+                  { path: '/about', label: 'About us' },
+                  { path: '/pricing', label: 'Pricing' },
+                  { path: '/help-center', label: 'Help Center' },
+                ];
+                for (const d of defaults) {
+                  if (extraLinks.length >= Math.max(2, 4)) break;
+                  extraLinks.push(`- [${d.label}](${d.path})`);
+                }
+                if (extraLinks.length) {
+                  finalContent += `\n\n## Related reading\n${extraLinks.slice(0, 4).join('\n')}\n`;
+                }
+              }
             }
           } catch (e) { console.warn('Internal linking failed (fallback):', e); }
 
