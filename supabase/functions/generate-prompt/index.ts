@@ -339,7 +339,8 @@ Title: [Compelling SEO title under 60 chars]
         return source.replace(regex, '\n');
       };
 
-      let clean = content;
+      const title = extractedTitle || "New Article";
+      let clean = extractedContent;
       clean = removeSection(clean, 'Keywords Used');
       clean = removeSection(clean, 'Brand Alignment');
       clean = clean.replace(/.*This article demonstrates[^\n]*\n?/gi, '');
@@ -347,8 +348,9 @@ Title: [Compelling SEO title under 60 chars]
 
       try {
         const linkMatches = clean.match(/\[[^\]]+\]\(https?:\/\/[^)]+\)/g) || [];
-        if (relevantUrls.length > 0 && linkMatches.length < 2) {
-          const linksToAdd = relevantUrls.slice(0, 3);
+        if (linkMatches.length < 2) {
+          const fallbackAuth = ['https://hbr.org', 'https://www.mckinsey.com', 'https://www.gartner.com'];
+          const linksToAdd = (relevantUrls.length > 0 ? relevantUrls.slice(0, 3) : fallbackAuth);
           const list = linksToAdd.map((u) => `- [${u.replace(/^https?:\/\//, '').split('/')[0]}](${u})`).join("\n");
           clean += `\n\n## Further reading\n${list}\n`;
         }
@@ -383,6 +385,12 @@ Title: [Compelling SEO title under 60 chars]
         }
       } catch (err) {
         console.warn('Image generation failed:', err);
+      }
+
+      // Ensure at least one image exists (fallback to Unsplash if none)
+      if (!/!\[.*\]\(.*\)/.test(finalContent)) {
+        const q = encodeURIComponent(extractedTitle || topicHint || 'business');
+        finalContent = `![${extractedTitle || 'Featured image'}](https://source.unsplash.com/featured/1024x576/?${q})\n\n${finalContent}`;
       }
 
       // Convert markdown to HTML for proper WYSIWYG display

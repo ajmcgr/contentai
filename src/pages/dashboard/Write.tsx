@@ -459,6 +459,7 @@ export default function Write() {
                   >
                     {isSaving ? "Saving..." : editingId ? "Update Article" : "Save Draft"}
                   </Button>
+                  <Button variant="secondary" onClick={() => setIsPublishOpen(true)}>Publish</Button>
                   {!isGenerating && (title || content) && (
                     <Button 
                       variant="outline" 
@@ -494,7 +495,6 @@ export default function Write() {
                     <Eye className="w-4 h-4 mr-2" />
                     Preview
                   </Button>
-                  <Button variant="secondary" onClick={() => setIsPublishOpen(true)}>Publish</Button>
                 </div>
               </CardContent>
             </Card>
