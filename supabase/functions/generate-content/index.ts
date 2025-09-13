@@ -13,24 +13,34 @@ async function fetchUnsplashImages(query: string, count = 3): Promise<{url: stri
   }
 
   try {
-    const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&orientation=landscape&per_page=${count}`,
-      {
-        headers: {
-          'Authorization': `Client-ID ${unsplashKey}`
-        }
-      }
-    );
+    const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&orientation=landscape&order_by=relevant&content_filter=high&per_page=${Math.max(10, count * 5)}`;
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Client-ID ${unsplashKey}` }
+    });
 
     if (!response.ok) {
       throw new Error(`Unsplash API error: ${response.status}`);
     }
 
     const data = await response.json();
-    return data.results.map((photo: any) => ({
+
+    // Score results by relevance to query terms
+    const terms = String(query).toLowerCase().split(/[^a-z0-9]+/).filter((w: string) => w.length > 3);
+    const scored = (data.results || []).map((photo: any) => {
+      const text = `${photo.alt_description || ''} ${photo.description || ''} ${(photo.tags || []).map((t: any) => t?.title || '').join(' ')}`.toLowerCase();
+      let score = 0;
+      for (const t of terms) { if (text.includes(t)) score += 2; }
+      // Prefer photos with descriptive alt/desc
+      if ((photo.alt_description || photo.description)) score += 1;
+      return { photo, score };
+    }).sort((a: any, b: any) => b.score - a.score);
+
+    const chosen = scored.slice(0, count).map(({ photo }: any) => ({
       url: photo.urls.regular,
       alt: photo.alt_description || photo.description || `Image related to ${query}`
     }));
+
+    return chosen;
   } catch (error) {
     console.error('Unsplash fetch failed:', error);
     return [];
@@ -46,45 +56,50 @@ async function getRelatedPostsByTagsAndKeywords(supabase: any, userId: string, t
   try {
     const { data: articles } = await supabase
       .from('articles')
-      .select('id, title, slug, keywords, meta_description')
+      .select('id, title, slug, keywords, meta_description, created_at')
       .eq('user_id', userId)
-      .limit(20);
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (!articles || articles.length === 0) return [];
 
-    // Score articles based on keyword and topic overlap
-    const scored = articles.map((article: any) => {
-      let score = 0;
-      const articleKeywords = article.keywords || [];
-      
-      // Check keyword overlap
-      keywords.forEach(keyword => {
-        if (articleKeywords.some((ak: string) => ak.toLowerCase().includes(keyword.toLowerCase()))) {
-          score += 3;
-        }
-        if (article.title.toLowerCase().includes(keyword.toLowerCase())) {
-          score += 2;
-        }
-        if (article.meta_description?.toLowerCase().includes(keyword.toLowerCase())) {
-          score += 1;
-        }
-      });
+    const safeKeywords = (keywords || []).map((kw) => String(kw).toLowerCase());
+    const topicWords = String(topic).toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 3);
 
-      // Check topic overlap in title
-      const topicWords = topic.toLowerCase().split(' ').filter(word => word.length > 3);
-      topicWords.forEach(word => {
-        if (article.title.toLowerCase().includes(word)) {
-          score += 1;
+    // Score by overlap
+    const scored = articles
+      .filter((a: any) => a.slug && a.slug.trim().length > 0)
+      .map((article: any) => {
+        let score = 0;
+        const articleKeywords = (article.keywords || []).map((x: string) => x.toLowerCase());
+
+        for (const kw of safeKeywords) {
+          if (articleKeywords.some((ak: string) => ak.includes(kw))) score += 3;
+          if (article.title?.toLowerCase().includes(kw)) score += 2;
+          if (article.meta_description?.toLowerCase().includes(kw)) score += 1;
         }
-      });
+        for (const w of topicWords) {
+          if (article.title?.toLowerCase().includes(w)) score += 1;
+          if (article.meta_description?.toLowerCase().includes(w)) score += 1;
+        }
+        return { ...article, score };
+      })
+      .sort((a: any, b: any) => b.score - a.score);
 
-      return { ...article, score };
-    })
-    .filter(article => article.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, k);
+    // Take top-k with score > 0, else fallback to recent posts
+    const top = scored.filter((a: any) => a.score > 0).slice(0, k);
+    if (top.length >= Math.min(2, k)) return top;
 
-    return scored;
+    // Fallback: recent posts with slugs (dedup)
+    const seen = new Set<string>();
+    const fallback = scored
+      .filter((a: any) => {
+        if (!a.slug) return false; const s = a.slug.trim();
+        if (seen.has(s)) return false; seen.add(s); return true;
+      })
+      .slice(0, k);
+
+    return fallback;
   } catch (error) {
     console.error('Error fetching related posts:', error);
     return [];
@@ -114,33 +129,35 @@ function insertImagesInContent(content: string, images: {url: string, alt: strin
   return lines.join('\n');
 }
 
-function insertInternalLinks(content: string, relatedPosts: Array<{ slug: string }>): string {
+function insertInternalLinks(content: string, relatedPosts: Array<{ slug: string; title?: string }>): string {
   if (!relatedPosts?.length) return content;
-  const lines = content.split('\n');
-  let idx = 0; const maxLinks = Math.min(4, relatedPosts.length);
-  let last = -10;
+  const paras = content.split('\n\n');
+  const maxLinks = Math.min(4, relatedPosts.length);
+  let idx = 0;
 
-  for (let i = 0; i < lines.length && idx < maxLinks; i++) {
-    const line = lines[i];
-    if (!line || line.startsWith('#') || line.trim() === '' || (i - last) < 6) continue;
-    const sentences = line.split('. ');
-    for (let s = 0; s < sentences.length && idx < maxLinks; s++) {
-      const sentence = sentences[s];
-      if (sentence.length < 60 || /\[(.*?)\]\((.*?)\)/.test(sentence)) continue;
-      const words = sentence.split(' ');
-      if (words.length < 7) continue;
-      const start = Math.max(1, Math.floor(words.length * 0.25));
-      const end = Math.min(words.length - 1, start + 4);
-      const anchor = words.slice(start, end).join(' ').replace(/[.,!?;:]$/, '');
-      const slug = relatedPosts[idx++].slug;
-      sentences[s] = `${words.slice(0, start).join(' ')} [${anchor}](/blog/${slug}) ${words.slice(end).join(' ')}`;
-      lines[i] = sentences.join('. ');
-      last = i;
-      break;
-    }
+  // Distribute links across the article
+  const step = Math.max(1, Math.floor(paras.length / (maxLinks + 1)));
+  for (let i = step; i < paras.length && idx < maxLinks; i += step) {
+    const p = paras[i];
+    if (!p || p.startsWith('#')) continue;
+    if (/\[(.*?)\]\((.*?)\)/.test(p)) continue; // already has a link
+    const words = p.split(' ');
+    if (words.length < 12) continue;
+    const start = Math.max(1, Math.floor(words.length * 0.2));
+    const end = Math.min(words.length - 1, start + 4);
+    const anchor = words.slice(start, end).join(' ').replace(/[.,!?;:]$/, '');
+    const slug = relatedPosts[idx++]?.slug;
+    if (!slug) break;
+    paras[i] = `${words.slice(0, start).join(' ')} [${anchor}](/blog/${slug}) ${words.slice(end).join(' ')}`;
   }
 
-  return lines.join('\n');
+  // Guarantee at least 2 links by appending a Related reading block
+  if (idx < 2) {
+    const extra = relatedPosts.slice(idx, Math.min(maxLinks, idx + (2 - idx))).map(r => `- [${(r.title || r.slug).replace(/-/g, ' ')}](/blog/${r.slug})`).join('\n');
+    if (extra) paras.push(`## Related reading\n${extra}`);
+  }
+
+  return paras.join('\n\n');
 }
 
 
@@ -233,16 +250,24 @@ serve(async (req) => {
     const relatedPosts = await getRelatedPostsByTagsAndKeywords(supabaseClient, user.id, topic, keywords || [], 4);
     console.log(`Found ${relatedPosts.length} related posts for internal linking`);
 
-    // Fetch images from Unsplash
-    console.log('Fetching images from Unsplash...');
-    const imageQueries = [topic, ...(keywords || []).slice(0, 2)];
-    const allImages: {url: string, alt: string}[] = [];
-    
-    for (const query of imageQueries) {
-      const images = await fetchUnsplashImages(query, 2);
-      allImages.push(...images);
+// Fetch images from Unsplash
+console.log('Fetching images from Unsplash...');
+const primaryKeywords = Array.isArray(keywords) ? keywords.filter(Boolean) : (keywords ? [String(keywords)] : []);
+const baseQueries = [...primaryKeywords.slice(0, 2), `${topic} ${industry || ''}`.trim()].filter(Boolean);
+const seenUrls = new Set<string>();
+const allImages: {url: string, alt: string}[] = [];
+
+for (const q of baseQueries) {
+  const images = await fetchUnsplashImages(q, 8);
+  for (const img of images) {
+    if (!seenUrls.has(img.url)) {
+      seenUrls.add(img.url);
+      allImages.push(img);
       if (allImages.length >= 2) break;
     }
+  }
+  if (allImages.length >= 2) break;
+}
 
     // Fallback if no images found
     if (allImages.length === 0) {
