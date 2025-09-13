@@ -436,14 +436,68 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
     
     console.log('Original markdown body length:', markdownBody.length);
 
-    // STEP 1: Insert exactly 2 images at 25% and 65% positions
+    // STEP 1: Improve image relevance using title, keywords and top H2s, then insert exactly 2 images
+    console.log('Improving image relevance from title/keywords...');
+    let selectedImages = allImages.slice(0, 2);
+    try {
+      const h2Matches = Array.from(markdownBody.matchAll(/^##\s+(.+)$/gim)).map(m => m[1]).slice(0, 2);
+      const primaryKeywords = Array.isArray(keywords) ? keywords.filter(Boolean) : (keywords ? [String(keywords)] : []);
+      const imageQueries = [...primaryKeywords.slice(0, 2), title, ...h2Matches]
+        .filter(Boolean)
+        .map(q => `${q} ${industry || ''}`.trim());
+      const seen = new Set<string>();
+      const refetch: {url: string, alt: string}[] = [];
+      for (const q of imageQueries) {
+        const imgs = await fetchUnsplashImages(q, 6);
+        for (const img of imgs) {
+          if (!seen.has(img.url)) {
+            seen.add(img.url);
+            refetch.push({ url: img.url, alt: img.alt || `${title} - ${q}` });
+            if (refetch.length >= 2) break;
+          }
+        }
+        if (refetch.length >= 2) break;
+      }
+      if (refetch.length) {
+        selectedImages = refetch.slice(0, 2);
+      }
+    } catch (e) {
+      console.warn('Improved image search failed, using fallback images', e);
+    }
+
     console.log('Inserting images...');
-    markdownBody = insertImagesInContent(markdownBody, allImages.slice(0, 2));
+    markdownBody = insertImagesInContent(markdownBody, selectedImages);
     console.log('After image insertion, markdown length:', markdownBody.length);
 
-    // STEP 2: Insert 2-4 internal links naturally distributed
+    // STEP 2: Insert 2-4 internal links naturally distributed, with guaranteed fallback
     console.log('Inserting internal links...');
     markdownBody = insertInternalLinks(markdownBody, relatedPosts);
+    const internalBlogLinkCount = (markdownBody.match(/\[.*?\]\(\/blog\/.*?\)/g) || []).length;
+
+    // Fallback: ensure at least 2 internal links using brand settings or a related reading block
+    if (internalBlogLinkCount < 2) {
+      const brandLinks = Array.isArray(brandSettings?.internal_links) ? brandSettings.internal_links.filter(Boolean) : [];
+      const extraLinks: string[] = [];
+      // Prefer relatedPosts slugs if any
+      if (relatedPosts?.length) {
+        for (const r of relatedPosts.slice(0, Math.max(2, 4))) {
+          extraLinks.push(`- [${(r.title || r.slug).replace(/-/g, ' ')}](/blog/${r.slug})`);
+        }
+      }
+      // Then add brand links
+      for (const url of brandLinks.slice(0, Math.max(2 - extraLinks.length, 0))) {
+        try {
+          const u = String(url);
+          const readable = u.replace(/^https?:\/\/(www\.)?/, '').replace(/[-_]/g, ' ');
+          extraLinks.push(`- [${readable}](${u})`);
+        } catch {
+          // ignore malformed
+        }
+      }
+      if (extraLinks.length) {
+        markdownBody += `\n\n## Related reading\n${extraLinks.join('\n')}\n`;
+      }
+    }
     console.log('After links insertion, markdown length:', markdownBody.length);
 
     // Convert markdown to HTML using basic conversion
@@ -463,7 +517,7 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
     const wordCountActual = markdownBody.replace(/!\[.*?\]\(.*?\)/g, '').replace(/\[.*?\]\(.*?\)/g, '').split(/\s+/).filter(word => word.length > 0).length;
 
     // Set featured image from first image
-    const featuredImageUrl = allImages[0]?.url || null;
+    const featuredImageUrl = selectedImages[0]?.url || null;
 
     console.log('Final article stats:', {
       title,
@@ -512,7 +566,7 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
       success: true,
       article,
       job_id: job.id,
-      images_count: allImages.length,
+      images_count: selectedImages.length,
       internal_links_count: relatedPosts.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
