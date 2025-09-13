@@ -97,6 +97,8 @@ serve(async (req) => {
     
     let prompt = `You are an elite content strategist and master copywriter creating premium-quality content for ${brandName}. This will be a comprehensive, expertly-crafted ${userWordCount}-word article that positions ${brandName} as the definitive authority in ${industry}.
 
+CRITICAL: Output ONLY in clean HTML format (no markdown). Use proper HTML tags: <h1>, <h2>, <h3>, <p>, <ul>, <ol>, <li>, <blockquote>, <strong>, <em>, <a href="">, etc.
+
 BRAND IDENTITY (CRITICAL - Must be reflected throughout):
 🏢 Company: ${brandName}
 🎯 Industry: ${industry} 
@@ -172,10 +174,13 @@ PREMIUM ARTICLE STRUCTURE:`;
 
 OUTPUT REQUIREMENTS:
 🔧 Pure HTML with semantic structure (start with <h1>)
-🎨 Rich formatting: bold, italic, lists, blockquotes
-📊 Include specific metrics and data points
-🔗 Suggest internal link opportunities where relevant
+🎨 Rich formatting: <strong>bold</strong>, <em>italic</em>, <ul><li>lists</li></ul>, <blockquote>quotes</blockquote>
+📊 Include specific metrics and data points with proper formatting
+🔗 Include 3-5 external backlinks to authoritative sources using <a href="URL">descriptive anchor text</a>
+🖼️ Suggest 2-3 relevant images using proper alt attributes
 💬 Write in authentic ${userTone} voice throughout
+
+BACKLINKS: Include authoritative external links to recent industry reports, studies, or expert sources. Use descriptive anchor text like "according to recent research by [Source]" or "industry experts at [Organization] report".
 
 QUALITY CHECK: This article should position ${brandName} as the go-to expert in ${industry}, providing immense value to ${targetAudience} while subtly showcasing ${brandName}'s solutions and expertise.`;
     }
@@ -212,7 +217,12 @@ QUALITY CHECK: This article should position ${brandName} as the go-to expert in 
     }
 
     const data = await response.json();
-    const generatedContent = data.content?.[0]?.text || '';
+    let generatedContent = data.content?.[0]?.text || '';
+
+    // Convert markdown to HTML if needed (fallback for mixed content)
+    if (generatedContent.includes('##') || generatedContent.includes('**') || generatedContent.includes('*')) {
+      generatedContent = await marked(generatedContent);
+    }
 
     // Extract title from content or generate one
     const titleMatch = generatedContent.match(/<h1[^>]*>(.+?)<\/h1>/i) || generatedContent.match(/^#\s+(.+)$/m);

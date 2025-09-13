@@ -1,11 +1,39 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { marked } from 'https://esm.sh/marked@14.1.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Convert markdown to proper HTML with enhanced formatting
+async function convertMarkdownToHtml(markdown: string): Promise<string> {
+  // Configure marked for rich HTML output
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+  });
+  
+  let html = await marked(markdown);
+  
+  // Enhance HTML for better WordPress/WYSIWYG compatibility
+  html = html
+    // Ensure proper paragraph tags
+    .replace(/<p><\/p>/g, '<p>&nbsp;</p>')
+    // Ensure proper line breaks
+    .replace(/<br>/g, '<br />')
+    // Add proper spacing after headings
+    .replace(/(<\/h[1-6]>)/g, '$1\n')
+    // Ensure proper list formatting
+    .replace(/(<\/li>)/g, '$1\n')
+    // Clean up extra whitespace
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    .trim();
+    
+  return html;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -357,10 +385,13 @@ Title: [Compelling SEO title under 60 chars]
         console.warn('Image generation failed:', err);
       }
 
+      // Convert markdown to HTML for proper WYSIWYG display
+      const htmlContent = await convertMarkdownToHtml(finalContent);
+      
       return new Response(JSON.stringify({
         success: true,
         title,
-        content: finalContent,
+        content: htmlContent,
         fullResponse: generatedContent,
         brandBased: !!brandSettings
       }), {
@@ -474,10 +505,14 @@ Title: [Compelling SEO title under 60 chars]
           }
 
           console.log('OpenAI fallback succeeded');
+          
+          // Convert markdown to HTML for OpenAI fallback
+          const htmlContent = await convertMarkdownToHtml(finalContent);
+          
           return new Response(JSON.stringify({
             success: true,
             title,
-            content: finalContent,
+            content: htmlContent,
             fullResponse: oaText,
             brandBased: !!brandSettings,
             provider: 'openai'
@@ -505,10 +540,13 @@ Title: [Compelling SEO title under 60 chars]
 
       const fallbackBody = `## Introduction\n\n${pick(intros)}\n\n## 1. Clarify Outcomes, Then Work Backwards\n- Define one north-star metric\n- Align initiatives to measurable outcomes\n- Review weekly and prune distractions\n\n## 2. Make Customer Insights a Habit\n- Run 5-10 interviews per month\n- Instrument key journeys and remove friction\n- Turn insights into small, shippable experiments\n\n## 3. Operationalize Content That Converts\n- Build topic clusters around revenue keywords\n- Repurpose top posts across formats\n- Refresh and internally link quarterly\n\n## 4. Compound Through Enablement\n- Create repeatable playbooks\n- Standardize templates and QA checklists\n- Automate handoffs to reduce cycle time\n${extra5}${extra6}## Conclusion\n\nAdopt one strategy this week, measure impact, and iterate. Consistency beats intensity for ${industry} teams.\n\n**Keywords used:** ${industry} strategy, ${industry} growth, customer insights, content operations, enablement, distribution${n>4?', platform foundations':''}`;
 
+      // Convert markdown to HTML for fallback
+      const htmlFallbackContent = await convertMarkdownToHtml(fallbackBody);
+      
       return new Response(JSON.stringify({
         success: true,
         title: fallbackTitle,
-        content: fallbackBody,
+        content: htmlFallbackContent,
         fullResponse: `Title: ${fallbackTitle}\n\n${fallbackBody}`,
         brandBased: !!brandSettings,
         fallback: true,
