@@ -970,20 +970,7 @@ export default function Settings() {
     }
   };
 
-
-    } catch (error: any) {
-      console.error(`${platform} OAuth error:`, error);
-      toast({
-        title: 'OAuth Error',
-        description: error.message || `Failed to start ${platform} OAuth flow`,
-        variant: 'destructive',
-      });
-      setConnectionDialog(prev => ({ ...prev, loading: false }));
-    }
-  };
-
-
-const handleDisconnect = async (platform: string) => {
+  const handleDisconnect = async (platform: string) => {
   try {
     const siteUrl = (integrations as any)[platform]?.siteUrl || '';
 
