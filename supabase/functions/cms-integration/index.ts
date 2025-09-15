@@ -111,6 +111,29 @@ async function handleConnect(req: Request, supabaseClient: any, user: any) {
     });
   }
 
+  // For Shopify and Wix, redirect to OAuth flow
+  if (platform === 'shopify') {
+    return new Response(JSON.stringify({
+      success: false,
+      requiresOAuth: true,
+      oauthUrl: await generateShopifyOAuthUrl(siteUrl, user.id),
+      message: 'Shopify requires OAuth authentication'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  if (platform === 'wix') {
+    return new Response(JSON.stringify({
+      success: false,
+      requiresOAuth: true,
+      oauthUrl: await generateWixOAuthUrl(siteUrl, user.id),
+      message: 'Wix requires OAuth authentication'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   // Validate connection based on platform
   let connectionValid = false;
   let config = {};
@@ -765,17 +788,17 @@ async function publishToNotion(article: any, connection: any, options: any) {
   return await response.json();
 }
 
-// WordPress.com OAuth functions
+// OAuth URL generation functions
 async function generateWordPressOAuthUrl(siteUrl: string, userId: string): Promise<string> {
   // Get client ID from database config instead of environment
-  const { clientId } = await getWpSupabaseSecrets();
-  if (!clientId) throw new Error('WordPress.com OAuth not configured');
+  const { wpClientId } = await getSecrets();
+  if (!wpClientId) throw new Error('WordPress.com OAuth not configured');
 
   const redirectUri = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')}/functions/v1/cms-integration/oauth-callback`;
-  const state = btoa(JSON.stringify({ u: userId, s: siteUrl }));
+  const state = btoa(JSON.stringify({ u: userId, s: siteUrl, p: 'wordpress' }));
 
   const params = new URLSearchParams({
-    client_id: clientId,
+    client_id: wpClientId,
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'global',
@@ -785,8 +808,44 @@ async function generateWordPressOAuthUrl(siteUrl: string, userId: string): Promi
   return `https://public-api.wordpress.com/oauth2/authorize?${params.toString()}`;
 }
 
-// Internal server-only function to get WordPress-Supabase secrets from database
-async function getWpSupabaseSecrets() {
+async function generateShopifyOAuthUrl(siteUrl: string, userId: string): Promise<string> {
+  const { shopifyClientId } = await getSecrets();
+  if (!shopifyClientId) throw new Error('Shopify OAuth not configured');
+
+  const cleanUrl = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const redirectUri = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')}/functions/v1/cms-integration/oauth-callback`;
+  const state = btoa(JSON.stringify({ u: userId, s: siteUrl, p: 'shopify' }));
+
+  const params = new URLSearchParams({
+    client_id: shopifyClientId,
+    scope: 'read_content,write_content,read_themes,write_themes',
+    redirect_uri: redirectUri,
+    state,
+  });
+
+  return `https://${cleanUrl}/admin/oauth/authorize?${params.toString()}`;
+}
+
+async function generateWixOAuthUrl(siteUrl: string, userId: string): Promise<string> {
+  const { wixClientId } = await getSecrets();
+  if (!wixClientId) throw new Error('Wix OAuth not configured');
+
+  const redirectUri = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')}/functions/v1/cms-integration/oauth-callback`;
+  const state = btoa(JSON.stringify({ u: userId, s: siteUrl, p: 'wix' }));
+
+  const params = new URLSearchParams({
+    client_id: wixClientId,
+    response_type: 'code',
+    redirect_uri: redirectUri,
+    scope: 'offline_access,wix.blog',
+    state,
+  });
+
+  return `https://www.wix.com/oauth/authorize?${params.toString()}`;
+}
+
+// Internal server-only function to get secrets from database
+async function getSecrets() {
   const supabaseServiceRole = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -794,45 +853,60 @@ async function getWpSupabaseSecrets() {
 
   const { data: config, error } = await supabaseServiceRole
     .from('config_integrations')
-    .select('wp_supabase_client_id, wp_supabase_client_secret')
+    .select('wp_client_id, wp_client_secret')
     .eq('id', 'global')
     .maybeSingle();
 
   if (error) {
-    console.error('Error fetching WP config:', error);
-    throw new Error('Failed to fetch WordPress configuration');
+    console.error('Error fetching config:', error);
+    throw new Error('Failed to fetch configuration');
   }
 
   if (!config) {
-    throw new Error('WordPress configuration not found');
+    throw new Error('Configuration not found');
   }
 
   return {
-    clientId: config?.wp_supabase_client_id || '',
-    clientSecret: config?.wp_supabase_client_secret || ''
+    wpClientId: config?.wp_client_id || '',
+    wpClientSecret: config?.wp_client_secret || '',
+    shopifyClientId: Deno.env.get('SHOPIFY_CLIENT_ID') || '',
+    shopifyClientSecret: Deno.env.get('SHOPIFY_CLIENT_SECRET') || '',
+    wixClientId: Deno.env.get('WIX_CLIENT_ID') || '',
+    wixClientSecret: Deno.env.get('WIX_CLIENT_SECRET') || ''
   };
 }
 
 async function handleOAuthStart(req: Request, supabaseClient: any, user: any) {
   const { platform, siteUrl } = await req.json();
   
-  if (platform !== 'wordpress') {
-    return new Response(JSON.stringify({
-      error: 'OAuth only supported for WordPress.com',
-      success: false
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
+  let oauthUrl;
+  
   try {
-    const oauthUrl = await generateWordPressOAuthUrl(siteUrl, user.id);
+    switch (platform) {
+      case 'wordpress':
+        oauthUrl = await generateWordPressOAuthUrl(siteUrl, user.id);
+        break;
+      case 'shopify':
+        oauthUrl = await generateShopifyOAuthUrl(siteUrl, user.id);
+        break;
+      case 'wix':
+        oauthUrl = await generateWixOAuthUrl(siteUrl, user.id);
+        break;
+      default:
+        return new Response(JSON.stringify({
+          error: `OAuth not supported for ${platform}`,
+          success: false
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+    }
+
     
     return new Response(JSON.stringify({
       success: true,
       oauthUrl,
-      message: 'Redirect to WordPress.com for authorization'
+      message: `Redirect to ${platform} for authorization`
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -847,12 +921,14 @@ async function handleOAuthStart(req: Request, supabaseClient: any, user: any) {
   }
 }
 
-// Public callback handler for WordPress.com OAuth
+// Public callback handler for OAuth
 async function handleOAuthCallbackPublic(req: Request) {
   try {
     const url = new URL(req.url);
     const code = url.searchParams.get('code') || '';
     const stateParam = url.searchParams.get('state') || '';
+    const shop = url.searchParams.get('shop') || '';
+    
     if (!code || !stateParam) {
       return new Response(JSON.stringify({ success:false, error:'Missing code or state' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -861,51 +937,107 @@ async function handleOAuthCallbackPublic(req: Request) {
     try { parsed = JSON.parse(atob(stateParam)); } catch {}
     const userId = parsed?.u;
     const siteUrl = parsed?.s;
-    if (!userId || !siteUrl) {
+    const platform = parsed?.p;
+    
+    if (!userId || !siteUrl || !platform) {
       return new Response(JSON.stringify({ success:false, error:'Invalid state' }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
     }
 
-    const { clientId, clientSecret } = await getWpSupabaseSecrets();
-    if (!clientId || !clientSecret) {
-      return new Response(JSON.stringify({ success:false, error:'WordPress.com OAuth credentials not configured' }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
-    }
+    let accessToken, config;
+    
+    if (platform === 'wordpress') {
+      const { wpClientId, wpClientSecret } = await getSecrets();
+      if (!wpClientId || !wpClientSecret) {
+        return new Response(JSON.stringify({ success:false, error:'WordPress.com OAuth credentials not configured' }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+      }
 
-    const redirectUri = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')}/functions/v1/cms-integration/oauth-callback`;
+      const redirectUri = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')}/functions/v1/cms-integration/oauth-callback`;
 
-    const tokenResponse = await fetch('https://public-api.wordpress.com/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, code, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
-    });
-    if (!tokenResponse.ok) {
-      const err = await tokenResponse.text();
-      return new Response(JSON.stringify({ success:false, error:`Token exchange failed: ${err}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
-    }
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
+      const tokenResponse = await fetch('https://public-api.wordpress.com/oauth2/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ client_id: wpClientId, client_secret: wpClientSecret, code, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
+      });
+      if (!tokenResponse.ok) {
+        const err = await tokenResponse.text();
+        return new Response(JSON.stringify({ success:false, error:`Token exchange failed: ${err}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+      }
+      const tokenData = await tokenResponse.json();
+      accessToken = tokenData.access_token;
 
-    const meRes = await fetch('https://public-api.wordpress.com/rest/v1/me', { headers: { Authorization: `Bearer ${accessToken}` } });
-    if (!meRes.ok) {
-      const err = await meRes.text();
-      return new Response(JSON.stringify({ success:false, error:`Token validation failed: ${err}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+      const meRes = await fetch('https://public-api.wordpress.com/rest/v1/me', { headers: { Authorization: `Bearer ${accessToken}` } });
+      if (!meRes.ok) {
+        const err = await meRes.text();
+        return new Response(JSON.stringify({ success:false, error:`Token validation failed: ${err}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+      }
+      const wpUser = await meRes.json();
+      
+      config = { 
+        endpoint: 'https://public-api.wordpress.com/rest/v1.1/', 
+        wpcom: true, 
+        wpUserId: wpUser.ID, 
+        wpUsername: wpUser.username,
+        scope: tokenData?.scope || null
+      };
+    } else if (platform === 'shopify') {
+      const { shopifyClientId, shopifyClientSecret } = await getSecrets();
+      if (!shopifyClientId || !shopifyClientSecret) {
+        return new Response(JSON.stringify({ success:false, error:'Shopify OAuth credentials not configured' }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+      }
+
+      const cleanUrl = shop || siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+      const tokenResponse = await fetch(`https://${cleanUrl}/admin/oauth/access_token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: shopifyClientId, client_secret: shopifyClientSecret, code }),
+      });
+      if (!tokenResponse.ok) {
+        const err = await tokenResponse.text();
+        return new Response(JSON.stringify({ success:false, error:`Shopify token exchange failed: ${err}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+      }
+      const tokenData = await tokenResponse.json();
+      accessToken = tokenData.access_token;
+      
+      config = { 
+        endpoint: `https://${cleanUrl}/admin/api/2024-01/`,
+        shop: cleanUrl
+      };
+    } else if (platform === 'wix') {
+      const { wixClientId, wixClientSecret } = await getSecrets();
+      if (!wixClientId || !wixClientSecret) {
+        return new Response(JSON.stringify({ success:false, error:'Wix OAuth credentials not configured' }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+      }
+
+      const redirectUri = `${(Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')}/functions/v1/cms-integration/oauth-callback`;
+
+      const tokenResponse = await fetch('https://www.wix.com/oauth/access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: wixClientId, client_secret: wixClientSecret, code, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
+      });
+      if (!tokenResponse.ok) {
+        const err = await tokenResponse.text();
+        return new Response(JSON.stringify({ success:false, error:`Wix token exchange failed: ${err}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
+      }
+      const tokenData = await tokenResponse.json();
+      accessToken = tokenData.access_token;
+      
+      config = { 
+        endpoint: 'https://www.wixapis.com/blog/v3/',
+        wixSiteId: siteUrl
+      };
     }
-    const wpUser = await meRes.json();
 
     const adminClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
     const { data: connection, error } = await adminClient
       .from('cms_connections')
       .upsert({ 
         user_id: userId, 
-        platform: 'wordpress', 
+        platform, 
         site_url: siteUrl, 
         access_token: accessToken, 
-        config: { 
-          endpoint: 'https://public-api.wordpress.com/rest/v1.1/', 
-          wpcom: true, 
-          wpUserId: wpUser.ID, 
-          wpUsername: wpUser.username,
-          scope: tokenData?.scope || null
-        }, 
+        config, 
         is_active: true, 
         last_sync: new Date().toISOString() 
       }, { onConflict: 'user_id,platform,site_url' })
@@ -916,7 +1048,7 @@ async function handleOAuthCallbackPublic(req: Request) {
       return new Response(JSON.stringify({ success:false, error:`Failed to save connection: ${error.message}` }), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json' } });
     }
 
-    const appUrl = `${req.headers.get('origin') || 'https://www.trycontent.ai'}/dashboard/settings?platform=wordpress&success=1`;
+    const appUrl = `${req.headers.get('origin') || 'https://www.trycontent.ai'}/dashboard/settings?platform=${platform}&success=1`;
     const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -977,15 +1109,15 @@ async function handleOAuthCallbackPublic(req: Request) {
 <body>
     <div class="container">
         <div class="icon">✅</div>
-        <h1>WordPress Connected!</h1>
-        <p>Successfully connected to your WordPress site.</p>
+        <h1>${platform.charAt(0).toUpperCase() + platform.slice(1)} Connected!</h1>
+        <p>Successfully connected to your ${platform} site.</p>
         <div class="spinner"></div>
         <p style="font-size: 0.875rem; margin-top: 1rem;">Redirecting you back...</p>
     </div>
     <script>
         // Always notify parent window and close popup
         if (window.opener) {
-            window.opener.postMessage({ type: 'wordpress_connected', success: true }, '*');
+            window.opener.postMessage({ type: '${platform}_connected', success: true }, '*');
             setTimeout(() => window.close(), 500);
         } else {
             setTimeout(() => {

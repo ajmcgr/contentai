@@ -685,6 +685,30 @@ export default function Settings() {
     }
   }, []);
 
+  const handleOAuthFlow = async (platform: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('cms-integration/oauth-start', {
+        body: { platform, siteUrl: connectionDialog.siteUrl }
+      });
+      if (error || !data?.success) throw new Error(data?.error || `Failed to start ${platform} OAuth flow`);
+      const popup = window.open(data.oauthUrl, `${platform}_oauth`, 'width=500,height=600');
+      if (!popup) throw new Error('Popup blocked');
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === `${platform}_connected` && event.data.success) {
+          window.removeEventListener('message', handleMessage);
+          popup.close();
+          toast({ title: 'Connected!', description: `Successfully connected to ${platform}` });
+          fetchConnections();
+          setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
+        }
+      };
+      window.addEventListener('message', handleMessage);
+    } catch (error: any) {
+      toast({ title: 'OAuth Error', description: error.message, variant: 'destructive' });
+      setConnectionDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
   const handleConnect = async () => {
     setConnectionDialog(prev => ({ ...prev, loading: true }));
 
@@ -692,14 +716,28 @@ export default function Settings() {
       // Basic client-side validation
       if (!connectionDialog.platform) throw new Error('Please choose a platform.');
       if (!connectionDialog.siteUrl) throw new Error('Please enter your site URL.');
+      
+      // Handle OAuth flows for specific platforms
+      if (connectionDialog.platform === 'wordpress' && 
+          (connectionDialog.siteUrl.includes('wordpress.com') || connectionDialog.siteUrl.includes('.wordpress.com'))) {
+        // Start OAuth flow for WordPress.com
+        await handleWordPressComOAuth();
+        return;
+      }
+      
+      if (connectionDialog.platform === 'shopify') {
+        // Start OAuth flow for Shopify
+        await handleOAuthFlow('shopify');
+        return;
+      }
+      
+      if (connectionDialog.platform === 'wix') {
+        // Start OAuth flow for Wix
+        await handleOAuthFlow('wix');
+        return;
+      }
+      
       if ((connectionDialog.platform === 'wordpress' || connectionDialog.platform === 'webhook') && !connectionDialog.apiKey) {
-        // Check if it's WordPress.com (requires OAuth)
-        if (connectionDialog.platform === 'wordpress' && 
-            (connectionDialog.siteUrl.includes('wordpress.com') || connectionDialog.siteUrl.includes('.wordpress.com'))) {
-          // Start OAuth flow for WordPress.com
-          await handleWordPressComOAuth();
-          return;
-        }
         throw new Error(connectionDialog.platform === 'wordpress'
           ? 'Enter WordPress credentials: username:application_password'
           : 'Enter your webhook secret/key');
@@ -768,10 +806,13 @@ export default function Settings() {
         }
 
         const handleMessage = (event: MessageEvent) => {
-          if (event.data.type === 'wordpress_connected' && event.data.success) {
+          if ((event.data.type === 'wordpress_connected' || 
+               event.data.type === 'shopify_connected' || 
+               event.data.type === 'wix_connected') && event.data.success) {
             window.removeEventListener('message', handleMessage);
             popup.close();
-            toast({ title: 'WordPress Connected!', description: 'Successfully connected to your WordPress site.' });
+            const platformName = event.data.type.replace('_connected', '');
+            toast({ title: `${platformName.charAt(0).toUpperCase() + platformName.slice(1)} Connected!`, description: `Successfully connected to your ${platformName} site.` });
             fetchConnections();
             setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
           }
@@ -886,17 +927,23 @@ export default function Settings() {
           }
         }
         // Legacy flow: popup already saved connection and just signals success
-        else if (event.data.type === 'wordpress_connected' && event.data.success) {
+        else if ((event.data.type === 'wordpress_connected' || 
+                  event.data.type === 'shopify_connected' || 
+                  event.data.type === 'wix_connected') && event.data.success) {
           window.removeEventListener('message', handleMessage);
           popup.close();
-          toast({ title: 'WordPress Connected!', description: 'Successfully connected to your WordPress site.' });
+          const platformName = event.data.type.replace('_connected', '');
+          toast({ title: `${platformName.charAt(0).toUpperCase() + platformName.slice(1)} Connected!`, description: `Successfully connected to your ${platformName} site.` });
           fetchConnections();
           setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
         }
-        else if (event.data.type === 'wordpress_oauth_error') {
+        else if (event.data.type === 'wordpress_oauth_error' || 
+                 event.data.type === 'shopify_oauth_error' || 
+                 event.data.type === 'wix_oauth_error') {
           window.removeEventListener('message', handleMessage);
           popup.close();
-          toast({ title: 'OAuth Error', description: event.data.error || 'OAuth authorization failed', variant: 'destructive' });
+          const platformName = event.data.type.replace('_oauth_error', '');
+          toast({ title: 'OAuth Error', description: event.data.error || `${platformName} authorization failed`, variant: 'destructive' });
           setConnectionDialog(prev => ({ ...prev, loading: false }));
         }
       };
@@ -922,6 +969,19 @@ export default function Settings() {
       setConnectionDialog(prev => ({ ...prev, loading: false }));
     }
   };
+
+
+    } catch (error: any) {
+      console.error(`${platform} OAuth error:`, error);
+      toast({
+        title: 'OAuth Error',
+        description: error.message || `Failed to start ${platform} OAuth flow`,
+        variant: 'destructive',
+      });
+      setConnectionDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
 
 const handleDisconnect = async (platform: string) => {
   try {
@@ -1541,7 +1601,7 @@ const handleDisconnect = async (platform: string) => {
                           <WordPressConnect />
 
                           {/* Shopify Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
+                          <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/93b6287a-d091-4ee7-b4ae-e45ea7a3e122.png"
@@ -1549,22 +1609,30 @@ const handleDisconnect = async (platform: string) => {
                                 className="w-10 h-10 object-contain"
                               />
                               <div className="flex-1">
-                                <h4 className="font-medium flex items-center gap-2">
-                                  Shopify
-                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
-                                </h4>
+                                <h4 className="font-medium">Shopify</h4>
                                 <p className="text-sm text-muted-foreground">
                                   Add a blog to your Shopify store and boost your SEO with ease.
                                 </p>
                               </div>
                             </div>
-                            <Button 
-                              variant="outline"
-                              disabled
-                              className="cursor-not-allowed"
-                            >
-                              Connect
-                            </Button>
+                            {integrations.shopify?.connected ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-green-600">Connected</span>
+                                <Button 
+                                  variant="outline"
+                                  onClick={() => handleDisconnect('shopify')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline"
+                                onClick={() => openConnectionDialog('shopify')}
+                              >
+                                Connect
+                              </Button>
+                            )}
                           </div>
 
                           {/* Webflow Integration */}
@@ -1595,7 +1663,7 @@ const handleDisconnect = async (platform: string) => {
                            </div>
 
                           {/* Wix Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
+                          <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/4a03d01f-8a2e-4efb-9cbc-a7fd87e0ce20.png"
@@ -1603,22 +1671,30 @@ const handleDisconnect = async (platform: string) => {
                                 className="w-10 h-10 object-contain"
                               />
                               <div className="flex-1">
-                                <h4 className="font-medium flex items-center gap-2">
-                                  Wix
-                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
-                                </h4>
+                                <h4 className="font-medium">Wix</h4>
                                 <p className="text-sm text-muted-foreground">
                                   Publish your blogs directly to your Wix site blog.
                                 </p>
                               </div>
                             </div>
-                            <Button 
-                              variant="outline"
-                              disabled
-                              className="cursor-not-allowed"
-                            >
-                              Connect
-                            </Button>
+                            {integrations.wix?.connected ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-green-600">Connected</span>
+                                <Button 
+                                  variant="outline"
+                                  onClick={() => handleDisconnect('wix')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="outline"
+                                onClick={() => openConnectionDialog('wix')}
+                              >
+                                Connect
+                              </Button>
+                            )}
                           </div>
 
                           {/* Notion Integration */}
