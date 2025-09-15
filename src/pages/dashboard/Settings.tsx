@@ -687,22 +687,45 @@ export default function Settings() {
 
   const handleOAuthFlow = async (platform: string) => {
     try {
+      console.log(`[OAuth] Starting ${platform} oauth-start with`, { siteUrl: connectionDialog.siteUrl });
       const { data, error } = await supabase.functions.invoke('cms-integration/oauth-start', {
         body: { platform, siteUrl: connectionDialog.siteUrl }
       });
       if (error || !data?.success) throw new Error(data?.error || `Failed to start ${platform} OAuth flow`);
-      const popup = window.open(data.oauthUrl, `${platform}_oauth`, 'width=500,height=600');
-      if (!popup) throw new Error('Popup blocked');
+
+      const features = 'width=500,height=650,scrollbars=yes,resizable=yes';
+      const popup = window.open(data.oauthUrl, `${platform}_oauth`, features);
+
+      if (!popup) {
+        toast({ title: 'Popup blocked', description: 'Opening in this tab instead.' });
+        window.location.href = data.oauthUrl; // Fallback navigation
+        return;
+      }
+
       const handleMessage = (event: MessageEvent) => {
-        if (event.data.type === `${platform}_connected` && event.data.success) {
+        if (event.data?.type === `${platform}_connected` && event.data?.success) {
           window.removeEventListener('message', handleMessage);
           popup.close();
           toast({ title: 'Connected!', description: `Successfully connected to ${platform}` });
           fetchConnections();
           setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
+        } else if (event.data?.type === `${platform}_oauth_error`) {
+          window.removeEventListener('message', handleMessage);
+          popup.close();
+          toast({ title: 'Connection Failed', description: event.data?.error || `Failed to complete ${platform} connection`, variant: 'destructive' });
+          setConnectionDialog(prev => ({ ...prev, loading: false }));
         }
       };
       window.addEventListener('message', handleMessage);
+
+      // Safety: if popup gets closed without a message, stop loading
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
+          setConnectionDialog(prev => ({ ...prev, loading: false }));
+        }
+      }, 1000);
     } catch (error: any) {
       toast({ title: 'OAuth Error', description: error.message, variant: 'destructive' });
       setConnectionDialog(prev => ({ ...prev, loading: false }));
