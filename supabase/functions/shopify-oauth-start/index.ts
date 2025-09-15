@@ -6,19 +6,12 @@ const corsHeaders = {
 }
 
 async function getSecrets() {
-  const supabaseServiceRole = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  )
+  const secrets = {
+    SHOPIFY_API_KEY: Deno.env.get('SHOPIFY_API_KEY'),
+    SHOPIFY_REDIRECT_URI: Deno.env.get('SHOPIFY_REDIRECT_URI'),
+    SHOPIFY_SCOPES: Deno.env.get('SHOPIFY_SCOPES')
+  }
   
-  const { data, error } = await supabaseServiceRole
-    .from('app_secrets')
-    .select('key, value')
-    .eq('namespace', 'cms_integrations')
-  
-  if (error) throw error
-  
-  const secrets = Object.fromEntries((data || []).map(r => [r.key, r.value]))
   const required = ['SHOPIFY_API_KEY', 'SHOPIFY_REDIRECT_URI', 'SHOPIFY_SCOPES']
   
   for (const key of required) {
