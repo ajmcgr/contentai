@@ -67,3 +67,21 @@ verify_jwt = true
 
 [functions.daily-generation]
 verify_jwt = false
+
+[functions.shopify-oauth-start]
+verify_jwt = true
+
+[functions.shopify-oauth-callback]
+verify_jwt = false
+
+[functions.wix-oauth-start]
+verify_jwt = true
+
+[functions.wix-oauth-callback]
+verify_jwt = false
+
+[functions.shopify-health]
+verify_jwt = true
+
+[functions.wix-health]
+verify_jwt = true
