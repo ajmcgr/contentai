@@ -625,6 +625,7 @@ export default function Settings() {
   };
 
   const openConnectionDialog = (platform: string) => {
+    console.log('[DEBUG] openConnectionDialog called for platform:', platform);
     setConnectionDialog({
       open: true,
       platform,
@@ -733,6 +734,7 @@ export default function Settings() {
   };
 
   const handleConnect = async () => {
+    console.log('[DEBUG] handleConnect called for platform:', connectionDialog.platform);
     setConnectionDialog(prev => ({ ...prev, loading: true }));
 
     try {

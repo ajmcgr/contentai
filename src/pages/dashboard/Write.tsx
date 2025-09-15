@@ -67,6 +67,7 @@ export default function Write() {
   };
 
   const generatePrompt = async (opts?: { useTitleAsTopic?: boolean }) => {
+    console.log('[DEBUG] generatePrompt called with options:', opts);
     setShowWarningDialog(false);
     setIsGenerating(true);
     try {
