@@ -99,12 +99,6 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
                 >
                   Pricing
                 </Link>
-                <Link 
-                  to="/nuclear-connect" 
-                  className="text-black text-sm font-medium hover:text-black"
-                >
-                  Nuclear
-                </Link>
                 <span 
                   className="text-black text-sm font-medium cursor-pointer hover:text-black"
                   onClick={() => navigate('/signin')}
