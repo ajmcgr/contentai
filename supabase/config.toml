@@ -69,13 +69,13 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.shopify-oauth-start]
-verify_jwt = true
+verify_jwt = false
 
 [functions.shopify-oauth-callback]
 verify_jwt = false
 
 [functions.wix-oauth-start]
-verify_jwt = true
+verify_jwt = false
 
 [functions.wix-oauth-callback]
 verify_jwt = false
@@ -97,3 +97,6 @@ verify_jwt = true
 
 [functions.integration-status]
 verify_jwt = true
+
+[functions.ping]
+verify_jwt = false

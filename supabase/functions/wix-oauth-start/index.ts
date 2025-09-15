@@ -41,27 +41,29 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
+    const url = new URL(req.url)
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response('Missing authorization header', { 
-        status: 401, 
-        headers: corsHeaders 
-      })
-    }
+    let userId = 'unknown-user'
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
-
-    if (authError || !user) {
-      console.warn('Wix OAuth start - missing or invalid user, proceeding with placeholder')
-      
-      return new Response(JSON.stringify({ 
-        error: 'Authentication required. Please sign in first.' 
-      }), { 
-        status: 401, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+    // Try to get user from auth header if present
+    if (authHeader) {
+      try {
+        const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+          authHeader.replace('Bearer ', '')
+        )
+        if (user && !authError) {
+          userId = user.id
+        } else {
+          console.warn('Wix OAuth start - invalid auth, using query userId')
+          userId = url.searchParams.get('userId') || 'unknown-user'
+        }
+      } catch (e) {
+        console.warn('Auth check failed, using query userId:', e)
+        userId = url.searchParams.get('userId') || 'unknown-user'
+      }
+    } else {
+      // No auth header, use query param
+      userId = url.searchParams.get('userId') || 'unknown-user'
     }
 
     // Generate random state
@@ -77,7 +79,7 @@ Deno.serve(async (req) => {
       .from('oauth_states')
       .insert({
         state,
-        user_id: user.id,
+        user_id: userId,
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString()
       })
 
@@ -90,21 +92,29 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set('redirect_uri', secrets.WIX_REDIRECT_URI)
     authUrl.searchParams.set('state', state)
 
-    return new Response(JSON.stringify({ 
-      authUrl: authUrl.toString(),
-      state 
-    }), {
+    // Return a redirect response instead of JSON
+    return new Response(`
+      <!DOCTYPE html>
+      <html><head><title>Redirecting...</title></head>
+      <body><script>window.location.href = '${authUrl.toString()}';</script></body>
+      </html>
+    `, {
       headers: { 
         ...corsHeaders,
-        'Content-Type': 'application/json'
+        'Content-Type': 'text/html'
       }
     })
 
   } catch (error) {
     console.error('Wix OAuth start error:', error)
-    return new Response('Internal server error', { 
+    return new Response(`
+      <!DOCTYPE html>
+      <html><head><title>Error</title></head>
+      <body><script>window.location.href = '/nuclear-connect?err=wix_start_failed';</script></body>
+      </html>
+    `, { 
       status: 500, 
-      headers: corsHeaders 
+      headers: { ...corsHeaders, 'Content-Type': 'text/html' }
     })
   }
 })

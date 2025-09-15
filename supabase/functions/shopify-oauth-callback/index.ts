@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
                 window.opener.postMessage({ type: 'shopify_connected', shop: '${shop}' }, '*');
                 window.close();
               } else {
-                window.location.href = '/integrations?shopify=connected';
+                window.location.href = '/nuclear-connect?shopify=connected';
               }
             }, 2000);
           </script>
@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
                 window.opener.postMessage({ type: 'shopify_error' }, '*');
                 window.close();
               } else {
-                window.location.href = '/integrations?error=shopify_failed';
+                window.location.href = '/nuclear-connect?error=shopify_failed';
               }
             }, 3000);
           </script>
