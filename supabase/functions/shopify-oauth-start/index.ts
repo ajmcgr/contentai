@@ -54,9 +54,15 @@ Deno.serve(async (req) => {
     )
 
     if (authError || !user) {
-      return new Response('Unauthorized', { 
+      console.warn('Shopify OAuth start - missing or invalid user, proceeding with placeholder')
+      // For development/testing, we'll use a placeholder user ID
+      const userId = 'unknown-user'
+      
+      return new Response(JSON.stringify({ 
+        error: 'Authentication required. Please sign in first.' 
+      }), { 
         status: 401, 
-        headers: corsHeaders 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 

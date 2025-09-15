@@ -54,9 +54,13 @@ Deno.serve(async (req) => {
     )
 
     if (authError || !user) {
-      return new Response('Unauthorized', { 
+      console.warn('Wix OAuth start - missing or invalid user, proceeding with placeholder')
+      
+      return new Response(JSON.stringify({ 
+        error: 'Authentication required. Please sign in first.' 
+      }), { 
         status: 401, 
-        headers: corsHeaders 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 

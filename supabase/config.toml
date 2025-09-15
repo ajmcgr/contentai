@@ -94,3 +94,6 @@ verify_jwt = true
 
 [functions.diag-test-publish]
 verify_jwt = true
+
+[functions.integration-status]
+verify_jwt = true
