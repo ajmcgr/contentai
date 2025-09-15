@@ -730,18 +730,14 @@ export default function Settings() {
           siteUrl: connectionDialog.siteUrl,
           hasAccessToken: !!connectionDialog.accessToken
         });
-        
-        // For Shopify, check if we have a private app access token
-        if (!connectionDialog.accessToken) {
-          throw new Error('Please enter your Shopify private app access token.');
-        }
-        
-        // Use direct API connection for Shopify with private app token
+
+        // Attempt connection; function will respond with requiresOAuth
         const { data, error } = await supabase.functions.invoke('cms-integration/connect', {
           body: {
             platform: 'shopify',
             siteUrl: connectionDialog.siteUrl,
-            accessToken: connectionDialog.accessToken
+            // pass token if provided (legacy private app flow); backend will ignore if OAuth is required
+            accessToken: connectionDialog.accessToken || ''
           }
         });
 
@@ -750,6 +746,53 @@ export default function Settings() {
         if (error) {
           console.error('Shopify connection error:', error);
           throw new Error(error.message || 'Failed to connect to Shopify');
+        }
+
+        if (data?.requiresOAuth && data?.oauthUrl) {
+          toast({
+            title: 'Authorization Required',
+            description: 'Please complete the Shopify authorization in the popup window.',
+          });
+
+          const popup = window.open(
+            data.oauthUrl,
+            'shopify_oauth',
+            'width=500,height=650,scrollbars=yes,resizable=yes'
+          );
+
+          if (!popup) {
+            toast({
+              title: 'Popup blocked',
+              description: 'Please allow popups and try again.',
+              variant: 'destructive',
+            });
+            return;
+          }
+
+          const handleMessage = (event: MessageEvent) => {
+            if (event.data?.type === 'shopify_connected' && event.data?.success) {
+              window.removeEventListener('message', handleMessage);
+              popup.close();
+              toast({ title: 'Shopify Connected!', description: 'Successfully connected to your Shopify store.' });
+              fetchConnections();
+              setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
+            } else if (event.data?.type === 'shopify_oauth_error') {
+              window.removeEventListener('message', handleMessage);
+              popup.close();
+              toast({ title: 'Connection Failed', description: event.data?.error || 'Failed to complete Shopify connection', variant: 'destructive' });
+              setConnectionDialog(prev => ({ ...prev, loading: false }));
+            }
+          };
+          window.addEventListener('message', handleMessage);
+
+          const checkClosed = setInterval(() => {
+            if (popup.closed) {
+              clearInterval(checkClosed);
+              window.removeEventListener('message', handleMessage);
+              setConnectionDialog(prev => ({ ...prev, loading: false }));
+            }
+          }, 1000);
+          return;
         }
 
         if (data?.success) {
@@ -2016,20 +2059,28 @@ export default function Settings() {
                            </div>
                          )}
 
-                        <div className="flex gap-2 pt-4">
-                          <Button 
-                            onClick={handleConnect}
-                             disabled={connectionDialog.loading || !connectionDialog.siteUrl || 
-                                ((['wordpress', 'ghost'].includes(connectionDialog.platform)) ? !connectionDialog.apiKey : 
-                                 (['zapier', 'webhook'].includes(connectionDialog.platform)) ? false : !connectionDialog.accessToken)}
-                            className="flex-1"
-                          >
-                            {connectionDialog.loading ? 'Connecting...' : 'Connect'}
-                          </Button>
-                          <Button variant="outline" onClick={closeConnectionDialog}>
-                            Cancel
-                          </Button>
-                        </div>
+        <div className="flex gap-2 pt-4">
+          <Button 
+            onClick={handleConnect}
+            disabled={
+              connectionDialog.loading ||
+              !connectionDialog.siteUrl ||
+              (
+                ['wordpress', 'ghost'].includes(connectionDialog.platform)
+                  ? !connectionDialog.apiKey
+                  : ['zapier', 'webhook', 'shopify', 'wix'].includes(connectionDialog.platform)
+                    ? false
+                    : !connectionDialog.accessToken
+              )
+            }
+            className="flex-1"
+          >
+            {connectionDialog.loading ? 'Connecting...' : 'Connect'}
+          </Button>
+          <Button variant="outline" onClick={closeConnectionDialog}>
+            Cancel
+          </Button>
+        </div>
                       </div>
                     </DialogContent>
                   </Dialog>
