@@ -862,31 +862,11 @@ async function generateWixOAuthUrl(siteUrl: string, userId: string): Promise<str
   return `https://www.wix.com/oauth/authorize?${params.toString()}`;
 }
 
-// Internal server-only function to get secrets from database
+// Internal server-only function to get secrets from environment
 async function getSecrets() {
-  const supabaseServiceRole = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  );
-
-  const { data: config, error } = await supabaseServiceRole
-    .from('config_integrations')
-    .select('wp_client_id, wp_client_secret')
-    .eq('id', 'global')
-    .maybeSingle();
-
-  if (error) {
-    console.error('Error fetching config:', error);
-    throw new Error('Failed to fetch configuration');
-  }
-
-  if (!config) {
-    throw new Error('Configuration not found');
-  }
-
   return {
-    wpClientId: config?.wp_client_id || '',
-    wpClientSecret: config?.wp_client_secret || '',
+    wpClientId: Deno.env.get('WORDPRESS_CLIENT_ID') || '',
+    wpClientSecret: Deno.env.get('WORDPRESS_CLIENT_SECRET') || '',
     shopifyClientId: Deno.env.get('SHOPIFY_CLIENT_ID') || '',
     shopifyClientSecret: Deno.env.get('SHOPIFY_CLIENT_SECRET') || '',
     wixClientId: Deno.env.get('WIX_CLIENT_ID') || '',
