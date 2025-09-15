@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, CheckCircle, XCircle, ExternalLink, Plus, Activity } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, ExternalLink, Plus, Activity, FileText, Clock } from 'lucide-react';
 
 interface CmsInstall {
   id: string;
@@ -26,6 +26,17 @@ interface HealthCheckResult {
   shop?: string;
   siteId?: string;
   connectedAt?: string;
+  correlationId?: string;
+}
+
+interface LogEntry {
+  id: number;
+  created_at: string;
+  provider: string;
+  stage: string;
+  level: string;
+  correlation_id: string;
+  detail: string;
 }
 
 const Integrations = () => {
@@ -35,6 +46,9 @@ const Integrations = () => {
   const [shopDomain, setShopDomain] = useState('');
   const [healthChecks, setHealthChecks] = useState<Record<string, HealthCheckResult>>({});
   const [runningHealthCheck, setRunningHealthCheck] = useState<string | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [highlightedCorrelationId, setHighlightedCorrelationId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -155,6 +169,37 @@ const Integrations = () => {
     }
   };
 
+  const loadLogs = async () => {
+    setLoadingLogs(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      const response = await supabase.functions.invoke('diag-logs', {
+        body: {},
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to load logs');
+      }
+
+      setLogs(response.data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to load diagnostic logs",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
   const runHealthCheck = async (install: CmsInstall) => {
     setRunningHealthCheck(install.id);
     
@@ -164,9 +209,7 @@ const Integrations = () => {
         throw new Error('No active session');
       }
 
-      const functionName = `${install.provider}-health`;
-      
-      const response = await supabase.functions.invoke(functionName, {
+      const response = await supabase.functions.invoke(`diag-health-${install.provider}`, {
         body: {},
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -181,6 +224,12 @@ const Integrations = () => {
         ...prev,
         [install.id]: response.data
       }));
+
+      // Highlight correlation ID in logs
+      if (response.data.correlationId) {
+        setHighlightedCorrelationId(response.data.correlationId);
+        setTimeout(() => setHighlightedCorrelationId(null), 5000);
+      }
 
       if (response.data.ok) {
         toast({
@@ -209,6 +258,48 @@ const Integrations = () => {
       toast({
         title: "Health Check Failed",
         description: error.message || "Failed to run health check",
+        variant: "destructive",
+      });
+    } finally {
+      setRunningHealthCheck(null);
+    }
+  };
+
+  const runTestPublish = async (install: CmsInstall) => {
+    setRunningHealthCheck(install.id);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      const response = await supabase.functions.invoke('diag-test-publish', {
+        body: { provider: install.provider },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Test publish failed');
+      }
+
+      toast({
+        title: "Test Publish Successful",
+        description: `Test post created on ${install.provider}. Correlation ID: ${response.data.correlationId}`,
+      });
+
+      // Highlight correlation ID in logs
+      if (response.data.correlationId) {
+        setHighlightedCorrelationId(response.data.correlationId);
+        setTimeout(() => setHighlightedCorrelationId(null), 5000);
+      }
+
+    } catch (error: any) {
+      toast({
+        title: "Test Publish Failed",
+        description: `${error.message} (see diagnostics for details)`,
         variant: "destructive",
       });
     } finally {
@@ -349,7 +440,7 @@ const Integrations = () => {
                         </Alert>
                       )}
                       
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -362,6 +453,19 @@ const Integrations = () => {
                             <Activity className="h-4 w-4" />
                           )}
                           Health Check
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => runTestPublish(install)}
+                          disabled={runningHealthCheck === install.id}
+                        >
+                          {runningHealthCheck === install.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Activity className="h-4 w-4" />
+                          )}
+                          Test Publish
                         </Button>
                         <Button
                           variant="outline"
@@ -464,7 +568,7 @@ const Integrations = () => {
                         </Alert>
                       )}
                       
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -477,6 +581,19 @@ const Integrations = () => {
                             <Activity className="h-4 w-4" />
                           )}
                           Health Check
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => runTestPublish(install)}
+                          disabled={runningHealthCheck === install.id}
+                        >
+                          {runningHealthCheck === install.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Activity className="h-4 w-4" />
+                          )}
+                          Test Publish
                         </Button>
                         <Button
                           variant="destructive"
@@ -509,6 +626,82 @@ const Integrations = () => {
           <strong>Note:</strong> After connecting your platforms, you can publish articles directly from the Write page using the "Publish to CMS" feature.
         </AlertDescription>
       </Alert>
+
+      {/* Diagnostics Section */}
+      {installs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Diagnostics
+            </CardTitle>
+            <CardDescription>
+              View diagnostic logs and test your integrations
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={loadLogs}
+                disabled={loadingLogs}
+              >
+                {loadingLogs ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                Refresh Logs
+              </Button>
+            </div>
+
+            {logs.length > 0 && (
+              <div className="space-y-2 max-h-96 overflow-y-auto border rounded p-4">
+                <h4 className="font-medium">Recent Activity</h4>
+                {logs.map((log) => {
+                  const isHighlighted = log.correlation_id === highlightedCorrelationId;
+                  const levelColor = log.level === 'error' ? 'text-red-600' : 
+                                    log.level === 'warn' ? 'text-yellow-600' : 'text-blue-600';
+                  
+                  return (
+                    <div 
+                      key={log.id} 
+                      className={`text-sm border-l-2 pl-3 py-2 ${
+                        isHighlighted ? 'bg-yellow-50 border-l-yellow-400' : 'border-l-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 font-mono">
+                        <Clock className="h-3 w-3" />
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(log.created_at).toLocaleString()}
+                        </span>
+                        <Badge variant="outline" className={levelColor}>
+                          {log.level}
+                        </Badge>
+                        <span className="font-medium">{log.provider}</span>
+                        <span>{log.stage}</span>
+                        {log.correlation_id && (
+                          <span className="text-xs text-muted-foreground">
+                            ID: {log.correlation_id.slice(-8)}
+                          </span>
+                        )}
+                      </div>
+                      {log.detail && (
+                        <div className="mt-1 text-xs text-muted-foreground font-mono max-w-full overflow-x-auto">
+                          {typeof log.detail === 'string' 
+                            ? log.detail.slice(0, 200) + (log.detail.length > 200 ? '...' : '')
+                            : JSON.stringify(JSON.parse(log.detail), null, 2).slice(0, 200)
+                          }
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

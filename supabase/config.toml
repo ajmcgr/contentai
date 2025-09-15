@@ -83,5 +83,14 @@ verify_jwt = false
 [functions.shopify-health]
 verify_jwt = true
 
-[functions.wix-health]
+[functions.diag-logs]
+verify_jwt = true
+
+[functions.diag-health-shopify]
+verify_jwt = true
+
+[functions.diag-health-wix]
+verify_jwt = true
+
+[functions.diag-test-publish]
 verify_jwt = true

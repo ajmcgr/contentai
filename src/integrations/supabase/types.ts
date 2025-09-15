@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_logs: {
+        Row: {
+          correlation_id: string | null
+          created_at: string | null
+          detail: string | null
+          id: number
+          level: string | null
+          provider: string | null
+          stage: string
+          user_id: string | null
+        }
+        Insert: {
+          correlation_id?: string | null
+          created_at?: string | null
+          detail?: string | null
+          id?: never
+          level?: string | null
+          provider?: string | null
+          stage: string
+          user_id?: string | null
+        }
+        Update: {
+          correlation_id?: string | null
+          created_at?: string | null
+          detail?: string | null
+          id?: never
+          level?: string | null
+          provider?: string | null
+          stage?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       app_secrets: {
         Row: {
           created_at: string | null
