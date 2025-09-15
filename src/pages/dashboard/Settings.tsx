@@ -1579,24 +1579,40 @@ export default function Settings() {
                       <CardTitle>Integrations</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">Connections</h3>
-                        <p className="text-muted-foreground">Connect to your favorite CMS and auto-publish your SEO blogs</p>
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold">Available Integrations</h3>
+                          <p className="text-muted-foreground">Connect to your favorite CMS and auto-publish your SEO blogs</p>
+                        </div>
                         
                         <div className="grid gap-4">
-                          {/* WordPress Integration - New OAuth Flow */}
-                          <WordPressConnect />
+                          {/* WordPress Integration - Featured */}
+                          <div className="relative">
+                            <div className="absolute top-4 right-4 z-10">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Live
+                              </span>
+                            </div>
+                            <div className="border border-green-200 bg-green-50/50 rounded-lg">
+                              <WordPressConnect />
+                            </div>
+                          </div>
 
-                          {/* Shopify Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex items-center gap-3">
+                          {/* Shopify Integration - Featured */}
+                          <div className="relative flex items-center justify-between p-4 border border-green-200 bg-green-50/50 rounded-lg">
+                            <div className="absolute top-4 right-4">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Live
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 flex-1 pr-16">
                               <img 
                                 src="/lovable-uploads/93b6287a-d091-4ee7-b4ae-e45ea7a3e122.png"
                                 alt="Shopify logo"
-                                className="w-10 h-10 object-contain"
+                                className="w-12 h-12 object-contain"
                               />
                               <div className="flex-1">
-                                <h4 className="font-medium">Shopify</h4>
+                                <h4 className="font-semibold text-lg">Shopify</h4>
                                 <p className="text-sm text-muted-foreground">
                                   Add a blog to your Shopify store and boost your SEO with ease.
                                 </p>
@@ -1604,7 +1620,7 @@ export default function Settings() {
                             </div>
                             {integrations.shopify?.connected ? (
                               <div className="flex items-center gap-2">
-                                <span className="text-sm text-green-600">Connected</span>
+                                <span className="text-sm text-green-600 font-medium">Connected</span>
                                 <Button 
                                   variant="outline"
                                   onClick={() => handleDisconnect('shopify')}
@@ -1614,51 +1630,29 @@ export default function Settings() {
                               </div>
                             ) : (
                               <Button 
-                                variant="outline"
                                 onClick={() => openConnectionDialog('shopify')}
+                                className="bg-primary hover:bg-primary/90"
                               >
                                 Connect
                               </Button>
                             )}
                           </div>
 
-                          {/* Webflow Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
-                            <div className="flex items-center gap-3">
-                              <img 
-                                src="/lovable-uploads/dea3f4ce-82f3-48a3-af08-5c64d570b629.png"
-                                alt="Webflow logo"
-                                className="w-10 h-10 object-contain"
-                              />
-                              <div className="flex-1">
-                                <h4 className="font-medium flex items-center gap-2">
-                                  Webflow
-                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
-                                </h4>
-                                <p className="text-sm text-muted-foreground">
-                                  Integrate Content AI with Webflow to publish blogs.
-                                </p>
-                              </div>
+                          {/* Wix Integration - Featured */}
+                          <div className="relative flex items-center justify-between p-4 border border-green-200 bg-green-50/50 rounded-lg">
+                            <div className="absolute top-4 right-4">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Live
+                              </span>
                             </div>
-                            <Button 
-                              variant="outline"
-                              disabled
-                              className="cursor-not-allowed"
-                            >
-                              Connect
-                            </Button>
-                           </div>
-
-                          {/* Wix Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 flex-1 pr-16">
                               <img 
                                 src="/lovable-uploads/4a03d01f-8a2e-4efb-9cbc-a7fd87e0ce20.png"
                                 alt="Wix logo"
-                                className="w-10 h-10 object-contain"
+                                className="w-12 h-12 object-contain"
                               />
                               <div className="flex-1">
-                                <h4 className="font-medium">Wix</h4>
+                                <h4 className="font-semibold text-lg">Wix</h4>
                                 <p className="text-sm text-muted-foreground">
                                   Publish your blogs directly to your Wix site blog.
                                 </p>
@@ -1666,7 +1660,7 @@ export default function Settings() {
                             </div>
                             {integrations.wix?.connected ? (
                               <div className="flex items-center gap-2">
-                                <span className="text-sm text-green-600">Connected</span>
+                                <span className="text-sm text-green-600 font-medium">Connected</span>
                                 <Button 
                                   variant="outline"
                                   onClick={() => handleDisconnect('wix')}
@@ -1676,28 +1670,65 @@ export default function Settings() {
                               </div>
                             ) : (
                               <Button 
-                                variant="outline"
                                 onClick={() => openConnectionDialog('wix')}
+                                className="bg-primary hover:bg-primary/90"
                               >
                                 Connect
                               </Button>
                             )}
                           </div>
+                        </div>
 
-                          {/* Notion Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
+                        <Separator />
+
+                        <div>
+                          <h3 className="text-lg font-medium text-muted-foreground">Coming Soon</h3>
+                          <p className="text-sm text-muted-foreground">More integrations in development</p>
+                        </div>
+
+                        <div className="grid gap-3">
+                          {/* Webflow Integration - Coming Soon */}
+                          <div className="flex items-center justify-between p-3 border rounded-lg opacity-60 bg-muted/30">
+                            <div className="flex items-center gap-3">
+                              <img 
+                                src="/lovable-uploads/dea3f4ce-82f3-48a3-af08-5c64d570b629.png"
+                                alt="Webflow logo"
+                                className="w-8 h-8 object-contain grayscale"
+                              />
+                              <div className="flex-1">
+                                <h4 className="font-medium text-sm flex items-center gap-2">
+                                  Webflow
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Coming Soon</span>
+                                </h4>
+                                <p className="text-xs text-muted-foreground">
+                                  Integrate Content AI with Webflow to publish blogs.
+                                </p>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="outline"
+                              disabled
+                              size="sm"
+                              className="cursor-not-allowed"
+                            >
+                              Connect
+                            </Button>
+                          </div>
+
+                          {/* Notion Integration - Coming Soon */}
+                          <div className="flex items-center justify-between p-3 border rounded-lg opacity-60 bg-muted/30">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/3668248b-f746-4b84-85a3-9a25cf2a937e.png"
                                 alt="Notion logo"
-                                className="w-10 h-10 object-contain"
+                                className="w-8 h-8 object-contain grayscale"
                               />
                               <div className="flex-1">
-                                <h4 className="font-medium flex items-center gap-2">
+                                <h4 className="font-medium text-sm flex items-center gap-2">
                                   Notion
-                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Coming Soon</span>
                                 </h4>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-xs text-muted-foreground">
                                   Create pages in your Notion database from your articles.
                                 </p>
                               </div>
@@ -1705,26 +1736,27 @@ export default function Settings() {
                             <Button 
                               variant="outline"
                               disabled
+                              size="sm"
                               className="cursor-not-allowed"
                             >
                               Connect
                             </Button>
                           </div>
 
-                          {/* Ghost Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
+                          {/* Ghost Integration - Coming Soon */}
+                          <div className="flex items-center justify-between p-3 border rounded-lg opacity-60 bg-muted/30">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/af07b7e4-6f3c-4202-8e50-f810cca951bc.png"
                                 alt="Ghost logo"
-                                className="w-10 h-10 object-contain"
+                                className="w-8 h-8 object-contain grayscale"
                               />
                               <div className="flex-1">
-                                <h4 className="font-medium flex items-center gap-2">
+                                <h4 className="font-medium text-sm flex items-center gap-2">
                                   Ghost
-                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Coming Soon</span>
                                 </h4>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-xs text-muted-foreground">
                                   Publish directly to your Ghost blog platform.
                                 </p>
                               </div>
@@ -1732,27 +1764,27 @@ export default function Settings() {
                             <Button 
                               variant="outline"
                               disabled
+                              size="sm"
                               className="cursor-not-allowed"
                             >
                               Connect
                             </Button>
                           </div>
 
-
-                          {/* Zapier Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
+                          {/* Zapier Integration - Coming Soon */}
+                          <div className="flex items-center justify-between p-3 border rounded-lg opacity-60 bg-muted/30">
                             <div className="flex items-center gap-3">
                               <img 
                                 src="/lovable-uploads/28858514-61f5-43b3-8eec-762b7b23c1b7.png"
                                 alt="Zapier logo"
-                                className="w-10 h-10 object-contain"
+                                className="w-8 h-8 object-contain grayscale"
                               />
                               <div className="flex-1">
-                                <h4 className="font-medium flex items-center gap-2">
+                                <h4 className="font-medium text-sm flex items-center gap-2">
                                   Zapier
-                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Coming Soon</span>
                                 </h4>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-xs text-muted-foreground">
                                   Automate publishing to 5000+ apps via Zapier webhooks.
                                 </p>
                               </div>
@@ -1760,24 +1792,25 @@ export default function Settings() {
                             <Button 
                               variant="outline"
                               disabled
+                              size="sm"
                               className="cursor-not-allowed"
                             >
                               Connect
                             </Button>
                           </div>
 
-                          {/* Webhook Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
+                          {/* Webhook Integration - Coming Soon */}
+                          <div className="flex items-center justify-between p-3 border rounded-lg opacity-60 bg-muted/30">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-indigo-600 rounded flex items-center justify-center text-white font-bold">
+                              <div className="w-8 h-8 bg-indigo-400 rounded flex items-center justify-center text-white text-sm grayscale">
                                 🔗
                               </div>
                               <div className="flex-1">
-                                <h4 className="font-medium flex items-center gap-2">
+                                <h4 className="font-medium text-sm flex items-center gap-2">
                                   Webhook
-                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Coming Soon</span>
                                 </h4>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-xs text-muted-foreground">
                                   Send article data to any webhook URL for custom integrations.
                                 </p>
                               </div>
@@ -1785,12 +1818,13 @@ export default function Settings() {
                             <Button 
                               variant="outline"
                               disabled
+                              size="sm"
                               className="cursor-not-allowed"
                             >
                               Connect
                             </Button>
                           </div>
-                         </div>
+                        </div>
                       </div>
 
                       <Separator />
