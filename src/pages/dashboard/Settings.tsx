@@ -726,8 +726,53 @@ export default function Settings() {
       }
       
       if (connectionDialog.platform === 'shopify') {
-        // Start OAuth flow for Shopify
-        await handleOAuthFlow('shopify');
+        console.log('Shopify connection attempt with:', {
+          siteUrl: connectionDialog.siteUrl,
+          hasAccessToken: !!connectionDialog.accessToken
+        });
+        
+        // For Shopify, check if we have a private app access token
+        if (!connectionDialog.accessToken) {
+          throw new Error('Please enter your Shopify private app access token.');
+        }
+        
+        // Use direct API connection for Shopify with private app token
+        const { data, error } = await supabase.functions.invoke('cms-integration/connect', {
+          body: {
+            platform: 'shopify',
+            siteUrl: connectionDialog.siteUrl,
+            accessToken: connectionDialog.accessToken
+          }
+        });
+
+        console.log('Shopify connection response:', { data, error });
+
+        if (error) {
+          console.error('Shopify connection error:', error);
+          throw new Error(error.message || 'Failed to connect to Shopify');
+        }
+
+        if (data?.success) {
+          setIntegrations(prev => ({
+            ...prev,
+            shopify: {
+              connected: true,
+              siteUrl: connectionDialog.siteUrl,
+              accessToken: connectionDialog.accessToken,
+              name: connectionDialog.siteUrl
+            }
+          }));
+
+          toast({
+            title: 'Shopify connected!',
+            description: 'Successfully connected to your Shopify store.',
+          });
+
+          closeConnectionDialog();
+          fetchConnections();
+        } else {
+          throw new Error(data?.error || 'Failed to connect to Shopify');
+        }
         return;
       }
       
