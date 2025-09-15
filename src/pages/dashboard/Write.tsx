@@ -241,7 +241,7 @@ export default function Write() {
     if (!isPublishOpen) return;
     (async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('cms-integration/status', { method: 'GET' });
+        const { data, error } = await supabase.functions.invoke('cms-integration', { body: { action: 'status' } });
         if (!error && data?.success) {
           const list = data.connections || [];
           if (list.length > 0) {
@@ -286,7 +286,7 @@ export default function Write() {
           }
 
           // Refetch connections after sync
-          const { data: afterSync } = await supabase.functions.invoke('cms-integration/status', { method: 'GET' });
+          const { data: afterSync } = await supabase.functions.invoke('cms-integration', { body: { action: 'status' } });
           if (afterSync?.success) {
             const list2 = afterSync.connections || [];
             setConnections(list2);
@@ -337,8 +337,9 @@ export default function Write() {
         });
       }
 
-      const { data, error } = await supabase.functions.invoke('cms-integration/publish', {
+      const { data, error } = await supabase.functions.invoke('cms-integration', {
         body: {
+          action: 'publish',
           articleId,
           connectionId: selectedConnection,
           publishOptions: { status: 'publish' }

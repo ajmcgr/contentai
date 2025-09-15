@@ -649,7 +649,7 @@ export default function Settings() {
   // Fetch existing connections and handle OAuth return
   const fetchConnections = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('cms-integration/status', { method: 'GET' });
+      const { data, error } = await supabase.functions.invoke('cms-integration', { body: { action: 'status' } });
       if (!error && data?.success && Array.isArray(data.connections)) {
         setIntegrations(prev => {
           const next: typeof prev = { ...prev };
@@ -688,8 +688,8 @@ export default function Settings() {
   const handleOAuthFlow = async (platform: string) => {
     try {
       console.log(`[OAuth] Starting ${platform} oauth-start with`, { siteUrl: connectionDialog.siteUrl });
-      const { data, error } = await supabase.functions.invoke('cms-integration/oauth-start', {
-        body: { platform, siteUrl: connectionDialog.siteUrl }
+      const { data, error } = await supabase.functions.invoke('cms-integration', {
+        body: { action: 'oauth-start', platform, siteUrl: connectionDialog.siteUrl }
       });
       if (error || !data?.success) throw new Error(data?.error || `Failed to start ${platform} OAuth flow`);
 
@@ -755,8 +755,9 @@ export default function Settings() {
         });
 
         // Attempt connection; function will respond with requiresOAuth
-        const { data, error } = await supabase.functions.invoke('cms-integration/connect', {
+        const { data, error } = await supabase.functions.invoke('cms-integration', {
           body: {
+            action: 'connect',
             platform: 'shopify',
             siteUrl: connectionDialog.siteUrl,
             // pass token if provided (legacy private app flow); backend will ignore if OAuth is required
@@ -857,8 +858,9 @@ export default function Settings() {
         throw new Error('Please enter an access token.');
       }
 
-      const { data, error } = await supabase.functions.invoke('cms-integration/connect', {
+      const { data, error } = await supabase.functions.invoke('cms-integration', {
         body: {
+          action: 'connect',
           platform: connectionDialog.platform,
           siteUrl: connectionDialog.siteUrl,
           ...(connectionDialog.platform === 'wordpress' || connectionDialog.platform === 'webhook'
@@ -982,8 +984,9 @@ export default function Settings() {
 
   const handleWordPressComOAuth = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('cms-integration/oauth-start', {
+      const { data, error } = await supabase.functions.invoke('cms-integration', {
         body: {
+          action: 'oauth-start',
           platform: 'wordpress',
           siteUrl: connectionDialog.siteUrl
         }
@@ -1014,8 +1017,9 @@ export default function Settings() {
         // New flow: popup sends code/state back to parent
         if (event.data.type === 'wordpress_oauth_callback' && event.data.code && event.data.state) {
           try {
-            const { data, error } = await supabase.functions.invoke('cms-integration/oauth-callback', {
+            const { data, error } = await supabase.functions.invoke('cms-integration', {
               body: {
+                action: 'oauth-callback',
                 code: event.data.code,
                 state: event.data.state,
                 siteUrl: connectionDialog.siteUrl
@@ -1085,8 +1089,8 @@ export default function Settings() {
   try {
     const siteUrl = (integrations as any)[platform]?.siteUrl || '';
 
-    const { data, error } = await supabase.functions.invoke('cms-integration/disconnect', {
-      body: { platform, siteUrl }
+    const { data, error } = await supabase.functions.invoke('cms-integration', {
+      body: { action: 'disconnect', platform, siteUrl }
     });
 
     if (error || !data?.success) {

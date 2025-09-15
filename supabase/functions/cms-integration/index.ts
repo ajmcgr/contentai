@@ -15,7 +15,25 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const action = url.pathname.split('/').pop();
+    // Determine action from path, query, or body (supports supabase.functions.invoke without subpath)
+    let action = url.pathname.split('/').pop() || '';
+    const allowed = new Set(['connect','disconnect','oauth-start','oauth-callback','publish','status']);
+    if (!allowed.has(action) || action === 'cms-integration') {
+      const qpAction = url.searchParams.get('action');
+      if (qpAction && allowed.has(qpAction)) {
+        action = qpAction;
+      } else {
+        try {
+          const clone = req.clone();
+          const body = await clone.json();
+          if (body?.action && allowed.has(body.action)) {
+            action = body.action;
+          }
+        } catch (_) {
+          // No JSON body or unreadable; ignore
+        }
+      }
+    }
 
     // Public callback endpoint hit by WordPress.com (no auth header available)
     if (action === 'oauth-callback' && req.method === 'GET') {
