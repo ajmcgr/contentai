@@ -1675,32 +1675,6 @@ const handleDisconnect = async (platform: string) => {
                             </Button>
                           </div>
 
-                          {/* Squarespace Integration */}
-                          <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">
-                            <div className="flex items-center gap-3">
-                              <img 
-                                src="/lovable-uploads/94e1830f-eb6c-4c1d-aa6e-42152232cf2f.png"
-                                alt="Squarespace logo"
-                                className="w-10 h-10 object-contain"
-                              />
-                              <div className="flex-1">
-                                <h4 className="font-medium flex items-center gap-2">
-                                  Squarespace
-                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Coming Soon</span>
-                                </h4>
-                                <p className="text-sm text-muted-foreground">
-                                  Publish blog posts to your Squarespace website.
-                                </p>
-                              </div>
-                            </div>
-                            <Button 
-                              variant="outline"
-                              disabled
-                              className="cursor-not-allowed"
-                            >
-                              Connect
-                            </Button>
-                          </div>
 
                           {/* Zapier Integration */}
                           <div className="flex items-center justify-between p-4 border rounded-lg opacity-60">

@@ -31,11 +31,6 @@ export const PlatformsSection = () => {
       description: "Publish to your Ghost blog platform"
     },
     {
-      name: "Squarespace",
-      logo: "/lovable-uploads/94e1830f-eb6c-4c1d-aa6e-42152232cf2f.png",
-      description: "Publish blog posts to your Squarespace website"
-    },
-    {
       name: "Zapier",
       logo: "/lovable-uploads/28858514-61f5-43b3-8eec-762b7b23c1b7.png",
       description: "Automate publishing to 5000+ apps"
