@@ -7,39 +7,7 @@ export const PricingSection = () => {
     <div className="py-20" style={{ backgroundColor: 'hsl(var(--section-white))' }}>
       <div className="max-w-5xl mx-auto px-6">
         <h2 className="text-4xl font-reckless text-center mb-12">Simple, Transparent Pricing</h2>
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {/* Free Plan */}
-          <div className="bg-white p-8 rounded-xl shadow-lg border-2 border-gray-200">
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-reckless mb-4">Free</h3>
-              <p className="text-4xl font-bold mb-2">$0<span className="text-xl text-gray-500">/month</span></p>
-              <p className="text-gray-600">Perfect for getting started</p>
-            </div>
-            
-            <div className="space-y-3 mb-6">
-              <div className="flex items-start gap-3">
-                <Check className="text-primary w-5 h-5 mt-0.5 flex-shrink-0" />
-                <span>3 Articles per month</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <Check className="text-primary w-5 h-5 mt-0.5 flex-shrink-0" />
-                <span>AI-powered content generation</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <Check className="text-primary w-5 h-5 mt-0.5 flex-shrink-0" />
-                <span>Basic integrations</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <Check className="text-primary w-5 h-5 mt-0.5 flex-shrink-0" />
-                <span>WYSIWYG editor</span>
-              </div>
-            </div>
-            
-            <Button asChild className="w-full text-lg py-3" variant="outline">
-              <Link to="/signup">Start Free</Link>
-            </Button>
-          </div>
-
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {/* Trial Plan */}
           <div className="bg-white p-8 rounded-xl shadow-lg border-2 border-blue-200">
             <div className="text-center mb-6">
