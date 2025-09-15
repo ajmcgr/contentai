@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_secrets: {
+        Row: {
+          created_at: string | null
+          id: string
+          key: string
+          namespace: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key: string
+          namespace: string
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key?: string
+          namespace?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           id: string
@@ -189,6 +216,45 @@ export type Database = {
           platform?: string
           refresh_token?: string | null
           site_url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cms_installs: {
+        Row: {
+          access_token: string
+          created_at: string | null
+          external_id: string
+          extra: Json | null
+          id: string
+          provider: string
+          refresh_token: string | null
+          scope: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string | null
+          external_id: string
+          extra?: Json | null
+          id?: string
+          provider: string
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string | null
+          external_id?: string
+          extra?: Json | null
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
