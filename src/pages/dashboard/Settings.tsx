@@ -688,11 +688,19 @@ export default function Settings() {
 
   const handleOAuthFlow = async (platform: string) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: 'Please sign in', description: 'You need to be signed in to connect integrations.', variant: 'destructive' });
+        setConnectionDialog(prev => ({ ...prev, loading: false }));
+        return;
+      }
+
       console.log(`[OAuth] Starting ${platform} oauth-start with`, { siteUrl: connectionDialog.siteUrl });
       const { data, error } = await supabase.functions.invoke('cms-integration', {
-        body: { action: 'oauth-start', platform, siteUrl: connectionDialog.siteUrl }
+        body: { action: 'oauth-start', platform, siteUrl: connectionDialog.siteUrl },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      if (error || !data?.success) throw new Error(data?.error || `Failed to start ${platform} OAuth flow`);
+      if (error || !data?.success || !data?.oauthUrl) throw new Error(data?.error || `Failed to start ${platform} OAuth flow`);
 
       const features = 'width=500,height=650,scrollbars=yes,resizable=yes';
       const popup = window.open(data.oauthUrl, `${platform}_oauth`, features);
@@ -728,6 +736,7 @@ export default function Settings() {
         }
       }, 1000);
     } catch (error: any) {
+      console.error('[OAuth] Error starting flow', { platform, error });
       toast({ title: 'OAuth Error', description: error.message, variant: 'destructive' });
       setConnectionDialog(prev => ({ ...prev, loading: false }));
     }
