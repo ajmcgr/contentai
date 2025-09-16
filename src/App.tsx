@@ -17,6 +17,7 @@ import Verify from "./pages/Verify";
 import ResendVerification from "./pages/ResendVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import FontDiagnostics from "./pages/FontDiagnostics";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
@@ -102,6 +103,7 @@ const App = () => (
             <Route path="tools/content-outline-generator" element={<ContentOutlineGenerator />} />
             <Route path="tools/readability-checker" element={<ReadabilityChecker />} />
             <Route path="typography-qa" element={<TypographyQA />} />
+            <Route path="font-diagnostics" element={<FontDiagnostics />} />
             <Route path="admin/font-debug" element={<FontDebug />} />
             <Route path="nuclear-connect" element={<NuclearConnect />} />
           </Route>

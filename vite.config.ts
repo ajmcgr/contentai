@@ -8,6 +8,23 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    // Add font caching headers for development
+    middlewareMode: false,
+    cors: true,
+  },
+  build: {
+    // Ensure font files are properly copied
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name?.endsWith('.woff2') || assetInfo.name?.endsWith('.woff')) {
+            return 'fonts/[name][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        }
+      }
+    }
   },
   plugins: [
     react(),
