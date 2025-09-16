@@ -11,6 +11,10 @@ export default defineConfig(({ mode }) => ({
     // Add font caching headers for development
     middlewareMode: false,
     cors: true,
+    headers: {
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Access-Control-Allow-Origin': '*',
+    },
   },
   build: {
     // Ensure font files are properly copied
