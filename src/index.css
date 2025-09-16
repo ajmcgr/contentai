@@ -197,11 +197,11 @@
     font-weight:500 !important;
   }
 
-  /* Footer headings should use Inter */
+  /* Footer headings should also use Reckless for consistency */
   footer :where(h1,h2,h3,h4),
   .footer-heading {
-    font-family: 'Inter', sans-serif !important;
+    font-family: "Reckless", serif !important;
     letter-spacing: normal !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
   }
 
