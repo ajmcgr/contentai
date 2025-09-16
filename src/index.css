@@ -39,9 +39,9 @@
 
     --radius: 0.5rem;
 
-    /* Global heading defaults (match trywrite.ai look) */
-    --heading-font: "RecklessLocal";
-    --heading-weight: 500;
+    /* Global heading defaults */
+    --heading-font: "Inter";
+    --heading-weight: 600;
     --heading-lh: 1.15;
     --heading-track: 0px;
 
@@ -112,7 +112,7 @@
 
   html, body {
     @apply bg-background text-foreground;
-    font-family: "RecklessLocal", serif !important;
+    font-family: 'Inter', sans-serif !important;
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -121,9 +121,9 @@
     font-variant-ligatures: common-ligatures contextual;
   }
 
-  /* Ensure RecklessLocal font loads properly on all devices */
+  /* Ensure Inter font loads properly on all devices */
   .font-reckless {
-    font-family: 'RecklessLocal' !important;
+    font-family: 'Inter' !important;
   }
 
 }
@@ -193,8 +193,8 @@
   body.force-reckless .h4,
   body.force-reckless [data-typography="heading"],
   body.force-reckless [data-heading]{
-    font-family:"RecklessLocal" !important;
-    font-weight:500 !important;
+    font-family:"Inter" !important;
+    font-weight:600 !important;
   }
 
   /* Footer headings should use Inter */

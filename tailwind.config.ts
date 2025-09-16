@@ -20,7 +20,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        reckless: ['"RecklessLocal"', 'serif'],
+        reckless: ['Inter', 'sans-serif'],
         merriweather: ["Merriweather", "serif"],
         inter: ['Inter', 'sans-serif'],
       },

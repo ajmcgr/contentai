@@ -7,7 +7,7 @@ export default function FontAuditor(){
   useEffect(()=>{
     const el = document.createElement('span');
     el.textContent = 'Reckless Auditor';
-    el.style.cssText = 'position:fixed;left:-9999px;top:-9999px;font-family:"RecklessLocal",serif;font-weight:400;font-size:32px';
+    el.style.cssText = 'position:fixed;left:-9999px;top:-9999px;font-family:"Inter",sans-serif;font-weight:400;font-size:32px';
     document.body.appendChild(el);
     const cs = getComputedStyle(el);
     setInfo({ family: cs.fontFamily, weight: cs.fontWeight, ua: navigator.userAgent });
