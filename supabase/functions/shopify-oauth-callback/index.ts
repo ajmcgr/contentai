@@ -5,21 +5,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-async function getSecrets() {
-  const secrets = {
-    SHOPIFY_API_KEY: Deno.env.get('SHOPIFY_API_KEY'),
-    SHOPIFY_API_SECRET: Deno.env.get('SHOPIFY_API_SECRET')
+async function getShopifySecrets() {
+  const supabaseServiceRole = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  )
+
+  const { data, error } = await supabaseServiceRole
+    .from("app_secrets")
+    .select("key,value")
+    .eq("namespace", "cms_integrations");
+
+  if (error) throw new Error("Failed to fetch Shopify secrets: " + error.message);
+
+  const map = Object.fromEntries((data || []).map(r => [r.key, String(r.value).trim()]));
+
+  const required = [
+    "SHOPIFY_API_KEY",
+    "SHOPIFY_API_SECRET"
+  ];
+  for (const k of required) {
+    if (!map[k]) throw new Error(`Missing Shopify secret: ${k}`);
   }
-  
-  const required = ['SHOPIFY_API_KEY', 'SHOPIFY_API_SECRET']
-  
-  for (const key of required) {
-    if (!secrets[key]) {
-      throw new Error(`Missing secret: ${key}`)
-    }
-  }
-  
-  return secrets
+
+  return {
+    apiKey: map.SHOPIFY_API_KEY,
+    apiSecret: map.SHOPIFY_API_SECRET
+  };
 }
 
 async function verifyHmac(params: Record<string, string>, secret: string): Promise<boolean> {
@@ -95,10 +107,10 @@ Deno.serve(async (req) => {
     }
 
     // Verify HMAC
-    const secrets = await getSecrets()
+    const { apiKey, apiSecret } = await getShopifySecrets()
     const params = Object.fromEntries(url.searchParams.entries())
     
-    const isValidHmac = await verifyHmac(params, secrets.SHOPIFY_API_SECRET)
+    const isValidHmac = await verifyHmac(params, apiSecret)
     if (!isValidHmac) {
       return new Response('Invalid HMAC', { 
         status: 401, 
@@ -111,8 +123,8 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        client_id: secrets.SHOPIFY_API_KEY,
-        client_secret: secrets.SHOPIFY_API_SECRET,
+        client_id: apiKey,
+        client_secret: apiSecret,
         code
       })
     })
@@ -155,7 +167,7 @@ Deno.serve(async (req) => {
 
     console.log('Shopify installation successful for user:', stateRecord.user_id, 'shop:', shop)
 
-    const appBase = Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
+    const appBase = 'https://hmrzmafwvhifjhsoizil.supabase.co';
     return new Response(null, {
       status: 302,
       headers: {
@@ -166,7 +178,7 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Shopify OAuth callback error:', error)
-    const appBase = Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
+    const appBase = 'https://hmrzmafwvhifjhsoizil.supabase.co';
     return new Response(null, { 
       status: 302, 
       headers: {

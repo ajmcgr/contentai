@@ -40,23 +40,39 @@ function topRedirectHtml(url: string) {
   });
 }
 
-async function getSecrets() {
-  const secrets = {
-    SHOPIFY_API_KEY: Deno.env.get('SHOPIFY_API_KEY'),
-    SHOPIFY_REDIRECT_URI: Deno.env.get('SHOPIFY_REDIRECT_URI'),
-    SHOPIFY_SCOPES: Deno.env.get('SHOPIFY_SCOPES'),
-    SHOPIFY_APP_URL: Deno.env.get('SHOPIFY_APP_URL'),
+async function getShopifySecrets() {
+  const supabaseServiceRole = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  )
+
+  const { data, error } = await supabaseServiceRole
+    .from("app_secrets")
+    .select("key,value")
+    .eq("namespace", "cms_integrations");
+
+  if (error) throw new Error("Failed to fetch Shopify secrets: " + error.message);
+
+  const map = Object.fromEntries((data || []).map(r => [r.key, String(r.value).trim()]));
+
+  const required = [
+    "SHOPIFY_API_KEY",
+    "SHOPIFY_API_SECRET", 
+    "SHOPIFY_APP_URL",
+    "SHOPIFY_REDIRECT_URI",
+    "SHOPIFY_SCOPES"
+  ];
+  for (const k of required) {
+    if (!map[k]) throw new Error(`Missing Shopify secret: ${k}`);
   }
-  
-  const required = ['SHOPIFY_API_KEY', 'SHOPIFY_REDIRECT_URI', 'SHOPIFY_SCOPES', 'SHOPIFY_APP_URL'] as const
-  
-  for (const key of required) {
-    if (!secrets[key]) {
-      throw new Error(`Missing secret: ${key}`)
-    }
-  }
-  
-  return secrets
+
+  return {
+    apiKey: map.SHOPIFY_API_KEY,
+    apiSecret: map.SHOPIFY_API_SECRET,
+    appUrl: map.SHOPIFY_APP_URL,
+    redirectUri: map.SHOPIFY_REDIRECT_URI,
+    scopes: map.SHOPIFY_SCOPES
+  };
 }
 
 Deno.serve(async (req) => {
@@ -98,7 +114,7 @@ Deno.serve(async (req) => {
     const shop = url.searchParams.get('shop')
     
     if (!shop || !shop.endsWith('.myshopify.com')) {
-      const appBase = Deno.env.get('SHOPIFY_APP_URL') || Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
+      const appBase = 'https://hmrzmafwvhifjhsoizil.supabase.co';
       return new Response(null, {
         status: 302,
         headers: { 
@@ -125,11 +141,11 @@ Deno.serve(async (req) => {
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString()
       })
 
-    const { SHOPIFY_API_KEY, SHOPIFY_REDIRECT_URI, SHOPIFY_APP_URL, SHOPIFY_SCOPES } = await getSecrets()
-    const hRedirect = host(SHOPIFY_REDIRECT_URI.trim())
-    const hApp = host(SHOPIFY_APP_URL.trim())
+    const { apiKey, apiSecret, appUrl, redirectUri, scopes } = await getShopifySecrets()
+    const hRedirect = host(redirectUri)
+    const hApp = host(appUrl)
 
-    console.log('[shopify-start] client_id=%s redirect=%s appUrl=%s', SHOPIFY_API_KEY, hRedirect, hApp)
+    console.log('[shopify-start] client_id=%s redirect=%s appUrl=%s', apiKey, hRedirect, hApp)
 
     if (hRedirect !== hApp) {
       console.error('[shopify-start] host-mismatch', { hRedirect, hApp })
@@ -139,11 +155,11 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Build authorize URL using *the same* SHOPIFY_REDIRECT_URI
+    // Build authorize URL using *the same* redirect URI
     const authUrl = new URL(`https://${shop}/admin/oauth/authorize`)
-    authUrl.searchParams.set('client_id', SHOPIFY_API_KEY)
-    authUrl.searchParams.set('scope', SHOPIFY_SCOPES)
-    authUrl.searchParams.set('redirect_uri', SHOPIFY_REDIRECT_URI.trim())
+    authUrl.searchParams.set('client_id', apiKey)
+    authUrl.searchParams.set('scope', scopes)
+    authUrl.searchParams.set('redirect_uri', redirectUri)
     authUrl.searchParams.set('state', state)
 
     // IMPORTANT: return iframe-safe top redirect (not a plain 302)
@@ -151,7 +167,7 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Shopify OAuth start error:', error)
-    const appBase = Deno.env.get('SHOPIFY_APP_URL') || Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
+    const appBase = 'https://hmrzmafwvhifjhsoizil.supabase.co';
     return new Response(null, {
       status: 302,
       headers: {
