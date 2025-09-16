@@ -511,17 +511,20 @@ export default function Settings() {
 
   // New OAuth handlers using direct navigation
   const onConnectShopify = async () => {
+    console.log('🔵 Shopify connect clicked, domain:', shopifyDomain);
     try {
       setBusy('shopify');
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('🔵 User check:', user?.id);
       if (!user) throw new Error('Not signed in');
       if (!shopifyDomain || !shopifyDomain.endsWith('.myshopify.com')) {
         throw new Error('Enter full shop domain like mystore.myshopify.com');
       }
+      console.log('🔵 Starting OAuth for:', shopifyDomain.trim());
       // Full-page redirect to Supabase Edge Function → Provider OAuth
       startShopifyOAuth({ shop: shopifyDomain.trim(), userId: user.id });
     } catch (e: any) {
-      console.error('Shopify connect failed:', e);
+      console.error('🔴 Shopify connect failed:', e);
       toast({
         title: "Error",
         description: e?.message || 'Shopify connect failed',
