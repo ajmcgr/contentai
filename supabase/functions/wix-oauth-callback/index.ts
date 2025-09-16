@@ -1,235 +1,80 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+type Secrets = { WIX_CLIENT_ID: string; WIX_CLIENT_SECRET: string; WIX_REDIRECT_URI: string; };
+
+async function getSecrets(): Promise<Secrets> {
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(url, key);
+  const { data, error } = await sb.from("app_secrets").select("key,value").eq("namespace","cms_integrations");
+  if (error) throw new Error("secrets fetch failed: " + error.message);
+  const map = Object.fromEntries((data||[]).map((r:any)=>[r.key, String(r.value||"").trim()]));
+  return { WIX_CLIENT_ID: map.WIX_CLIENT_ID, WIX_CLIENT_SECRET: map.WIX_CLIENT_SECRET, WIX_REDIRECT_URI: map.WIX_REDIRECT_URI };
 }
 
-async function getSecrets() {
-  // Prefer environment secrets set via Supabase Secrets
-  const envSecrets = {
-    WIX_CLIENT_ID: Deno.env.get('WIX_CLIENT_ID') ?? '',
-    WIX_CLIENT_SECRET: Deno.env.get('WIX_CLIENT_SECRET') ?? '',
-    WIX_REDIRECT_URI: Deno.env.get('WIX_REDIRECT_URI') ?? '',
-  }
-
-  const hasAll = envSecrets.WIX_CLIENT_ID && envSecrets.WIX_CLIENT_SECRET && envSecrets.WIX_REDIRECT_URI
-  if (hasAll) {
-    return envSecrets
-  }
-
-  // Fallback to app_secrets table for backward compatibility
-  const supabaseServiceRole = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  )
-  
-  const { data, error } = await supabaseServiceRole
-    .from('app_secrets')
-    .select('key, value')
-    .eq('namespace', 'cms_integrations')
-  
-  if (error) throw error
-  
-  const secrets = Object.fromEntries((data || []).map(r => [r.key, r.value]))
-  const required = ['WIX_CLIENT_ID', 'WIX_CLIENT_SECRET', 'WIX_REDIRECT_URI']
-  
-  for (const key of required) {
-    if (!secrets[key]) {
-      throw new Error(`Missing secret: ${key}`)
-    }
-  }
-  
-  return secrets
+function html(msg: string, back?: string) {
+  const s = back ? `<script>setTimeout(()=>{location.href='${back}'},1200)</script>` : "";
+  return new Response(`<!doctype html><html><body><pre>${msg}</pre>${s}</body></html>`,
+    { status: 200, headers: { "content-type":"text/html; charset=utf-8", "cache-control":"no-store" } });
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
+  const url = new URL(req.url);
+  const rid = crypto.randomUUID();
   try {
-    const supabaseServiceRole = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const code = String(url.searchParams.get("code") || "");
+    const state = String(url.searchParams.get("state") || "unknown"); // you passed userId as state
+    if (!code) return html("Missing code");
 
-    const url = new URL(req.url)
-    const state = url.searchParams.get('state')
-    const code = url.searchParams.get('code')
-    const error = url.searchParams.get('error')
+    const { WIX_CLIENT_ID, WIX_CLIENT_SECRET, WIX_REDIRECT_URI } = await getSecrets();
 
-    if (error) {
-      return new Response(`OAuth error: ${error}`, { 
-        status: 400, 
-        headers: corsHeaders 
-      })
-    }
-
-    if (!state || !code) {
-      return new Response('Missing required parameters', { 
-        status: 400, 
-        headers: corsHeaders 
-      })
-    }
-
-    // Verify state
-    const { data: stateRecord, error: stateError } = await supabaseServiceRole
-      .from('oauth_states')
-      .select('user_id, expires_at')
-      .eq('state', state)
-      .single()
-
-    if (stateError || !stateRecord) {
-      return new Response('Invalid state', { 
-        status: 401, 
-        headers: corsHeaders 
-      })
-    }
-
-    if (new Date(stateRecord.expires_at) < new Date()) {
-      return new Response('Expired state', { 
-        status: 401, 
-        headers: corsHeaders 
-      })
-    }
-
-    // Exchange code for access token
-    const secrets = await getSecrets()
-    
-    const tokenResponse = await fetch('https://www.wix.com/oauth/access', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    // Exchange code → tokens
+    const tokenRes = await fetch("https://www.wix.com/oauth/access", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        client_id: secrets.WIX_CLIENT_ID,
-        client_secret: secrets.WIX_CLIENT_SECRET,
+        grant_type: "authorization_code",
+        client_id: WIX_CLIENT_ID,
+        client_secret: WIX_CLIENT_SECRET,
         code,
-        grant_type: 'authorization_code',
-        redirect_uri: secrets.WIX_REDIRECT_URI
+        redirect_uri: WIX_REDIRECT_URI
       })
-    })
-
-    const tokenData = await tokenResponse.json()
-    if (!tokenResponse.ok || !tokenData.access_token) {
-      console.error('Wix token exchange failed:', tokenData)
-      return new Response('Token exchange failed', { 
-        status: 401, 
-        headers: corsHeaders 
-      })
+    });
+    const tok = await tokenRes.json();
+    if (!tokenRes.ok || !tok.access_token) {
+      console.error("[wix-cb]", rid, "token error", tok);
+      return html("Token exchange failed. See logs.");
     }
+    const access_token = tok.access_token as string;
+    const refresh_token = tok.refresh_token as (string | undefined);
 
-    // Get site info using the access token
-    let siteId = 'unknown'
-    try {
-      const siteResponse = await fetch('https://www.wixapis.com/site-list/v2/sites', {
-        headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
-      })
-      const siteData = await siteResponse.json()
-      if (siteResponse.ok && siteData.sites && siteData.sites.length > 0) {
-        siteId = siteData.sites[0].id
-      }
-    } catch (e) {
-      console.warn('Could not fetch site ID:', e)
-    }
+    // Probe Blog API to verify permission
+    const probe = await fetch("https://www.wixapis.com/blog/v3/posts?limit=1", {
+      headers: { "Authorization": `Bearer ${access_token}` }
+    });
+    const probeJson = await probe.json();
+    const ok = probe.ok;
 
-    // Store the install
-    const { error: insertError } = await supabaseServiceRole
-      .from('cms_installs')
-      .upsert({
-        user_id: stateRecord.user_id,
-        provider: 'wix',
-        external_id: siteId,
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        scope: tokenData.scope,
-        extra: { site_id: siteId }
-      }, {
-        onConflict: 'user_id,provider,external_id'
-      })
+    // Store install (provider 'wix'); external_id optional — you can backfill siteId later
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { error: upErr } = await sb.from("cms_installs").upsert({
+      user_id: state || "unknown",
+      provider: "wix",
+      external_id: "wix-site", // optional: fetch actual siteId if needed
+      access_token,
+      refresh_token,
+      scope: "", // Wix manages permissions at app config; keep blank/optional
+      extra: {}
+    }, { onConflict: "user_id,provider,external_id" });
+    if (upErr) console.error("[wix-cb]", rid, "upsert error", upErr);
 
-    if (insertError) {
-      console.error('Failed to store install:', insertError)
-      return new Response('Failed to store installation', { 
-        status: 500, 
-        headers: corsHeaders 
-      })
-    }
-
-    // Clean up state
-    await supabaseServiceRole
-      .from('oauth_states')
-      .delete()
-      .eq('state', state)
-
-    console.log('Wix installation successful for user:', stateRecord.user_id, 'site:', siteId)
-
-    return new Response(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Wix Connected</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 50px; }
-            .success { color: #28a745; }
-          </style>
-        </head>
-        <body>
-          <h1 class="success">✅ Wix Connected Successfully</h1>
-          <p>Your Wix site has been connected.</p>
-          <p>You can now close this window and return to the application.</p>
-          <script>
-            setTimeout(() => {
-              if (window.opener) {
-                window.opener.postMessage({ type: 'wix_connected', siteId: '${siteId}' }, '*');
-                window.close();
-              } else {
-                window.location.href = '/settings?connected=wix';
-              }
-            }, 2000);
-          </script>
-        </body>
-      </html>
-    `, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/html'
-      }
-    })
-
-  } catch (error) {
-    console.error('Wix OAuth callback error:', error)
-    return new Response(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Connection Failed</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 50px; }
-            .error { color: #dc3545; }
-          </style>
-        </head>
-        <body>
-          <h1 class="error">❌ Connection Failed</h1>
-          <p>There was an error connecting your Wix site.</p>
-          <p>Please try again or contact support if the problem persists.</p>
-          <script>
-            setTimeout(() => {
-              if (window.opener) {
-                window.opener.postMessage({ type: 'wix_error' }, '*');
-                window.close();
-              } else {
-                window.location.href = '/settings?error=wix_failed';
-              }
-            }, 3000);
-          </script>
-        </body>
-      </html>
-    `, { 
-      status: 500, 
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/html'
-      }
-    })
+    const msg = ok ? `✅ Wix access OK. Posts len: ${(probeJson?.posts?.length ?? 0)}` 
+                   : `⚠️ Wix blog probe failed: ${JSON.stringify(probeJson).slice(0,400)}`;
+    // Redirect back to Settings
+    const back = `https://hmrzmafwvhifjhsoizil.lovable.app/dashboard/settings?wix_ok=${ok ? "1" : "0"}`;
+    return html(msg, back);
+  } catch (e) {
+    console.error("[wix-cb]", rid, "error", e?.message || String(e));
+    return html("Callback failed. See logs.");
   }
-})
+});

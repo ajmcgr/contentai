@@ -1,131 +1,60 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// Deno / Supabase Edge
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+export const corsHeaders = { "access-control-allow-origin": "*", "access-control-allow-methods": "GET, OPTIONS" };
+
+type Secrets = { WIX_CLIENT_ID: string; WIX_CLIENT_SECRET: string; WIX_REDIRECT_URI: string; };
+
+async function getSecrets(): Promise<Secrets> {
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(url, key);
+  const { data, error } = await sb.from("app_secrets").select("key,value").eq("namespace", "cms_integrations");
+  if (error) throw new Error("secrets fetch failed: " + error.message);
+  const map = Object.fromEntries((data||[]).map((r:any)=>[r.key, String(r.value||"").trim()]));
+  for (const k of ["WIX_CLIENT_ID","WIX_CLIENT_SECRET","WIX_REDIRECT_URI"]) {
+    if (!map[k]) throw new Error(`missing secret: ${k}`);
+  }
+  return { WIX_CLIENT_ID: map.WIX_CLIENT_ID, WIX_CLIENT_SECRET: map.WIX_CLIENT_SECRET, WIX_REDIRECT_URI: map.WIX_REDIRECT_URI };
 }
 
-async function getSecrets() {
-  // Prefer environment secrets set via Supabase Secrets
-  const envSecrets = {
-    WIX_CLIENT_ID: Deno.env.get('WIX_CLIENT_ID') ?? '',
-    WIX_REDIRECT_URI: Deno.env.get('WIX_REDIRECT_URI') ?? '',
-  }
-
-  if (envSecrets.WIX_CLIENT_ID && envSecrets.WIX_REDIRECT_URI) {
-    return envSecrets
-  }
-
-  // Fallback to app_secrets table for backward compatibility
-  const supabaseServiceRole = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  )
-  
-  const { data, error } = await supabaseServiceRole
-    .from('app_secrets')
-    .select('key, value')
-    .eq('namespace', 'cms_integrations')
-  
-  if (error) throw error
-  
-  const secrets = Object.fromEntries((data || []).map(r => [r.key, r.value]))
-  const required = ['WIX_CLIENT_ID', 'WIX_REDIRECT_URI']
-  
-  for (const key of required) {
-    if (!secrets[key]) {
-      throw new Error(`Missing secret: ${key}`)
-    }
-  }
-  
-  return secrets
+function topRedirectHtml(targetUrl: string) {
+  const safe = targetUrl.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return new Response(
+`<!doctype html><html><head><meta charset="utf-8"><title>Redirecting…</title></head>
+<body>
+  <noscript><p>Click <a href="${safe}" target="_top" rel="noopener">continue</a>.</p></noscript>
+  <script>
+    (function(){
+      var u="${safe}";
+      try{ if(window.top && window.top!==window.self){ window.top.location.href=u; } else { window.location.href=u; } }
+      catch(e){ window.open(u,"_blank","noopener,noreferrer"); }
+    })();
+  </script>
+</body></html>`,
+    { status: 200, headers: { "content-type":"text/html; charset=utf-8", "cache-control":"no-store" } }
+  );
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const u = new URL(req.url);
+  const userId = String(u.searchParams.get("userId") || "unknown");
+  const rid = crypto.randomUUID();
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    )
+    const { WIX_CLIENT_ID, WIX_REDIRECT_URI } = await getSecrets();
+    // Build Wix Installer URL (lets user pick the site; redirectUrl must match app config)
+    const auth = new URL("https://www.wix.com/installer/install");
+    auth.searchParams.set("appId", WIX_CLIENT_ID);
+    auth.searchParams.set("redirectUrl", WIX_REDIRECT_URI);
+    // carry a state; you can encode userId if you like (URL-safe)
+    auth.searchParams.set("state", userId);
 
-    const url = new URL(req.url)
-    const authHeader = req.headers.get('Authorization')
-    let userId = 'unknown-user'
-
-    // Try to get user from auth header if present
-    if (authHeader) {
-      try {
-        const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
-          authHeader.replace('Bearer ', '')
-        )
-        if (user && !authError) {
-          userId = user.id
-        } else {
-          console.warn('Wix OAuth start - invalid auth, using query userId')
-          userId = url.searchParams.get('userId') || 'unknown-user'
-        }
-      } catch (e) {
-        console.warn('Auth check failed, using query userId:', e)
-        userId = url.searchParams.get('userId') || 'unknown-user'
-      }
-    } else {
-      // No auth header, use query param
-      userId = url.searchParams.get('userId') || 'unknown-user'
-    }
-
-    // Generate random state
-    const state = crypto.randomUUID()
-    
-    // Store state temporarily (expires in 10 minutes)
-    const supabaseServiceRole = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-    
-    await supabaseServiceRole
-      .from('oauth_states')
-      .insert({
-        state,
-        user_id: userId,
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString()
-      })
-
-    const secrets = await getSecrets()
-    
-    const authUrl = new URL('https://www.wix.com/oauth/authorize')
-    authUrl.searchParams.set('client_id', secrets.WIX_CLIENT_ID)
-    authUrl.searchParams.set('response_type', 'code')
-    authUrl.searchParams.set('scope', 'offline_access wix-blog.read wix-blog.write')
-    authUrl.searchParams.set('redirect_uri', secrets.WIX_REDIRECT_URI)
-    authUrl.searchParams.set('state', state)
-
-    // Return a redirect response instead of JSON
-    return new Response(`
-      <!DOCTYPE html>
-      <html><head><title>Redirecting...</title></head>
-      <body><script>window.location.href = '${authUrl.toString()}';</script></body>
-      </html>
-    `, {
-      headers: { 
-        ...corsHeaders,
-        'Content-Type': 'text/html'
-      }
-    })
-
-  } catch (error) {
-    console.error('Wix OAuth start error:', error)
-    return new Response(`
-      <!DOCTYPE html>
-      <html><head><title>Error</title></head>
-      <body><script>window.location.href = '/nuclear-connect?err=wix_start_failed';</script></body>
-      </html>
-    `, { 
-      status: 500, 
-      headers: { ...corsHeaders, 'Content-Type': 'text/html' }
-    })
+    console.log("[wix-start]", rid, { client: WIX_CLIENT_ID.slice(0,6)+"…", redirect: WIX_REDIRECT_URI });
+    return topRedirectHtml(auth.toString());
+  } catch (e) {
+    console.error("[wix-start]", rid, "error", e?.message || String(e));
+    return new Response("wix_start_failed", { status: 500, headers: corsHeaders });
   }
-})
+});
