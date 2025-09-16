@@ -50,30 +50,7 @@
     
     <!-- Debug badge for font loading (remove after QA) -->
     <script>
-      (async function(){
-        try{
-          console.log('🔤 Font debug starting...');
-          await (document.fonts?.ready);
-          console.log('🔤 Fonts ready');
-          
-          const headingEl = document.querySelector("h1,h2,h3,h4,[data-typography=\"heading\"],.font-heading") || document.body;
-          const cs = getComputedStyle(headingEl);
-          console.log('🔤 Heading element:', headingEl.tagName, headingEl.className);
-          console.log('🔤 Computed styles:', { fontFamily: cs.fontFamily, fontWeight: cs.fontWeight });
-          
-          const loadedReckless400 = document.fonts?.check("400 16px Reckless");
-          const loadedReckless700 = document.fonts?.check("700 16px Reckless");
-          const loadedInter400 = document.fonts?.check("400 16px Inter");
-          console.log('🔤 Font checks:', { loadedReckless400, loadedReckless700, loadedInter400 });
-          
-          const b=document.createElement("div");
-          b.style.cssText="position:fixed;left:8px;bottom:8px;padding:6px 10px;background:#000;color:#fff;font:12px/1.2 system-ui;border-radius:8px;z-index:99999;opacity:.85";
-          b.textContent=`El: ${headingEl.tagName} • Reckless: ${loadedReckless700?"YES":"NO"} • weight: ${cs.fontWeight} • fam: ${cs.fontFamily.split(',')[0]}`;
-          document.body.appendChild(b);
-        }catch(e){
-          console.error('🔤 Font debug error:', e);
-        }
-      })();
+      console.log('[Boot] Font debugging removed for cleaner UI');
     </script>
   </head>
   <body>
