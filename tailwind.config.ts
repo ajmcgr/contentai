@@ -26,6 +26,10 @@ export default {
       fontWeight: {
         'reckless-medium': '500',
         'heading': '500',
+        normal: '400',
+        medium: '500',
+        semibold: '700', // map 600 → 700 so it hits your Bold face
+        bold: '700',
       },
       colors: {
         border: "hsl(var(--border))",
