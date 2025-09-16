@@ -46,6 +46,7 @@ import ReadabilityChecker from "./pages/tools/ReadabilityChecker";
 import TypographyQA from "./pages/TypographyQA";
 import FontDebug from "./pages/admin/FontDebug";
 import NuclearConnect from "./pages/NuclearConnect";
+import FontOverrideAudit from "./components/FontOverrideAudit";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        {process.env.NODE_ENV !== 'production' && <FontOverrideAudit />}
         <Header />
         <Routes>
           <Route path="/dashboard/*" element={<AuthenticatedLayout />}>
