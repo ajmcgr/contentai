@@ -110,7 +110,7 @@
     @apply border-border;
   }
 
-  /* Inter on body by default */
+  /* Inter as the default body font */
   html, body {
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, sans-serif !important;
@@ -122,28 +122,33 @@
     font-variant-ligatures: common-ligatures contextual;
   }
 
-  /* Reckless only on headings */
-  h1, h2, h3, h4 {
+  /* Reckless for semantic headings */
+  h1, h2, h3, h4, h5, h6 {
     font-family: "RecklessLocal", serif !important;
   }
   h1, h2 { font-weight: 700 !important; }
-  h3, h4 { font-weight: 400 !important; }
-
+  h3, h4, h5, h6 { font-weight: 400 !important; }
 }
 
 @layer components {
+  /* Tailwind Typography (prose) often overrides heading fonts.
+     These rules beat the prose defaults explicitly. */
+  .prose :where(h1,h2,h3,h4,h5,h6):not(:where([class~="not-prose"] *)) {
+    font-family: "RecklessLocal", serif !important;
+  }
+
   /* Utility class for ad-hoc heading text */
   .font-heading { 
     font-family: "RecklessLocal", serif !important;
   }
 
-  :where(h1,h2,h3,h4,
-         .h1,.h2,.h3,.h4,
+  :where(h1,h2,h3,h4,h5,h6,
+         .h1,.h2,.h3,.h4,.h5,.h6,
          [role="heading"],
          [data-typography="heading"],
          [data-heading],
          .heading,.title,.hero-title,.page-title,.section-title,
-         .prose h1,.prose h2,.prose h3,.prose h4){
+         .prose h1,.prose h2,.prose h3,.prose h4,.prose h5,.prose h6){
     font-family: var(--heading-font) !important;
     font-weight: var(--heading-weight) !important;
     font-style: normal !important;
@@ -154,13 +159,13 @@
   }
 
   /* Propagate to nested nodes (links/spans/strong/em) */
-  :where(h1,h2,h3,h4,
-         .h1,.h2,.h3,.h4,
+  :where(h1,h2,h3,h4,h5,h6,
+         .h1,.h2,.h3,.h4,.h5,.h6,
          [role="heading"],
          [data-typography="heading"],
          [data-heading],
          .heading,.title,.hero-title,.page-title,.section-title,
-         .prose h1,.prose h2,.prose h3,.prose h4) *{
+         .prose h1,.prose h2,.prose h3,.prose h4,.prose h5,.prose h6) *{
     font-family: inherit !important;
     font-weight: inherit !important;
     font-style: inherit !important;
@@ -178,8 +183,8 @@
 
 /* Ensure no mobile breakpoint overrides */
 @media (max-width: 767px) {
-  h1, h2, h3, h4,
-  .h1, .h2, .h3, .h4,
+  h1, h2, h3, h4, h5, h6,
+  .h1, .h2, .h3, .h4, .h5, .h6,
   [data-typography="heading"],
   [data-heading] {
     font-weight: 500 !important; /* Slightly heavier weight for mobile */

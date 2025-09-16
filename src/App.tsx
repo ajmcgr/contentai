@@ -47,6 +47,7 @@ import TypographyQA from "./pages/TypographyQA";
 import FontDebug from "./pages/admin/FontDebug";
 import NuclearConnect from "./pages/NuclearConnect";
 import FontOverrideAudit from "./components/FontOverrideAudit";
+import HeadingFontLock from "./components/HeadingFontLock";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,8 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        {/* Forces headings to Reckless in document + any same-origin iframes */}
+        <HeadingFontLock />
         {process.env.NODE_ENV !== 'production' && <FontOverrideAudit />}
         <Header />
         <Routes>
