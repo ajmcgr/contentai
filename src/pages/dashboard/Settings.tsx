@@ -695,46 +695,55 @@ export default function Settings() {
         return;
       }
 
+      // Open a blank popup immediately to avoid blockers, then set its URL once we have it
+      const features = 'width=500,height=650,scrollbars=yes,resizable=yes';
+      const popup = window.open('', `${platform}_oauth`, features);
+
       console.log(`[OAuth] Starting ${platform} oauth-start with`, { siteUrl: connectionDialog.siteUrl });
       const { data, error } = await supabase.functions.invoke('cms-integration', {
         body: { action: 'oauth-start', platform, siteUrl: connectionDialog.siteUrl },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      if (error || !data?.success || !data?.oauthUrl) throw new Error(data?.error || `Failed to start ${platform} OAuth flow`);
 
-      const features = 'width=500,height=650,scrollbars=yes,resizable=yes';
-      const popup = window.open(data.oauthUrl, `${platform}_oauth`, features);
-
-      if (!popup) {
-        toast({ title: 'Popup blocked', description: 'Opening in this tab instead.' });
-        window.location.href = data.oauthUrl; // Fallback navigation
-        return;
+      if (error || !data?.success || !data?.oauthUrl) {
+        if (popup) popup.close();
+        throw new Error(data?.error || `Failed to start ${platform} OAuth flow`);
       }
 
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data?.type === `${platform}_connected` && event.data?.success) {
-          window.removeEventListener('message', handleMessage);
-          popup.close();
-          toast({ title: 'Connected!', description: `Successfully connected to ${platform}` });
-          fetchConnections();
-          setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
-        } else if (event.data?.type === `${platform}_oauth_error`) {
-          window.removeEventListener('message', handleMessage);
-          popup.close();
-          toast({ title: 'Connection Failed', description: event.data?.error || `Failed to complete ${platform} connection`, variant: 'destructive' });
-          setConnectionDialog(prev => ({ ...prev, loading: false }));
-        }
-      };
-      window.addEventListener('message', handleMessage);
+      console.log('[OAuth] Received oauthUrl', { platform, oauthUrl: data.oauthUrl });
 
-      // Safety: if popup gets closed without a message, stop loading
-      const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed);
-          window.removeEventListener('message', handleMessage);
-          setConnectionDialog(prev => ({ ...prev, loading: false }));
-        }
-      }, 1000);
+      if (popup) {
+        popup.location.href = data.oauthUrl;
+
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data?.type === `${platform}_connected` && event.data?.success) {
+            window.removeEventListener('message', handleMessage);
+            popup.close();
+            toast({ title: 'Connected!', description: `Successfully connected to ${platform}` });
+            fetchConnections();
+            setConnectionDialog(prev => ({ ...prev, open: false, loading: false }));
+          } else if (event.data?.type === `${platform}_oauth_error`) {
+            window.removeEventListener('message', handleMessage);
+            popup.close();
+            toast({ title: 'Connection Failed', description: event.data?.error || `Failed to complete ${platform} connection`, variant: 'destructive' });
+            setConnectionDialog(prev => ({ ...prev, loading: false }));
+          }
+        };
+        window.addEventListener('message', handleMessage);
+
+        // Safety: if popup gets closed without a message, stop loading
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener('message', handleMessage);
+            setConnectionDialog(prev => ({ ...prev, loading: false }));
+          }
+        }, 1000);
+      } else {
+        // Popup blocked: navigate current tab
+        toast({ title: 'Popup blocked', description: 'Opening in this tab instead.' });
+        window.location.href = data.oauthUrl;
+      }
     } catch (error: any) {
       console.error('[OAuth] Error starting flow', { platform, error });
       toast({ title: 'OAuth Error', description: error.message, variant: 'destructive' });
