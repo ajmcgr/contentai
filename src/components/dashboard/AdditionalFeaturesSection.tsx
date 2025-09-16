@@ -48,6 +48,12 @@ export const AdditionalFeaturesSection = () => {
             <p className="text-muted-foreground">Get expert assistance 24/7, ensuring smooth operation of all platform features.</p>
           </div>
         </div>
+        
+        <div className="text-center mt-12">
+          <h2 className="text-2xl md:text-3xl font-reckless font-medium text-foreground">
+            And Much More
+          </h2>
+        </div>
       </div>
     </div>
   );
