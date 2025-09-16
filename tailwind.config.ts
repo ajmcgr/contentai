@@ -22,6 +22,7 @@ export default {
       fontFamily: {
         reckless: ['"Reckless"', 'serif'],
         merriweather: ["Merriweather", "serif"],
+        inter: ['Inter', 'sans-serif'],
       },
       fontWeight: {
         'reckless-medium': '500',
