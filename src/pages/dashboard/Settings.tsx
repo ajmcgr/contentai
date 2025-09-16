@@ -32,6 +32,22 @@ export default function Settings() {
       : 'brand';
   });
   
+  // Relay Shopify OAuth params to Supabase Edge Function to satisfy Shopify host rule
+  const EDGE_BASE = 'https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1';
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hasShopifyOAuthParams =
+      params.has('hmac') && params.has('code') && params.has('state') && params.has('shop');
+    if (hasShopifyOAuthParams) {
+      const relay = `${EDGE_BASE}/shopify-oauth-callback${window.location.search}`;
+      try {
+        (window.top || window).location.replace(relay);
+      } catch {
+        window.location.replace(relay);
+      }
+    }
+  }, []);
+  
   // Load existing brand settings on component mount
   useEffect(() => {
     const loadBrandSettings = async () => {
