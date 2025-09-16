@@ -94,7 +94,7 @@
     <div id="root"></div>
     <script>
       try {
-        document.getElementById('root').innerHTML = '<div style="padding:12px;text-align:center;color:#444">Loading…</div>';
+        // removed loading placeholder
         window.addEventListener('error', function(e) {
           const b=document.createElement('div');
           b.style.cssText='position:fixed;top:0;left:0;right:0;background:#fee;color:#900;padding:8px;z-index:99999;font:12px/1.2 system-ui;border-bottom:1px solid #f99';
