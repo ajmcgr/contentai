@@ -699,21 +699,30 @@ export default function Settings() {
       const features = 'width=500,height=650,scrollbars=yes,resizable=yes';
       const popup = window.open('', `${platform}_oauth`, features);
 
-      console.log(`[OAuth] Starting ${platform} oauth-start with`, { siteUrl: connectionDialog.siteUrl });
-      const { data, error } = await supabase.functions.invoke('cms-integration', {
-        body: { action: 'oauth-start', platform, siteUrl: connectionDialog.siteUrl },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      let targetUrl: string | null = null;
 
-      if (error || !data?.success || !data?.oauthUrl) {
-        if (popup) popup.close();
-        throw new Error(data?.error || `Failed to start ${platform} OAuth flow`);
+      if (platform === 'wix') {
+        // Use dedicated Edge Function for Wix to guarantee function activity + redirect
+        targetUrl = `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-start?userId=${encodeURIComponent(session.user.id)}`;
+        console.log('[OAuth] Redirecting via wix-oauth-start', { targetUrl });
+      } else {
+        console.log(`[OAuth] Starting ${platform} oauth-start with`, { siteUrl: connectionDialog.siteUrl });
+        const { data, error } = await supabase.functions.invoke('cms-integration', {
+          body: { action: 'oauth-start', platform, siteUrl: connectionDialog.siteUrl },
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+
+        if (error || !data?.success || !data?.oauthUrl) {
+          if (popup) popup.close();
+          throw new Error(data?.error || `Failed to start ${platform} OAuth flow`);
+        }
+
+        targetUrl = data.oauthUrl;
+        console.log('[OAuth] Received oauthUrl', { platform, oauthUrl: targetUrl });
       }
 
-      console.log('[OAuth] Received oauthUrl', { platform, oauthUrl: data.oauthUrl });
-
       if (popup) {
-        popup.location.href = data.oauthUrl;
+        popup.location.href = targetUrl!;
 
         const handleMessage = (event: MessageEvent) => {
           if (event.data?.type === `${platform}_connected` && event.data?.success) {
@@ -742,7 +751,7 @@ export default function Settings() {
       } else {
         // Popup blocked: navigate current tab
         toast({ title: 'Popup blocked', description: 'Opening in this tab instead.' });
-        window.location.href = data.oauthUrl;
+        window.location.href = targetUrl!;
       }
     } catch (error: any) {
       console.error('[OAuth] Error starting flow', { platform, error });
