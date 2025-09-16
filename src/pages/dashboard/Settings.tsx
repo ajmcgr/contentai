@@ -2112,7 +2112,7 @@ export default function Settings() {
             onClick={handleConnect}
             disabled={
               connectionDialog.loading ||
-              !connectionDialog.siteUrl ||
+              (connectionDialog.platform !== 'wix' && !connectionDialog.siteUrl) ||
               (
                 ['wordpress', 'ghost'].includes(connectionDialog.platform)
                   ? !connectionDialog.apiKey
