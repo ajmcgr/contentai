@@ -1,4 +1,6 @@
 export const PlatformsSection = () => {
+  console.log('PlatformsSection: Component rendering started');
+  
   const primaryPlatforms = [
     {
       name: "WordPress",
@@ -48,6 +50,9 @@ export const PlatformsSection = () => {
     }
   ];
 
+  console.log('PlatformsSection: primaryPlatforms defined', primaryPlatforms.length);
+  console.log('PlatformsSection: otherPlatforms defined', otherPlatforms.length);
+  
   return (
     <section className="py-20" style={{ backgroundColor: 'hsl(var(--section-white))' }}>
       <div className="container mx-auto px-4">
