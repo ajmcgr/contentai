@@ -15,7 +15,10 @@ export function startShopifyOAuth({ shop, userId }: { shop: string; userId: stri
     throw new Error('Enter full shop domain like mystore.myshopify.com');
   }
   const url = `${EDGE_BASE}/shopify-oauth-start?shop=${encodeURIComponent(shop)}&userId=${encodeURIComponent(userId)}`;
+  console.log('🟡 Constructed OAuth URL:', url);
+  console.log('🟡 Attempting navigation...');
   goTop(url);
+  console.log('🟡 Navigation called');
 }
 
 export function startWixOAuth({ userId }: { userId: string }) {
