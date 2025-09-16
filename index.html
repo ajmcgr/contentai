@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/lovable-uploads/78e855d7-32c3-4df1-80d5-81ad944df77c.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
     
     <!-- Preload Reckless fonts for headings -->
     <link rel="preload" href="/fonts/reckless/Reckless-Regular.woff2?v=7" as="font" type="font/woff2" crossorigin />
@@ -55,18 +55,19 @@
           await (document.fonts?.ready);
           console.log('🔤 Fonts ready');
           
-          const headingEl = document.querySelector("h1,h2,h3,h4,[data-typography=\\"heading\\"],.font-reckless") || document.body;
+          const headingEl = document.querySelector("h1,h2,h3,h4,[data-typography=\"heading\"],.font-heading") || document.body;
           const cs = getComputedStyle(headingEl);
           console.log('🔤 Heading element:', headingEl.tagName, headingEl.className);
           console.log('🔤 Computed styles:', { fontFamily: cs.fontFamily, fontWeight: cs.fontWeight });
           
-          const loaded600 = document.fonts?.check("600 16px Inter");
-          const loaded400 = document.fonts?.check("400 16px Inter");
-          console.log('🔤 Font checks:', { loaded600, loaded400 });
+          const loadedReckless400 = document.fonts?.check("400 16px Reckless");
+          const loadedReckless700 = document.fonts?.check("700 16px Reckless");
+          const loadedInter400 = document.fonts?.check("400 16px Inter");
+          console.log('🔤 Font checks:', { loadedReckless400, loadedReckless700, loadedInter400 });
           
           const b=document.createElement("div");
           b.style.cssText="position:fixed;left:8px;bottom:8px;padding:6px 10px;background:#000;color:#fff;font:12px/1.2 system-ui;border-radius:8px;z-index:99999;opacity:.85";
-          b.textContent=`El: ${headingEl.tagName} • Inter 600: ${loaded600?"YES":"NO"} • weight: ${cs.fontWeight} • fam: ${cs.fontFamily.split(',')[0]}`;
+          b.textContent=`El: ${headingEl.tagName} • Reckless: ${loadedReckless700?"YES":"NO"} • weight: ${cs.fontWeight} • fam: ${cs.fontFamily.split(',')[0]}`;
           document.body.appendChild(b);
         }catch(e){
           console.error('🔤 Font debug error:', e);

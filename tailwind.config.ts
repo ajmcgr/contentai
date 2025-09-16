@@ -20,9 +20,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],   // body
-        heading: ['"RecklessLocal"', 'serif'],         // headings
-        'inter': ['Inter', 'sans-serif'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],   // body
+        heading: ['var(--font-reckless)', 'serif'],               // headings
+        'inter': ['var(--font-inter)', 'sans-serif'],
       },
       fontWeight: {
         'reckless-medium': '500',

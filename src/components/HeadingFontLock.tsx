@@ -3,10 +3,10 @@ import { useEffect } from 'react';
 
 const CSS = `
 h1,h2,h3,h4,h5,h6,.font-heading{
-  font-family:"RecklessLocal", serif !important;
+  font-family: var(--font-reckless), serif !important;
 }
 .prose :where(h1,h2,h3,h4,h5,h6):not(:where([class~="not-prose"] *)){
-  font-family:"RecklessLocal", serif !important;
+  font-family: var(--font-reckless), serif !important;
 }
 `;
 
