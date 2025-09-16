@@ -9,10 +9,11 @@ async function getSecrets() {
   const secrets = {
     SHOPIFY_API_KEY: Deno.env.get('SHOPIFY_API_KEY'),
     SHOPIFY_REDIRECT_URI: Deno.env.get('SHOPIFY_REDIRECT_URI'),
-    SHOPIFY_SCOPES: Deno.env.get('SHOPIFY_SCOPES')
+    SHOPIFY_SCOPES: Deno.env.get('SHOPIFY_SCOPES'),
+    SHOPIFY_APP_URL: Deno.env.get('SHOPIFY_APP_URL'),
   }
   
-  const required = ['SHOPIFY_API_KEY', 'SHOPIFY_REDIRECT_URI', 'SHOPIFY_SCOPES']
+  const required = ['SHOPIFY_API_KEY', 'SHOPIFY_REDIRECT_URI', 'SHOPIFY_SCOPES', 'SHOPIFY_APP_URL'] as const
   
   for (const key of required) {
     if (!secrets[key]) {
@@ -62,7 +63,7 @@ Deno.serve(async (req) => {
     const shop = url.searchParams.get('shop')
     
     if (!shop || !shop.endsWith('.myshopify.com')) {
-      const appBase = Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
+      const appBase = Deno.env.get('SHOPIFY_APP_URL') || Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
       return new Response(null, {
         status: 302,
         headers: { 
@@ -90,11 +91,56 @@ Deno.serve(async (req) => {
       })
 
     const secrets = await getSecrets()
-    
+
+    const rid = crypto.randomUUID()
+    const redirectHost = new URL(secrets.SHOPIFY_REDIRECT_URI!).host
+    const appHost = new URL(secrets.SHOPIFY_APP_URL!).host
+
+    // Log inputs and derived values
+    try {
+      await supabaseServiceRole.from('app_logs').insert({
+        provider: 'shopify',
+        stage: 'oauth.start',
+        level: 'info',
+        correlation_id: rid,
+        detail: JSON.stringify({
+          userId,
+          shop,
+          redirect_uri: secrets.SHOPIFY_REDIRECT_URI,
+          app_url: secrets.SHOPIFY_APP_URL,
+          scopes: secrets.SHOPIFY_SCOPES,
+          redirect_host: redirectHost,
+          app_host: appHost,
+          referer: req.headers.get('referer') || null,
+          origin: req.headers.get('origin') || null,
+        }).slice(0, 8000)
+      })
+    } catch (_) { /* ignore logging failures */ }
+
+    // Enforce host match between configured redirect_uri and App URL
+    if (redirectHost !== appHost) {
+      try {
+        await supabaseServiceRole.from('app_logs').insert({
+          provider: 'shopify',
+          stage: 'oauth.start.host_mismatch',
+          level: 'error',
+          correlation_id: rid,
+          detail: JSON.stringify({ redirectHost, appHost }).slice(0, 8000)
+        })
+      } catch (_) { /* ignore */ }
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          Location: `${secrets.SHOPIFY_APP_URL}/dashboard/settings?error=host_mismatch&rid=${rid}`
+        }
+      })
+    }
+
     const authUrl = new URL(`https://${shop}/admin/oauth/authorize`)
-    authUrl.searchParams.set('client_id', secrets.SHOPIFY_API_KEY)
-    authUrl.searchParams.set('scope', secrets.SHOPIFY_SCOPES)
-    authUrl.searchParams.set('redirect_uri', secrets.SHOPIFY_REDIRECT_URI)
+    authUrl.searchParams.set('client_id', secrets.SHOPIFY_API_KEY!)
+    authUrl.searchParams.set('scope', secrets.SHOPIFY_SCOPES!)
+    authUrl.searchParams.set('redirect_uri', secrets.SHOPIFY_REDIRECT_URI!)
     authUrl.searchParams.set('state', state)
 
     // 302 redirect to Shopify OAuth
@@ -108,7 +154,7 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Shopify OAuth start error:', error)
-    const appBase = Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
+    const appBase = Deno.env.get('SHOPIFY_APP_URL') || Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
     return new Response(null, {
       status: 302,
       headers: {
