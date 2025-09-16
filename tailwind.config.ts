@@ -20,9 +20,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        reckless: ['Inter', 'sans-serif'],
-        merriweather: ["Merriweather", "serif"],
-        inter: ['Inter', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],   // body
+        heading: ['"RecklessLocal"', 'serif'],         // headings
+        'inter': ['Inter', 'sans-serif'],
       },
       fontWeight: {
         'reckless-medium': '500',

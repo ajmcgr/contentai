@@ -40,8 +40,8 @@
     --radius: 0.5rem;
 
     /* Global heading defaults */
-    --heading-font: "Inter";
-    --heading-weight: 600;
+    --heading-font: "RecklessLocal", serif;
+    --heading-weight: 400;
     --heading-lh: 1.15;
     --heading-track: 0px;
 
@@ -110,9 +110,10 @@
     @apply border-border;
   }
 
+  /* Inter on body by default */
   html, body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -121,14 +122,21 @@
     font-variant-ligatures: common-ligatures contextual;
   }
 
-  /* Ensure Inter font loads properly on all devices */
-  .font-reckless {
-    font-family: 'Inter' !important;
+  /* Reckless only on headings */
+  h1, h2, h3, h4 {
+    font-family: "RecklessLocal", serif !important;
   }
+  h1, h2 { font-weight: 700 !important; }
+  h3, h4 { font-weight: 400 !important; }
 
 }
 
 @layer components {
+  /* Utility class for ad-hoc heading text */
+  .font-heading { 
+    font-family: "RecklessLocal", serif !important;
+  }
+
   :where(h1,h2,h3,h4,
          .h1,.h2,.h3,.h4,
          [role="heading"],
@@ -168,40 +176,40 @@
   }
 }
 
-  /* Ensure no mobile breakpoint overrides */
-  @media (max-width: 767px) {
-    h1, h2, h3, h4,
-    .h1, .h2, .h3, .h4,
-    [data-typography="heading"],
-    [data-heading] {
-      font-weight: 500 !important; /* Slightly heavier weight for mobile */
-    }
+/* Ensure no mobile breakpoint overrides */
+@media (max-width: 767px) {
+  h1, h2, h3, h4,
+  .h1, .h2, .h3, .h4,
+  [data-typography="heading"],
+  [data-heading] {
+    font-weight: 500 !important; /* Slightly heavier weight for mobile */
   }
+}
 
-  a:hover {
-    color: #000000 !important;
-  }
+a:hover {
+  color: #000000 !important;
+}
 
-  /* Force mode for debugging (toggle via body class) */
-  body.force-reckless h1,
-  body.force-reckless h2,
-  body.force-reckless h3,
-  body.force-reckless h4,
-  body.force-reckless .h1,
-  body.force-reckless .h2,
-  body.force-reckless .h3,
-  body.force-reckless .h4,
-  body.force-reckless [data-typography="heading"],
-  body.force-reckless [data-heading]{
-    font-family:"Inter" !important;
-    font-weight:600 !important;
-  }
+/* Force mode for debugging (toggle via body class) */
+body.force-reckless h1,
+body.force-reckless h2,
+body.force-reckless h3,
+body.force-reckless h4,
+body.force-reckless .h1,
+body.force-reckless .h2,
+body.force-reckless .h3,
+body.force-reckless .h4,
+body.force-reckless [data-typography="heading"],
+body.force-reckless [data-heading]{
+  font-family:"Inter" !important;
+  font-weight:600 !important;
+}
 
-  /* Footer headings should use Inter */
-  footer :where(h1,h2,h3,h4),
-  .footer-heading {
-    font-family: 'Inter', sans-serif !important;
-    letter-spacing: normal !important;
-    font-weight: 600 !important;
-  }
+/* Footer headings should use Inter */
+footer :where(h1,h2,h3,h4),
+.footer-heading {
+  font-family: 'Inter', sans-serif !important;
+  letter-spacing: normal !important;
+  font-weight: 600 !important;
+}
 

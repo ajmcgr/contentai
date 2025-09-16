@@ -1,32 +1,17 @@
-/* Unique family to avoid collisions with any other "Reckless" declarations */
-@font-face {
-  font-family: "RecklessLocal";
+/* Reckless as a distinct family name to avoid collisions */
+@font-face{
+  font-family:"RecklessLocal";
   src:
-    url("/fonts/reckless/Reckless-Regular.woff2?v=4") format("woff2"),
-    url("/fonts/reckless/Reckless-Regular.woff?v=4") format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+    url("/fonts/reckless/Reckless-Regular.woff2?v=1") format("woff2"),
+    url("/fonts/reckless/Reckless-Regular.woff?v=1") format("woff");
+  font-weight:400; font-style:normal; font-display:swap;
 }
-
-@font-face {
-  font-family: "RecklessLocal";
+@font-face{
+  font-family:"RecklessLocal";
   src:
-    url("/fonts/reckless/Reckless-Medium.woff2?v=4") format("woff2"),
-    url("/fonts/reckless/Reckless-Medium.woff?v=4") format("woff");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "RecklessLocal";
-  src:
-    url("/fonts/reckless/Reckless-Bold.woff2?v=4") format("woff2"),
-    url("/fonts/reckless/Reckless-Bold.woff?v=4") format("woff");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
+    url("/fonts/reckless/Reckless-Bold.woff2?v=1") format("woff2"),
+    url("/fonts/reckless/Reckless-Bold.woff?v=1") format("woff");
+  font-weight:700; font-style:normal; font-display:swap;
 }
 
 /* Kill synthetic variants that can look "different" */
