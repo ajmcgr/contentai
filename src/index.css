@@ -174,7 +174,7 @@
     .h1, .h2, .h3, .h4,
     [data-typography="heading"],
     [data-heading] {
-      font-weight: 400 !important; /* Decreased weight for mobile */
+      font-weight: 500 !important; /* Slightly heavier weight for mobile */
     }
   }
 
