@@ -12,21 +12,11 @@ export async function startShopifyOAuth(shop: string) {
     throw new Error('Not authenticated');
   }
 
-  const response = await supabase.functions.invoke('shopify-oauth-start', {
-    body: {},
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-    },
-  });
+  // Build direct function URL with query params and redirect the browser
+  const fnUrl = `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/shopify-oauth-start?shop=${encodeURIComponent(shop)}&userId=${encodeURIComponent(session.user.id)}`;
 
-  if (response.error) {
-    throw new Error(response.error.message || 'OAuth start failed');
-  }
-
-  const { authUrl } = response.data;
-  
-  // Direct redirect - no fetch, no popup
-  window.location.assign(authUrl);
+  console.log('[Integrations] Redirecting to Shopify OAuth start', { fnUrl });
+  window.location.assign(fnUrl);
 }
 
 export async function startWixOAuth() {
@@ -37,21 +27,11 @@ export async function startWixOAuth() {
     throw new Error('Not authenticated');
   }
 
-  const response = await supabase.functions.invoke('wix-oauth-start', {
-    body: {},
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-    },
-  });
+  // Build direct function URL with query params and redirect the browser
+  const fnUrl = `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-start?userId=${encodeURIComponent(session.user.id)}`;
 
-  if (response.error) {
-    throw new Error(response.error.message || 'OAuth start failed');
-  }
-
-  const { authUrl } = response.data;
-  
-  // Direct redirect - no fetch, no popup  
-  window.location.assign(authUrl);
+  console.log('[Integrations] Redirecting to Wix OAuth start', { fnUrl });
+  window.location.assign(fnUrl);
 }
 
 export async function getIntegrationStatus() {
