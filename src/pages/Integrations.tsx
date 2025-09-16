@@ -106,7 +106,14 @@ const Integrations = () => {
     try {
       setConnecting('shopify');
       console.log('[Integrations] Shopify connect clicked', { shop: shopInput });
-      await startShopifyOAuth(shopInput.trim());
+      
+      // Get user ID from auth session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+      
+      startShopifyOAuth({ shop: shopInput.trim(), userId: session.user.id });
     } catch (error: any) {
       setConnecting(null);
       setToast(error?.message || 'Shopify start failed');
@@ -118,7 +125,14 @@ const Integrations = () => {
     try {
       setConnecting('wix');
       console.log('[Integrations] Wix connect clicked');
-      await startWixOAuth();
+      
+      // Get user ID from auth session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+      
+      startWixOAuth({ userId: session.user.id });
     } catch (error: any) {
       setConnecting(null);
       setToast(error?.message || 'Wix start failed');

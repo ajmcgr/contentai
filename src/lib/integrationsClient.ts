@@ -1,38 +1,29 @@
-import { supabase } from '@/integrations/supabase/client';
+const EDGE_BASE = 'https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1';
 
-export async function startShopifyOAuth(shop: string) {
+// Always navigate the TOP window (escapes iframes, avoids popup blockers)
+function goTop(href: string) {
+  if (!href) return;
+  try {
+    (window.top || window).location.href = href;
+  } catch {
+    window.location.href = href;
+  }
+}
+
+export function startShopifyOAuth({ shop, userId }: { shop: string; userId: string }) {
   if (!shop || !shop.endsWith('.myshopify.com')) {
     throw new Error('Enter full shop domain like mystore.myshopify.com');
   }
-
-  console.log('[Integrations] Shopify connect clicked', { shop });
-
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error('Not authenticated');
-  }
-
-  // Build direct function URL with query params and redirect the browser
-  const fnUrl = `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/shopify-oauth-start?shop=${encodeURIComponent(shop)}&userId=${encodeURIComponent(session.user.id)}`;
-
-  console.log('[Integrations] Redirecting to Shopify OAuth start', { fnUrl });
-  window.location.assign(fnUrl);
+  const url = `${EDGE_BASE}/shopify-oauth-start?shop=${encodeURIComponent(shop)}&userId=${encodeURIComponent(userId)}`;
+  goTop(url);
 }
 
-export async function startWixOAuth() {
-  console.log('[Integrations] Wix connect clicked');
-
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    throw new Error('Not authenticated');
-  }
-
-  // Build direct function URL with query params and redirect the browser
-  const fnUrl = `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-start?userId=${encodeURIComponent(session.user.id)}`;
-
-  console.log('[Integrations] Redirecting to Wix OAuth start', { fnUrl });
-  window.location.assign(fnUrl);
+export function startWixOAuth({ userId }: { userId: string }) {
+  const url = `${EDGE_BASE}/wix-oauth-start?userId=${encodeURIComponent(userId)}`;
+  goTop(url);
 }
+
+import { supabase } from '@/integrations/supabase/client';
 
 export async function getIntegrationStatus() {
   const { data: { session } } = await supabase.auth.getSession();

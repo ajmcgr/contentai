@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { WordPressConnect } from "@/components/WordPressConnect";
 import { ArticleScheduler } from "@/components/ArticleScheduler";
+import { startShopifyOAuth, startWixOAuth, getIntegrationStatus } from "@/lib/integrationsClient";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -489,6 +490,48 @@ export default function Settings() {
     loading: false
   });
 
+  const [shopifyDomain, setShopifyDomain] = useState('');
+  const [busy, setBusy] = useState<'shopify'|'wix'|null>(null);
+
+  // New OAuth handlers using direct navigation
+  const onConnectShopify = async () => {
+    try {
+      setBusy('shopify');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not signed in');
+      if (!shopifyDomain || !shopifyDomain.endsWith('.myshopify.com')) {
+        throw new Error('Enter full shop domain like mystore.myshopify.com');
+      }
+      // Full-page redirect to Supabase Edge Function → Provider OAuth
+      startShopifyOAuth({ shop: shopifyDomain.trim(), userId: user.id });
+    } catch (e: any) {
+      console.error('Shopify connect failed:', e);
+      toast({
+        title: "Error",
+        description: e?.message || 'Shopify connect failed',
+        variant: "destructive",
+      });
+      setBusy(null);
+    }
+  };
+
+  const onConnectWix = async () => {
+    try {
+      setBusy('wix');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not signed in');
+      startWixOAuth({ userId: user.id });
+    } catch (e: any) {
+      console.error('Wix connect failed:', e);
+      toast({
+        title: "Error",
+        description: e?.message || 'Wix connect failed',
+        variant: "destructive",
+      });
+      setBusy(null);
+    }
+  };
+
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -650,11 +693,11 @@ export default function Settings() {
   // Fetch existing connections and handle OAuth return
   const fetchConnections = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('cms-integration', { body: { action: 'status' } });
-      if (!error && data?.success && Array.isArray(data.connections)) {
+      const status = await getIntegrationStatus();
+      if (status?.success && Array.isArray(status.connections)) {
         setIntegrations(prev => {
           const next: typeof prev = { ...prev };
-          for (const c of data.connections as any[]) {
+          for (const c of status.connections as any[]) {
             if ((next as any)[c.platform]) {
               (next as any)[c.platform] = {
                 connected: true,
@@ -668,14 +711,29 @@ export default function Settings() {
           return next;
         });
       }
-    } catch {}
+    } catch (error) {
+      console.error('Error fetching connections:', error);
+    }
   };
 
   useEffect(() => {
     fetchConnections();
     const params = new URLSearchParams(window.location.search);
+    const connected = params.get('connected');
     const platform = params.get('platform');
     const success = params.get('success');
+    
+    // Handle OAuth return for new flow
+    if (connected) {
+      toast({
+        title: 'Connection successful',
+        description: `Connected to ${connected.charAt(0).toUpperCase() + connected.slice(1)} successfully.`
+      });
+      fetchConnections();
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    
+    // Handle legacy WordPress flow
     if (platform === 'wordpress' && success === '1') {
       toast({
         title: 'Connection successful',
@@ -684,7 +742,7 @@ export default function Settings() {
       fetchConnections();
       window.history.replaceState(null, '', window.location.pathname);
     }
-  }, []);
+  }, [toast]);
 
   const handleOAuthFlow = async (platform: string) => {
     try {
@@ -1744,19 +1802,19 @@ export default function Settings() {
                           </div>
 
                           {/* Shopify Integration - Featured */}
-                          <div className="relative flex items-center justify-between p-4 border border-green-200 bg-green-50/50 rounded-lg">
+                          <div className="relative border border-green-200 bg-green-50/50 rounded-lg p-4">
                             <div className="absolute top-4 right-4">
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 Live
                               </span>
                             </div>
-                            <div className="flex items-center gap-3 flex-1 pr-16">
+                            <div className="flex items-center gap-3 mb-4">
                               <img 
                                 src="/lovable-uploads/93b6287a-d091-4ee7-b4ae-e45ea7a3e122.png"
                                 alt="Shopify logo"
                                 className="w-12 h-12 object-contain"
                               />
-                              <div className="flex-1">
+                              <div className="flex-1 pr-16">
                                 <h4 className="font-semibold text-lg">Shopify</h4>
                                 <p className="text-sm text-muted-foreground">
                                   Add a blog to your Shopify store and boost your SEO with ease.
@@ -1774,29 +1832,40 @@ export default function Settings() {
                                 </Button>
                               </div>
                             ) : (
-                              <Button 
-                                onClick={() => openConnectionDialog('shopify')}
-                                className="bg-primary hover:bg-primary/90"
-                              >
-                                Connect
-                              </Button>
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                  <Input
+                                    placeholder="mystore.myshopify.com"
+                                    value={shopifyDomain}
+                                    onChange={(e) => setShopifyDomain(e.target.value)}
+                                    className="flex-1"
+                                  />
+                                  <Button
+                                    onClick={onConnectShopify}
+                                    disabled={busy === 'shopify'}
+                                    className="bg-primary hover:bg-primary/90"
+                                  >
+                                    {busy === 'shopify' ? 'Redirecting…' : 'Connect'}
+                                  </Button>
+                                </div>
+                              </div>
                             )}
                           </div>
 
                           {/* Wix Integration - Featured */}
-                          <div className="relative flex items-center justify-between p-4 border border-green-200 bg-green-50/50 rounded-lg">
+                          <div className="relative border border-green-200 bg-green-50/50 rounded-lg p-4">
                             <div className="absolute top-4 right-4">
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 Live
                               </span>
                             </div>
-                            <div className="flex items-center gap-3 flex-1 pr-16">
+                            <div className="flex items-center gap-3 mb-4">
                               <img 
                                 src="/lovable-uploads/4a03d01f-8a2e-4efb-9cbc-a7fd87e0ce20.png"
                                 alt="Wix logo"
                                 className="w-12 h-12 object-contain"
                               />
-                              <div className="flex-1">
+                              <div className="flex-1 pr-16">
                                 <h4 className="font-semibold text-lg">Wix</h4>
                                 <p className="text-sm text-muted-foreground">
                                   Publish your blogs directly to your Wix site blog.
@@ -1814,11 +1883,12 @@ export default function Settings() {
                                 </Button>
                               </div>
                             ) : (
-                              <Button 
-                                onClick={() => openConnectionDialog('wix')}
+                              <Button
+                                onClick={onConnectWix}
+                                disabled={busy === 'wix'}
                                 className="bg-primary hover:bg-primary/90"
                               >
-                                Connect
+                                {busy === 'wix' ? 'Redirecting…' : 'Connect'}
                               </Button>
                             )}
                           </div>

@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
                 window.opener.postMessage({ type: 'wix_connected', siteId: '${siteId}' }, '*');
                 window.close();
               } else {
-                window.location.href = '/nuclear-connect?wix=connected';
+                window.location.href = '/settings?connected=wix';
               }
             }, 2000);
           </script>
@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
                 window.opener.postMessage({ type: 'wix_error' }, '*');
                 window.close();
               } else {
-                window.location.href = '/nuclear-connect?error=wix_failed';
+                window.location.href = '/settings?error=wix_failed';
               }
             }, 3000);
           </script>
