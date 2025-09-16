@@ -102,11 +102,11 @@ const Integrations = () => {
     }
   };
 
-  const onShopifyConnect = () => {
+  const onShopifyConnect = async () => {
     try {
       setConnecting('shopify');
       console.log('[Integrations] Shopify connect clicked', { shop: shopInput });
-      startShopifyOAuth(shopInput.trim());
+      await startShopifyOAuth(shopInput.trim());
     } catch (error: any) {
       setConnecting(null);
       setToast(error?.message || 'Shopify start failed');
@@ -114,11 +114,11 @@ const Integrations = () => {
     }
   };
 
-  const onWixConnect = () => {
+  const onWixConnect = async () => {
     try {
       setConnecting('wix');
       console.log('[Integrations] Wix connect clicked');
-      startWixOAuth();
+      await startWixOAuth();
     } catch (error: any) {
       setConnecting(null);
       setToast(error?.message || 'Wix start failed');
