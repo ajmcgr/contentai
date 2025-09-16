@@ -758,7 +758,8 @@ export default function Settings() {
     try {
       // Basic client-side validation
       if (!connectionDialog.platform) throw new Error('Please choose a platform.');
-      if (!connectionDialog.siteUrl) throw new Error('Please enter your site URL.');
+      const requiresSiteUrl = !['wix'].includes(connectionDialog.platform);
+      if (requiresSiteUrl && !connectionDialog.siteUrl) throw new Error('Please enter your site URL.');
       
       // Handle OAuth flows for specific platforms
       if (connectionDialog.platform === 'wordpress' && 
