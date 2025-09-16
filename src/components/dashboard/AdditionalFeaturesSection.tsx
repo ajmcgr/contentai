@@ -4,6 +4,12 @@ export const AdditionalFeaturesSection = () => {
   return (
     <div className="py-20 bg-white">
       <div className="max-w-4xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-reckless font-medium text-foreground">
+            And Much More
+          </h2>
+        </div>
+        
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="text-center p-6">
             <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -47,12 +53,6 @@ export const AdditionalFeaturesSection = () => {
             <h3 className="text-xl font-reckless mb-2 text-foreground">Support</h3>
             <p className="text-muted-foreground">Get expert assistance 24/7, ensuring smooth operation of all platform features.</p>
           </div>
-        </div>
-        
-        <div className="text-center mt-12">
-          <h2 className="text-2xl md:text-3xl font-reckless font-medium text-foreground">
-            And Much More
-          </h2>
         </div>
       </div>
     </div>
