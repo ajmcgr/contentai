@@ -6,6 +6,19 @@ const corsHeaders = {
 }
 
 async function getSecrets() {
+  // Prefer environment secrets set via Supabase Secrets
+  const envSecrets = {
+    WIX_CLIENT_ID: Deno.env.get('WIX_CLIENT_ID') ?? '',
+    WIX_CLIENT_SECRET: Deno.env.get('WIX_CLIENT_SECRET') ?? '',
+    WIX_REDIRECT_URI: Deno.env.get('WIX_REDIRECT_URI') ?? '',
+  }
+
+  const hasAll = envSecrets.WIX_CLIENT_ID && envSecrets.WIX_CLIENT_SECRET && envSecrets.WIX_REDIRECT_URI
+  if (hasAll) {
+    return envSecrets
+  }
+
+  // Fallback to app_secrets table for backward compatibility
   const supabaseServiceRole = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''

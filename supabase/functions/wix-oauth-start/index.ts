@@ -6,6 +6,17 @@ const corsHeaders = {
 }
 
 async function getSecrets() {
+  // Prefer environment secrets set via Supabase Secrets
+  const envSecrets = {
+    WIX_CLIENT_ID: Deno.env.get('WIX_CLIENT_ID') ?? '',
+    WIX_REDIRECT_URI: Deno.env.get('WIX_REDIRECT_URI') ?? '',
+  }
+
+  if (envSecrets.WIX_CLIENT_ID && envSecrets.WIX_REDIRECT_URI) {
+    return envSecrets
+  }
+
+  // Fallback to app_secrets table for backward compatibility
   const supabaseServiceRole = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -88,7 +99,7 @@ Deno.serve(async (req) => {
     const authUrl = new URL('https://www.wix.com/oauth/authorize')
     authUrl.searchParams.set('client_id', secrets.WIX_CLIENT_ID)
     authUrl.searchParams.set('response_type', 'code')
-    authUrl.searchParams.set('scope', 'offline_access')
+    authUrl.searchParams.set('scope', 'offline_access wix-blog.read wix-blog.write')
     authUrl.searchParams.set('redirect_uri', secrets.WIX_REDIRECT_URI)
     authUrl.searchParams.set('state', state)
 
