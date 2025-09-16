@@ -1,12 +1,24 @@
 const EDGE_BASE = 'https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1';
 
-// Always navigate the TOP window (escapes iframes, avoids popup blockers)
+// Always navigate the TOP window. If inside an iframe, open a new tab to avoid frame restrictions
 function goTop(href: string) {
   if (!href) return;
   try {
-    (window.top || window).location.href = href;
-  } catch {
+    // If we are inside an iframe, prefer opening a new tab (Shopify blocks being framed)
+    if (window.top && window.top !== window) {
+      const w = window.open(href, '_blank', 'noopener,noreferrer');
+      if (!w) {
+        // Fallback: attempt top navigation
+        (window.top as Window).location.href = href;
+      }
+      return;
+    }
+    // Not in an iframe: regular navigation
     window.location.href = href;
+  } catch {
+    // Last resort
+    const w = window.open(href, '_blank', 'noopener,noreferrer');
+    if (!w) window.location.href = href;
   }
 }
 
