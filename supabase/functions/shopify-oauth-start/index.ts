@@ -11,14 +11,15 @@ function host(u: string) {
 }
 
 function topRedirectHtml(url: string) {
-  return new Response(`
+  const html = `
     <!DOCTYPE html>
     <html>
     <head>
+      <meta http-equiv="refresh" content="0;url=${url}">
       <title>Redirecting to Shopify...</title>
     </head>
     <body>
-      <p>Redirecting to Shopify authorization...</p>
+      <p>Redirecting to Shopify authorization... If not redirected, <a href="${url}" target="_top" rel="noopener noreferrer">click here</a>.</p>
       <script>
         try {
           if (window.top && window.top !== window) {
@@ -32,10 +33,14 @@ function topRedirectHtml(url: string) {
       </script>
     </body>
     </html>
-  `, {
+  `;
+  return new Response(html, {
+    status: 302,
     headers: {
       ...corsHeaders,
-      'Content-Type': 'text/html'
+      'Content-Type': 'text/html',
+      'Location': url,
+      'Referrer-Policy': 'no-referrer'
     }
   });
 }
