@@ -7,43 +7,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- Preload the Reckless faces from local assets -->
-    <link rel="preload" href="/fonts/reckless/Reckless-Medium.otf" as="font" type="font/otf" crossorigin>
-    <link rel="preload" href="/fonts/reckless/Reckless-Regular.otf" as="font" type="font/otf" crossorigin>
-    <link rel="preload" href="/fonts/reckless/Reckless-Bold.otf" as="font" type="font/otf" crossorigin>
-    <!-- Keep woff2 preloads (will be ignored if invalid) -->
-    <link rel="preload" href="/fonts/reckless/Reckless-Medium.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/reckless/Reckless-Regular.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/reckless/Reckless-Bold.woff2" as="font" type="font/woff2" crossorigin>
-    
-    <style>
-      @font-face {
-        font-family: 'Reckless';
-        src: url('/fonts/reckless/Reckless-Regular.woff2') format('woff2'),
-             url('/fonts/reckless/Reckless-Regular.otf') format('opentype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-      }
-      
-      @font-face {
-        font-family: 'Reckless';
-        src: url('/fonts/reckless/Reckless-Medium.woff2') format('woff2'),
-             url('/fonts/reckless/Reckless-Medium.otf') format('opentype');
-        font-weight: 500;
-        font-style: normal;
-        font-display: swap;
-      }
-      
-      @font-face {
-        font-family: 'Reckless';
-        src: url('/fonts/reckless/Reckless-Bold.woff2') format('woff2'),
-             url('/fonts/reckless/Reckless-Bold.otf') format('opentype');
-        font-weight: 700;
-        font-style: normal;
-        font-display: swap;
-      }
-    </style>
+    <!-- Preload Reckless font for better performance -->
+    <link
+      rel="preload"
+      href="/fonts/reckless/Reckless-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossOrigin="anonymous"
+    />
+    <link
+      rel="preload"
+      href="/fonts/reckless/Reckless-Medium.woff2"
+      as="font"
+      type="font/woff2"
+      crossOrigin="anonymous"
+    />
     
     <title>Content AI — AI Blog Content Writing Assistant</title>
     
