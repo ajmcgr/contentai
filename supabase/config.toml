@@ -80,6 +80,9 @@ verify_jwt = false
 [functions.wix-oauth-callback]
 verify_jwt = false
 
+[functions.wix-oauth-dbg]
+verify_jwt = false
+
 [functions.shopify-health]
 verify_jwt = true
 
