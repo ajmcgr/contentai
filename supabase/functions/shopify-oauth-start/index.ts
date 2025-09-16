@@ -5,6 +5,41 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function host(u: string) { 
+  const x = new URL(u); 
+  return x.protocol + '//' + x.host.toLowerCase(); 
+}
+
+function topRedirectHtml(url: string) {
+  return new Response(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Redirecting to Shopify...</title>
+    </head>
+    <body>
+      <p>Redirecting to Shopify authorization...</p>
+      <script>
+        try {
+          if (window.top && window.top !== window) {
+            window.top.location.href = "${url}";
+          } else {
+            window.location.href = "${url}";
+          }
+        } catch (e) {
+          window.location.href = "${url}";
+        }
+      </script>
+    </body>
+    </html>
+  `, {
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'text/html'
+    }
+  });
+}
+
 async function getSecrets() {
   const secrets = {
     SHOPIFY_API_KEY: Deno.env.get('SHOPIFY_API_KEY'),
@@ -90,67 +125,29 @@ Deno.serve(async (req) => {
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString()
       })
 
-    const secrets = await getSecrets()
+    const { SHOPIFY_API_KEY, SHOPIFY_REDIRECT_URI, SHOPIFY_APP_URL, SHOPIFY_SCOPES } = await getSecrets()
+    const hRedirect = host(SHOPIFY_REDIRECT_URI.trim())
+    const hApp = host(SHOPIFY_APP_URL.trim())
 
-    const rid = crypto.randomUUID()
-    const redirectHost = new URL(secrets.SHOPIFY_REDIRECT_URI!).host
-    const appHost = new URL(secrets.SHOPIFY_APP_URL!).host
+    console.log('[shopify-start] client_id=%s redirect=%s appUrl=%s', SHOPIFY_API_KEY, hRedirect, hApp)
 
-    // Log inputs and derived values
-    try {
-      await supabaseServiceRole.from('app_logs').insert({
-        provider: 'shopify',
-        stage: 'oauth.start',
-        level: 'info',
-        correlation_id: rid,
-        detail: JSON.stringify({
-          userId,
-          shop,
-          redirect_uri: secrets.SHOPIFY_REDIRECT_URI,
-          app_url: secrets.SHOPIFY_APP_URL,
-          scopes: secrets.SHOPIFY_SCOPES,
-          redirect_host: redirectHost,
-          app_host: appHost,
-          referer: req.headers.get('referer') || null,
-          origin: req.headers.get('origin') || null,
-        }).slice(0, 8000)
-      })
-    } catch (_) { /* ignore logging failures */ }
-
-    // Enforce host match between configured redirect_uri and App URL
-    if (redirectHost !== appHost) {
-      try {
-        await supabaseServiceRole.from('app_logs').insert({
-          provider: 'shopify',
-          stage: 'oauth.start.host_mismatch',
-          level: 'error',
-          correlation_id: rid,
-          detail: JSON.stringify({ redirectHost, appHost }).slice(0, 8000)
-        })
-      } catch (_) { /* ignore */ }
-      return new Response(null, {
-        status: 302,
-        headers: {
-          ...corsHeaders,
-          Location: `${secrets.SHOPIFY_APP_URL}/dashboard/settings?error=host_mismatch&rid=${rid}`
-        }
-      })
+    if (hRedirect !== hApp) {
+      console.error('[shopify-start] host-mismatch', { hRedirect, hApp })
+      return new Response(
+        `Host mismatch: redirect=${hRedirect} app=${hApp}. Fix App URL to match redirect host or vice versa.`,
+        { status: 400, headers: corsHeaders }
+      )
     }
 
+    // Build authorize URL using *the same* SHOPIFY_REDIRECT_URI
     const authUrl = new URL(`https://${shop}/admin/oauth/authorize`)
-    authUrl.searchParams.set('client_id', secrets.SHOPIFY_API_KEY!)
-    authUrl.searchParams.set('scope', secrets.SHOPIFY_SCOPES!)
-    authUrl.searchParams.set('redirect_uri', secrets.SHOPIFY_REDIRECT_URI!)
+    authUrl.searchParams.set('client_id', SHOPIFY_API_KEY)
+    authUrl.searchParams.set('scope', SHOPIFY_SCOPES)
+    authUrl.searchParams.set('redirect_uri', SHOPIFY_REDIRECT_URI.trim())
     authUrl.searchParams.set('state', state)
 
-    // 302 redirect to Shopify OAuth
-    return new Response(null, {
-      status: 302,
-      headers: {
-        ...corsHeaders,
-        Location: authUrl.toString()
-      }
-    })
+    // IMPORTANT: return iframe-safe top redirect (not a plain 302)
+    return topRedirectHtml(authUrl.toString())
 
   } catch (error) {
     console.error('Shopify OAuth start error:', error)
