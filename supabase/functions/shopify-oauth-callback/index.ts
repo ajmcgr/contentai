@@ -155,72 +155,23 @@ Deno.serve(async (req) => {
 
     console.log('Shopify installation successful for user:', stateRecord.user_id, 'shop:', shop)
 
-    return new Response(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Shopify Connected</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 50px; }
-            .success { color: #28a745; }
-          </style>
-        </head>
-        <body>
-          <h1 class="success">✅ Shopify Connected Successfully</h1>
-          <p>Your Shopify store "${shop}" has been connected.</p>
-          <p>You can now close this window and return to the application.</p>
-          <script>
-            setTimeout(() => {
-              if (window.opener) {
-                window.opener.postMessage({ type: 'shopify_connected', shop: '${shop}' }, '*');
-                window.close();
-              } else {
-                window.location.href = '/settings?connected=shopify';
-              }
-            }, 2000);
-          </script>
-        </body>
-      </html>
-    `, {
+    const appBase = Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
+    return new Response(null, {
+      status: 302,
       headers: {
         ...corsHeaders,
-        'Content-Type': 'text/html'
+        Location: `${appBase}/dashboard/settings?connected=shopify`
       }
     })
 
   } catch (error) {
     console.error('Shopify OAuth callback error:', error)
-    return new Response(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Connection Failed</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 50px; }
-            .error { color: #dc3545; }
-          </style>
-        </head>
-        <body>
-          <h1 class="error">❌ Connection Failed</h1>
-          <p>There was an error connecting your Shopify store.</p>
-          <p>Please try again or contact support if the problem persists.</p>
-          <script>
-            setTimeout(() => {
-              if (window.opener) {
-                window.opener.postMessage({ type: 'shopify_error' }, '*');
-                window.close();
-              } else {
-                window.location.href = '/settings?error=shopify_failed';
-              }
-            }, 3000);
-          </script>
-        </body>
-      </html>
-    `, { 
-      status: 500, 
+    const appBase = Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
+    return new Response(null, { 
+      status: 302, 
       headers: {
         ...corsHeaders,
-        'Content-Type': 'text/html'
+        Location: `${appBase}/dashboard/settings?error=shopify_failed`
       }
     })
   }

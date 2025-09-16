@@ -62,14 +62,13 @@ Deno.serve(async (req) => {
     const shop = url.searchParams.get('shop')
     
     if (!shop || !shop.endsWith('.myshopify.com')) {
-      return new Response(`
-        <!DOCTYPE html>
-        <html><head><title>Error</title></head>
-        <body><script>window.location.href = '/nuclear-connect?err=bad_shop';</script></body>
-        </html>
-      `, { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'text/html' }
+      const appBase = Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
+      return new Response(null, {
+        status: 302,
+        headers: { 
+          ...corsHeaders,
+          Location: `${appBase}/dashboard/settings?error=bad_shop`
+        }
       })
     }
 
@@ -98,29 +97,24 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set('redirect_uri', secrets.SHOPIFY_REDIRECT_URI)
     authUrl.searchParams.set('state', state)
 
-    // Return a redirect response instead of JSON
-    return new Response(`
-      <!DOCTYPE html>
-      <html><head><title>Redirecting...</title></head>
-      <body><script>window.location.href = '${authUrl.toString()}';</script></body>
-      </html>
-    `, {
-      headers: { 
+    // 302 redirect to Shopify OAuth
+    return new Response(null, {
+      status: 302,
+      headers: {
         ...corsHeaders,
-        'Content-Type': 'text/html'
+        Location: authUrl.toString()
       }
     })
 
   } catch (error) {
     console.error('Shopify OAuth start error:', error)
-    return new Response(`
-      <!DOCTYPE html>
-      <html><head><title>Error</title></head>
-      <body><script>window.location.href = '/nuclear-connect?err=shopify_start_failed';</script></body>
-      </html>
-    `, { 
-      status: 500, 
-      headers: { ...corsHeaders, 'Content-Type': 'text/html' }
+    const appBase = Deno.env.get('APP_BASE_URL') || 'https://trycontent.ai';
+    return new Response(null, {
+      status: 302,
+      headers: {
+        ...corsHeaders,
+        Location: `${appBase}/dashboard/settings?error=shopify_start_failed`
+      }
     })
   }
 })
