@@ -1,9 +1,9 @@
 
-/* Local Reckless font definitions with CSS variables */
+/* Fresh Reckless font definitions */
 @font-face {
   font-family: "Reckless";
-  src: url("/fonts/reckless/Reckless-Regular.woff2?v=7") format("woff2"),
-       url("/fonts/reckless/Reckless-Regular.woff?v=7") format("woff");
+  src: url("/fonts/reckless/Reckless-Regular.woff2") format("woff2"),
+       url("/fonts/reckless/Reckless-Regular.woff") format("woff");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -11,8 +11,17 @@
 
 @font-face {
   font-family: "Reckless";
-  src: url("/fonts/reckless/Reckless-Bold.woff2?v=7") format("woff2"),
-       url("/fonts/reckless/Reckless-Bold.woff?v=7") format("woff");
+  src: url("/fonts/reckless/Reckless-Medium.woff2") format("woff2"),
+       url("/fonts/reckless/Reckless-Medium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Reckless";
+  src: url("/fonts/reckless/Reckless-Bold.woff2") format("woff2"),
+       url("/fonts/reckless/Reckless-Bold.woff") format("woff");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -141,24 +150,24 @@
     font-variant-ligatures: common-ligatures contextual;
   }
 
-  /* Inter for semantic headings */
+  /* Reckless for semantic headings (except footer) */
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-inter) !important;
+    font-family: var(--font-reckless) !important;
   }
   h1, h2 { font-weight: 700 !important; }
-  h3, h4, h5, h6 { font-weight: 600 !important; }
+  h3, h4, h5, h6 { font-weight: 500 !important; }
 }
 
 @layer components {
   /* Tailwind Typography (prose) often overrides heading fonts.
      These rules beat the prose defaults explicitly. */
   .prose :where(h1,h2,h3,h4,h5,h6):not(:where([class~="not-prose"] *)) {
-    font-family: var(--font-inter) !important;
+    font-family: var(--font-reckless) !important;
   }
 
   /* Utility class for ad-hoc heading text */
   .font-heading { 
-    font-family: var(--font-inter) !important;
+    font-family: var(--font-reckless) !important;
   }
 
   :where(h1,h2,h3,h4,h5,h6,
@@ -168,7 +177,7 @@
          [data-heading],
          .heading,.title,.hero-title,.page-title,.section-title,
          .prose h1,.prose h2,.prose h3,.prose h4,.prose h5,.prose h6){
-    font-family: var(--font-inter) !important;
+    font-family: var(--font-reckless) !important;
     font-weight: var(--heading-weight) !important;
     font-style: normal !important;
     line-height: var(--heading-lh);

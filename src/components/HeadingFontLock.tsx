@@ -3,9 +3,14 @@ import { useEffect } from 'react';
 
 const CSS = `
 h1,h2,h3,h4,h5,h6,.font-heading{
-  font-family: var(--font-inter), sans-serif !important;
+  font-family: var(--font-reckless), serif !important;
 }
 .prose :where(h1,h2,h3,h4,h5,h6):not(:where([class~="not-prose"] *)){
+  font-family: var(--font-reckless), serif !important;
+}
+/* Footer headings stay Inter */
+footer h1, footer h2, footer h3, footer h4, footer h5, footer h6,
+.footer-heading {
   font-family: var(--font-inter), sans-serif !important;
 }
 `;

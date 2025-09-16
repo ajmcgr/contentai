@@ -21,7 +21,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],   // body
-        heading: ['var(--font-inter)', 'sans-serif'],            // headings
+        heading: ['var(--font-reckless)', 'serif'],               // headings
         'inter': ['var(--font-inter)', 'sans-serif'],
       },
       fontWeight: {
