@@ -40,7 +40,7 @@
     --radius: 0.5rem;
 
     /* Global heading defaults (match trywrite.ai look) */
-    --heading-font: "Reckless";
+    --heading-font: "RecklessLocal";
     --heading-weight: 500;
     --heading-lh: 1.15;
     --heading-track: 0px;
@@ -110,9 +110,9 @@
     @apply border-border;
   }
 
-  body {
+  html, body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: "RecklessLocal", serif !important;
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -121,9 +121,9 @@
     font-variant-ligatures: common-ligatures contextual;
   }
 
-  /* Ensure Reckless font loads properly on all devices */
+  /* Ensure RecklessLocal font loads properly on all devices */
   .font-reckless {
-    font-family: 'Reckless' !important;
+    font-family: 'RecklessLocal' !important;
   }
 
 }
@@ -193,7 +193,7 @@
   body.force-reckless .h4,
   body.force-reckless [data-typography="heading"],
   body.force-reckless [data-heading]{
-    font-family:"Reckless" !important;
+    font-family:"RecklessLocal" !important;
     font-weight:500 !important;
   }
 

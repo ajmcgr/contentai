@@ -7,22 +7,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Preload critical Reckless fonts with cache-busting -->
+    <!-- Preload critical RecklessLocal fonts with cache-busting -->
     <link
       rel="preload"
-      href="/fonts/reckless/Reckless-Regular.woff2?v=3"
+      href="/fonts/reckless/Reckless-Regular.woff2?v=4"
       as="font"
       type="font/woff2"
     />
     <link
       rel="preload"
-      href="/fonts/reckless/Reckless-Medium.woff2?v=3"
+      href="/fonts/reckless/Reckless-Medium.woff2?v=4"
       as="font"
       type="font/woff2"
     />
     <link
       rel="preload"
-      href="/fonts/reckless/Reckless-Bold.woff2?v=3"
+      href="/fonts/reckless/Reckless-Bold.woff2?v=4"
       as="font"
       type="font/woff2"
     />
@@ -76,13 +76,13 @@
           console.log('🔤 Heading element:', headingEl.tagName, headingEl.className);
           console.log('🔤 Computed styles:', { fontFamily: cs.fontFamily, fontWeight: cs.fontWeight });
           
-          const loaded500 = document.fonts?.check("500 16px Reckless");
-          const loaded400 = document.fonts?.check("400 16px Reckless");
+          const loaded500 = document.fonts?.check("500 16px RecklessLocal");
+          const loaded400 = document.fonts?.check("400 16px RecklessLocal");
           console.log('🔤 Font checks:', { loaded500, loaded400 });
           
           const b=document.createElement("div");
           b.style.cssText="position:fixed;left:8px;bottom:8px;padding:6px 10px;background:#000;color:#fff;font:12px/1.2 system-ui;border-radius:8px;z-index:99999;opacity:.85";
-          b.textContent=`El: ${headingEl.tagName} • Reckless 500: ${loaded500?"YES":"NO"} • weight: ${cs.fontWeight} • fam: ${cs.fontFamily.split(',')[0]}`;
+          b.textContent=`El: ${headingEl.tagName} • RecklessLocal 500: ${loaded500?"YES":"NO"} • weight: ${cs.fontWeight} • fam: ${cs.fontFamily.split(',')[0]}`;
           document.body.appendChild(b);
         }catch(e){
           console.error('🔤 Font debug error:', e);

@@ -1,38 +1,36 @@
-/* Reckless Font - Simplified for mobile compatibility */
-
-/* Prevent synthetic bold/italic confusing detection */
-:root { 
-  font-synthesis-weight: none; 
-  font-synthesis-style: none; 
-}
-
-/* STATIC faces - prioritize WOFF2, fallback to WOFF (removed unicode-range for mobile compatibility) */
+/* Unique family to avoid collisions with any other "Reckless" declarations */
 @font-face {
-  font-family: "Reckless";
+  font-family: "RecklessLocal";
   src:
-    url("/fonts/reckless/Reckless-Regular.woff2?v=3") format("woff2"),
-    url("/fonts/reckless/Reckless-Regular.woff?v=3") format("woff");
+    url("/fonts/reckless/Reckless-Regular.woff2?v=4") format("woff2"),
+    url("/fonts/reckless/Reckless-Regular.woff?v=4") format("woff");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Reckless";
+  font-family: "RecklessLocal";
   src:
-    url("/fonts/reckless/Reckless-Medium.woff2?v=3") format("woff2"),
-    url("/fonts/reckless/Reckless-Medium.woff?v=3") format("woff");
+    url("/fonts/reckless/Reckless-Medium.woff2?v=4") format("woff2"),
+    url("/fonts/reckless/Reckless-Medium.woff?v=4") format("woff");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Reckless";
+  font-family: "RecklessLocal";
   src:
-    url("/fonts/reckless/Reckless-Bold.woff2?v=3") format("woff2"),
-    url("/fonts/reckless/Reckless-Bold.woff?v=3") format("woff");
+    url("/fonts/reckless/Reckless-Bold.woff2?v=4") format("woff2"),
+    url("/fonts/reckless/Reckless-Bold.woff?v=4") format("woff");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
+}
+
+/* Kill synthetic variants that can look "different" */
+:root { 
+  font-synthesis-weight: none; 
+  font-synthesis-style: none; 
 }

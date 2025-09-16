@@ -11,7 +11,7 @@ export default function FontOverrideKillSwitch() {
     style.textContent = `
       /* highest-specificity nuke: apply Reckless to everything */
       :where(html):not(.no-reckless) , :where(body):not(.no-reckless), :where(*) :where(*) {
-        font-family: "Reckless", serif !important;
+        font-family: "RecklessLocal", serif !important;
       }
       /* keep code/pre monospaced */
       code, pre, kbd, samp { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace !important; }
