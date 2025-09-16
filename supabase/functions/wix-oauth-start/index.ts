@@ -47,7 +47,23 @@ Deno.serve(async (req) => {
     auth.searchParams.set("state", userId);
 
     console.log("[wix-start]", rid, { appId: WIX_CLIENT_ID.slice(0,6)+"…", redirect: WIX_REDIRECT_URI, state: userId });
-    return topRedirectHtml(auth.toString());
+    
+    // Return iframe-safe redirect that opens new tab if top navigation fails
+    const installerUrl = auth.toString();
+    return new Response(`<!doctype html><meta charset="utf-8">
+<script>
+ (function(){
+   var u=${JSON.stringify(installerUrl)};
+   try {
+     if (window.top && window.top !== window.self) {
+       // Try top-nav; if any policy blocks it, fallback opens a new tab.
+       try { window.top.location.href = u; return; } catch(e){}
+       window.open(u, "_blank", "noopener,noreferrer"); return;
+     }
+     window.location.href = u;
+   } catch (e) { window.open(u, "_blank", "noopener,noreferrer"); }
+ })();
+</script>`, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }});
   } catch (e) {
     console.error("[wix-start]", rid, "error", e?.message || String(e));
     return new Response("wix_start_failed", { status: 500, headers: { "content-type":"text/plain" } });

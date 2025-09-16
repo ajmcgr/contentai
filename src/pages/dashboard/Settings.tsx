@@ -20,7 +20,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { WordPressConnect } from "@/components/WordPressConnect";
 import { ArticleScheduler } from "@/components/ArticleScheduler";
-import { startShopifyOAuth, startWixOAuth, getIntegrationStatus } from "@/lib/integrationsClient";
+import { startShopifyOAuth, getIntegrationStatus } from "@/lib/integrationsClient";
+import { startWixFromSettings } from "@/lib/wixConnect";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -539,7 +540,7 @@ export default function Settings() {
       setBusy('wix');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
-      startWixOAuth({ userId: user.id });
+      startWixFromSettings(user.id);
     } catch (e: any) {
       console.error('Wix connect failed:', e);
       toast({
