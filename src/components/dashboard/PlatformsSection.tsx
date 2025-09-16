@@ -62,17 +62,11 @@ export const PlatformsSection = () => {
         
         {/* Primary Platforms - WordPress, Shopify, Wix */}
         <div className="mb-20">
-          <div className="text-center mb-12">
-            <h3 className="text-2xl font-reckless font-medium text-foreground mb-3">
-              Premium Integrations Available Now
-            </h3>
-            <p className="text-muted-foreground">Start publishing immediately to these industry-leading platforms</p>
-          </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
             {primaryPlatforms.map((platform, index) => (
               <div 
                 key={index}
-                className={`relative rounded-2xl p-8 text-center bg-gradient-to-br ${platform.gradient} border-2 ${platform.borderColor} transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] group`}
+                className="relative rounded-2xl p-8 text-center bg-card border-2 border-border hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] group"
               >
                 <div className="absolute top-6 right-6">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-500 text-white shadow-lg">
