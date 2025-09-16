@@ -1,128 +1,133 @@
 export const PlatformsSection = () => {
-  const featuredPlatforms = [
+  const primaryPlatforms = [
     {
       name: "WordPress",
       logo: "/lovable-uploads/d8fa0a46-f1a4-4e86-a9fa-f2102a039436.png",
-      description: "Seamlessly publish to your WordPress blog",
-      featured: true
+      description: "The world's most popular CMS platform",
+      subtext: "Seamlessly publish to your WordPress blog with one click",
+      users: "43% of all websites",
+      gradient: "from-blue-500/20 to-blue-600/30",
+      borderColor: "border-blue-500/30 hover:border-blue-500/50"
     },
     {
       name: "Shopify", 
       logo: "/lovable-uploads/93b6287a-d091-4ee7-b4ae-e45ea7a3e122.png",
-      description: "Create content for your Shopify store blog",
-      featured: true
+      description: "Leading e-commerce platform",
+      subtext: "Create engaging blog content for your Shopify store",
+      users: "1.75M+ businesses",
+      gradient: "from-green-500/20 to-green-600/30",
+      borderColor: "border-green-500/30 hover:border-green-500/50"
     },
     {
       name: "Wix",
       logo: "/lovable-uploads/4a03d01f-8a2e-4efb-9cbc-a7fd87e0ce20.png",
-      description: "Publish blogs directly to your Wix site",
-      featured: true
+      description: "Popular website builder",
+      subtext: "Publish blogs directly to your Wix site effortlessly",
+      users: "200M+ users worldwide",
+      gradient: "from-purple-500/20 to-purple-600/30",
+      borderColor: "border-purple-500/30 hover:border-purple-500/50"
     }
   ];
 
-  const comingSoonPlatforms = [
+  const otherPlatforms = [
     {
       name: "Webflow",
-      logo: "/lovable-uploads/dea3f4ce-82f3-48a3-af08-5c64d570b629.png", 
-      description: "Publish directly to your Webflow CMS",
-      featured: false
+      logo: "/lovable-uploads/dea3f4ce-82f3-48a3-af08-5c64d570b629.png"
     },
     {
-      name: "Notion",
-      logo: "/lovable-uploads/3668248b-f746-4b84-85a3-9a25cf2a937e.png",
-      description: "Create pages in your Notion database",
-      featured: false
+      name: "Notion", 
+      logo: "/lovable-uploads/3668248b-f746-4b84-85a3-9a25cf2a937e.png"
     },
     {
       name: "Ghost",
-      logo: "/lovable-uploads/af07b7e4-6f3c-4202-8e50-f810cca951bc.png",
-      description: "Publish to your Ghost blog platform",
-      featured: false
+      logo: "/lovable-uploads/af07b7e4-6f3c-4202-8e50-f810cca951bc.png"
     },
     {
       name: "Zapier",
-      logo: "/lovable-uploads/28858514-61f5-43b3-8eec-762b7b23c1b7.png",
-      description: "Automate publishing to 5000+ apps",
-      featured: false
+      logo: "/lovable-uploads/28858514-61f5-43b3-8eec-762b7b23c1b7.png"
     }
   ];
 
   return (
-    <section className="py-16" style={{ backgroundColor: 'hsl(var(--section-white))' }}>
+    <section className="py-20" style={{ backgroundColor: 'hsl(var(--section-white))' }}>
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-reckless font-medium text-foreground mb-4">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-reckless font-medium text-foreground mb-6">
             Publish to Your Favorite Platform
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Connect and publish your AI-generated content directly to the platforms you already use
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            Connect and publish your AI-generated content directly to the world's most popular platforms
           </p>
         </div>
         
-        {/* Featured Platforms */}
-        <div className="mb-16">
-          <h3 className="text-2xl font-reckless font-medium text-center mb-8 text-foreground">
-            Available Now
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {featuredPlatforms.map((platform, index) => (
+        {/* Primary Platforms - WordPress, Shopify, Wix */}
+        <div className="mb-20">
+          <div className="text-center mb-12">
+            <h3 className="text-2xl font-reckless font-medium text-foreground mb-3">
+              Premium Integrations Available Now
+            </h3>
+            <p className="text-muted-foreground">Start publishing immediately to these industry-leading platforms</p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            {primaryPlatforms.map((platform, index) => (
               <div 
                 key={index}
-                className="relative rounded-xl p-8 text-center bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:scale-105"
+                className={`relative rounded-2xl p-8 text-center bg-gradient-to-br ${platform.gradient} border-2 ${platform.borderColor} transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] group`}
               >
-                <div className="absolute top-4 right-4">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    Live
+                <div className="absolute top-6 right-6">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-500 text-white shadow-lg">
+                    ✓ Live
                   </span>
                 </div>
-                <div className="mb-6 flex justify-center">
-                  <img 
-                    src={platform.logo} 
-                    alt={`${platform.name} logo`}
-                    className="h-16 w-auto object-contain"
-                  />
+                <div className="mb-8 flex justify-center">
+                  <div className="p-4 rounded-2xl bg-white shadow-lg group-hover:shadow-xl transition-shadow">
+                    <img 
+                      src={platform.logo} 
+                      alt={`${platform.name} logo`}
+                      className="h-16 w-auto object-contain"
+                    />
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-foreground">{platform.name}</h3>
-                <p className="text-sm text-muted-foreground">{platform.description}</p>
+                <h3 className="text-2xl font-reckless font-semibold mb-3 text-foreground">{platform.name}</h3>
+                <p className="text-lg font-medium mb-3 text-foreground">{platform.description}</p>
+                <p className="text-sm text-muted-foreground mb-4">{platform.subtext}</p>
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                  {platform.users}
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Coming Soon Platforms */}
-        <div>
-          <h3 className="text-xl font-reckless font-medium text-center mb-8 text-muted-foreground">
-            Coming Soon
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            {comingSoonPlatforms.map((platform, index) => (
+        {/* Other Platforms - Much Smaller */}
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <h3 className="text-lg font-medium text-muted-foreground mb-2">
+              Additional Platforms Coming Soon
+            </h3>
+          </div>
+          <div className="flex justify-center items-center gap-6 flex-wrap">
+            {otherPlatforms.map((platform, index) => (
               <div 
                 key={index}
-                className="relative rounded-lg p-6 text-center opacity-60 hover:opacity-80 transition-opacity duration-300"
+                className="relative rounded-lg p-3 text-center opacity-40 hover:opacity-60 transition-opacity duration-300 bg-muted/50"
               >
-                <div className="absolute top-2 right-2">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                    Soon
-                  </span>
-                </div>
-                <div className="mb-4 flex justify-center">
+                <div className="mb-2 flex justify-center">
                   <img 
                     src={platform.logo} 
                     alt={`${platform.name} logo`}
-                    className="h-12 w-auto object-contain grayscale"
+                    className="h-8 w-auto object-contain grayscale"
                   />
                 </div>
-                <h4 className="text-sm font-medium mb-2 text-foreground">{platform.name}</h4>
-                <p className="text-xs text-muted-foreground">{platform.description}</p>
+                <h4 className="text-xs font-medium text-foreground">{platform.name}</h4>
               </div>
             ))}
           </div>
-        </div>
-        
-        <div className="text-center mt-12">
-          <p className="text-sm text-muted-foreground">
-            More integrations including Framer and custom APIs are in development
-          </p>
+          <div className="text-center mt-8">
+            <p className="text-sm text-muted-foreground">
+              More integrations including Framer and custom APIs are in development
+            </p>
+          </div>
         </div>
       </div>
     </section>
