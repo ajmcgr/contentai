@@ -58,7 +58,7 @@ const About = () => {
                 href="https://www.linkedin.com/in/alexmacgregor2/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-base"
+                className="text-base underline"
                 style={{ color: '#2563eb' }}
               >
                 Connect with me on LinkedIn
