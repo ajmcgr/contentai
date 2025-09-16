@@ -8,7 +8,7 @@ import { AdditionalFeaturesSection } from "@/components/dashboard/AdditionalFeat
 import { PricingSection } from "@/components/dashboard/PricingSection";
 import { FAQSection } from "@/components/dashboard/FAQSection";
 import { EnterpriseSection } from "@/components/dashboard/EnterpriseSection";
-import FontOverrideKillSwitch from "@/components/FontOverrideKillSwitch";
+
 
 const Index = () => {
   return (
@@ -22,11 +22,6 @@ const Index = () => {
       <PricingSection />
       <FAQSection />
       <EnterpriseSection />
-      {process.env.NODE_ENV !== 'production' && (
-        <>
-          <FontOverrideKillSwitch />
-        </>
-      )}
     </>
   );
 };
