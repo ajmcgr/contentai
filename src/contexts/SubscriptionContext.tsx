@@ -1,6 +1,8 @@
+'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
+
 if (typeof (React as any)?.useState !== 'function') {
-  throw new Error('[SubscriptionProvider] React hooks unavailable — check duplicate React or Vite aliases.');
+  throw new Error('[SubscriptionProvider] React hooks unavailable — duplicate/externalized React detected.');
 }
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';

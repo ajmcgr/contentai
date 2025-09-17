@@ -14,13 +14,16 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
-  optimizeDeps: {
-    include: ["react", "react-dom", "@tanstack/react-query"],
-  },
   resolve: {
+    // Force every import of react/react-dom to one copy
+    dedupe: ["react", "react-dom"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // IMPORTANT: leave react/react-dom untouched
     },
-    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
+  },
+  optimizeDeps: {
+    // Ensure Vite prebundles a single copy
+    include: ["react", "react-dom", "@tanstack/react-query"],
   },
 }));
