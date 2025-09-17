@@ -1,5 +1,4 @@
-'use client';
-import { useEffect } from 'react';
+import React from 'react';
 
 const FACE = `
 @font-face {
@@ -81,7 +80,7 @@ function injectEverywhere() {
 }
 
 export default function RecklessEverywhere() {
-  useEffect(() => {
+  React.useEffect(() => {
     injectEverywhere();
 
     // Re-inject after route transitions/mutations

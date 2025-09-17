@@ -1,5 +1,4 @@
-'use client';
-import { useEffect } from 'react';
+import React from 'react';
 
 const CSS = `
 h1,h2,h3,h4,h5,h6,.font-heading{
@@ -27,7 +26,7 @@ function injectInto(doc: Document) {
 }
 
 export default function HeadingFontLock() {
-  useEffect(() => {
+  React.useEffect(() => {
     // main document
     injectInto(document);
     // any same-origin iframes (e.g., preview/editor canvases)
