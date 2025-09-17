@@ -45,11 +45,11 @@ import TypographyQA from "./pages/TypographyQA";
 import FontDebug from "./pages/admin/FontDebug";
 import NuclearConnect from "./pages/NuclearConnect";
 
-const queryClient = new QueryClient();
+const emailSettingsQueryClient = new QueryClient();
 
 const App = () => (
   <SubscriptionProvider>
-  <QueryClientProvider client={queryClient}>
+  
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -67,7 +67,7 @@ const App = () => (
             <Route path="upgrade" element={<div>Upgrade Plan</div>} />
             <Route path="generator" element={<ContentGenerator />} />
             <Route path="account" element={<Account />} />
-            <Route path="admin/email-settings" element={<EmailSettings />} />
+            <Route path="admin/email-settings" element={<QueryClientProvider client={emailSettingsQueryClient}><EmailSettings /></QueryClientProvider>} />
             <Route path="admin/integration-settings" element={<IntegrationSettings />} />
           </Route>
           <Route element={
@@ -108,7 +108,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
-  </QueryClientProvider>
+  
   </SubscriptionProvider>
 );
 
