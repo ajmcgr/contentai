@@ -47,6 +47,7 @@ import TypographyQA from "./pages/TypographyQA";
 import FontDebug from "./pages/admin/FontDebug";
 import NuclearConnect from "./pages/NuclearConnect";
 import HeadingFontLock from "./components/HeadingFontLock";
+import RecklessEverywhere from "./components/RecklessEverywhere";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
       <BrowserRouter>
         {/* Forces headings to Reckless in document + any same-origin iframes */}
         <HeadingFontLock />
+        <RecklessEverywhere />
         <Header />
         <Routes>
           <Route path="/dashboard/*" element={<AuthenticatedLayout />}>
