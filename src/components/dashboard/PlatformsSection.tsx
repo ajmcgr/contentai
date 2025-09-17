@@ -68,11 +68,6 @@ export const PlatformsSection = () => {
                 key={index}
                 className="relative rounded-2xl p-8 text-center bg-card border-2 border-border hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] group"
               >
-                <div className="absolute top-6 right-6">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-500 text-white shadow-lg">
-                    ✓ Live
-                  </span>
-                </div>
                 <div className="mb-8 flex justify-center">
                   <div className="p-4 rounded-2xl bg-white shadow-lg group-hover:shadow-xl transition-shadow">
                     <img 
