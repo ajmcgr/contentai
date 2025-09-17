@@ -2,6 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 
+if (typeof (React as any)?.useState !== 'function') {
+  throw new Error('[SubscriptionProvider] React hooks unavailable — duplicate/externalized React detected.');
+}
+
+
 interface SubscriptionStatus {
   subscribed: boolean;
   planType: 'free' | 'basic' | 'pro';
