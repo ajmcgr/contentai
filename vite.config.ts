@@ -15,15 +15,8 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
   ].filter(Boolean),
   resolve: {
-    // Force every import of react/react-dom to one copy
-    dedupe: ["react", "react-dom"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      // IMPORTANT: leave react/react-dom untouched
     },
-  },
-  optimizeDeps: {
-    // Ensure Vite prebundles a single copy
-    include: ["react", "react-dom", "@tanstack/react-query"],
   },
 }));
