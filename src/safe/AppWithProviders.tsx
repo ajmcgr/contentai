@@ -2,11 +2,13 @@
 import React from 'react';
 import ErrorBoundary from './ErrorBoundary';
 import ProviderProbe from './ProviderProbe';
+
+// ✅ import the real provider now
 import { SubscriptionProvider } from '../contexts/SubscriptionContext';
 import SafeQueryProvider from './QueryProvider';
 
 export default function AppWithProviders({ children }:{children:React.ReactNode}) {
-  // Flip these booleans to gradually re-enable providers.
+  // Both ON now
   const ENABLE_SUBSCRIPTION = true;
   const ENABLE_REACT_QUERY = true;
 
