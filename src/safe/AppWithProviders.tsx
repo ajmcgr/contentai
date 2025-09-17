@@ -1,25 +1,22 @@
 'use client';
 import React from 'react';
 import ErrorBoundary from './ErrorBoundary';
-import ProviderProbe from './ProviderProbe';
 
-// ✅ import the real provider now
+// Import the shim (safe)
 import { SubscriptionProvider } from '../contexts/SubscriptionContext';
-import SafeQueryProvider from './QueryProvider';
+
+// If you had a safe React Query wrapper, keep it off for now
+const ENABLE_SUBSCRIPTION = true;
+const ENABLE_REACT_QUERY = false; // leave OFF to keep preview clean
+
+function MaybeWrap({ on, Wrap, children }:{on:boolean; Wrap:React.FC<{children:React.ReactNode}>; children:React.ReactNode}) {
+  return on ? <Wrap>{children}</Wrap> : <>{children}</>;
+}
 
 export default function AppWithProviders({ children }:{children:React.ReactNode}) {
-  // Both ON now
-  const ENABLE_SUBSCRIPTION = true;
-  const ENABLE_REACT_QUERY = true;
-
   let tree = <>{children}</>;
-  if (ENABLE_SUBSCRIPTION) tree = <SubscriptionProvider>{tree}</SubscriptionProvider>;
-  if (ENABLE_REACT_QUERY) tree = <SafeQueryProvider>{tree}</SafeQueryProvider>;
-
-  return (
-    <ErrorBoundary>
-      {tree}
-      <ProviderProbe />
-    </ErrorBoundary>
-  );
+  tree = <MaybeWrap on={ENABLE_SUBSCRIPTION} Wrap={SubscriptionProvider}>{tree}</MaybeWrap>;
+  // add React Query later when you want:
+  // tree = <MaybeWrap on={ENABLE_REACT_QUERY} Wrap={SafeQueryProvider}>{tree}</MaybeWrap>;
+  return <ErrorBoundary>{tree}</ErrorBoundary>;
 }
