@@ -18,6 +18,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
+import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import { AuthenticatedLayout } from "./components/layouts/AuthenticatedLayout";
 import ArticlesDashboard from "./pages/dashboard/ArticlesDashboard";
 import Write from "./pages/dashboard/Write";
@@ -43,10 +44,12 @@ import FontDebug from "./pages/admin/FontDebug";
 import NuclearConnect from "./pages/NuclearConnect";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const emailSettingsQueryClient = new QueryClient();
+const queryClient = new QueryClient();
 
 const App = () => {
   return (
+    <SubscriptionProvider>
+      <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -64,7 +67,7 @@ const App = () => {
             <Route path="upgrade" element={<div>Upgrade Plan</div>} />
             <Route path="generator" element={<ContentGenerator />} />
             <Route path="account" element={<Account />} />
-            <Route path="admin/email-settings" element={<QueryClientProvider client={emailSettingsQueryClient}><EmailSettings /></QueryClientProvider>} />
+            <Route path="admin/email-settings" element={<EmailSettings />} />
             <Route path="admin/integration-settings" element={<IntegrationSettings />} />
           </Route>
           <Route element={
@@ -103,7 +106,9 @@ const App = () => {
           </Route>
         </Routes>
       </BrowserRouter>
-    </TooltipProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </SubscriptionProvider>
   );
 };
 
