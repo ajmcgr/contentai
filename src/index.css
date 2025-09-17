@@ -72,7 +72,7 @@
     --heading-font: "Inter";
     --heading-weight: 500;
     --heading-lh: 1.15;
-    --heading-track: 0px;
+    --heading-track: -0.01em;
 
     --sidebar-background: 0 0% 98%;
 
