@@ -432,6 +432,55 @@ Title: [Compelling SEO title under 60 chars]
         console.warn('Failed to increment monthly usage for user:', userId, usageErr);
       }
 
+      // If auto-publish is enabled, also publish to connected CMS platforms
+      if (shouldAutoPublish) {
+        try {
+          // Get active CMS connections for this user
+          const { data: connections } = await admin
+            .from('cms_connections')
+            .select('id, platform, site_url')
+            .eq('user_id', userId)
+            .eq('is_active', true);
+
+          if (connections && connections.length > 0) {
+            console.log(`Auto-publishing article ${article.id} to ${connections.length} connected platforms for user ${userId}`);
+            
+            // Publish to each connected platform
+            for (const connection of connections) {
+              try {
+                const publishResponse = await fetch(`${supabaseUrl}/functions/v1/cms-integration`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${serviceRoleKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    action: 'publish',
+                    articleId: article.id,
+                    connectionId: connection.id,
+                    publishOptions: {}
+                  })
+                });
+
+                if (publishResponse.ok) {
+                  console.log(`Successfully published article ${article.id} to ${connection.platform} (${connection.site_url})`);
+                } else {
+                  const errorText = await publishResponse.text();
+                  console.error(`Failed to publish article ${article.id} to ${connection.platform}:`, errorText);
+                }
+              } catch (publishError) {
+                console.error(`Error publishing article ${article.id} to ${connection.platform}:`, publishError);
+              }
+            }
+          } else {
+            console.log(`Auto-publish enabled for user ${userId} but no active CMS connections found`);
+          }
+        } catch (cmsError) {
+          console.error('Error during CMS auto-publishing:', cmsError);
+          // Don't fail the entire process if CMS publishing fails
+        }
+      }
+
       results.push({ userId, generated: true, articleId: article.id });
       processed += 1;
     }
