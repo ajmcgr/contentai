@@ -1,24 +1,29 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "./reactSanity";
+import "./reactSanity"; // keep the sanity check
 import AppWithProviders from "./safe/AppWithProviders";
 
 const Root = () => (
   <div style={{ fontFamily: "system-ui", padding: 24 }}>
-    <h1 style={{ fontSize: 28, marginBottom: 8 }}>🧪 Provider Bring-Up</h1>
-    <p>React is mounted. Providers are enabled via <code>AppWithProviders</code>.</p>
-    <ul>
-      <li><b>SubscriptionProvider</b>: ON</li>
-      <li><b>React Query</b>: ON</li>
-    </ul>
-    <p>Toggle flags in <code>src/safe/AppWithProviders.tsx</code> if something crashes.</p>
+    <h1 style={{ fontSize: 28, marginBottom: 8 }}>🚀 Preview unblocked</h1>
+    <p>SubscriptionProvider is a temporary NO-HOOK shim so the app can render.</p>
   </div>
 );
 
-let rootEl = document.getElementById("root");
-if (!rootEl) { rootEl = document.createElement("div"); rootEl.id = "root"; document.body.appendChild(rootEl); }
+/** Ensure there’s exactly one React root */
+let container = document.getElementById("root");
+if (!container) {
+  container = document.createElement("div");
+  container.id = "root";
+  document.body.appendChild(container);
+}
 
-ReactDOM.createRoot(rootEl!).render(
+const anyContainer = container as any;
+const existingRoot = anyContainer.__reactRoot as ReturnType<typeof ReactDOM.createRoot> | undefined;
+const root = existingRoot ?? ReactDOM.createRoot(container!);
+anyContainer.__reactRoot = root;
+
+root.render(
   <React.StrictMode>
     <AppWithProviders>
       <Root />

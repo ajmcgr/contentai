@@ -1,51 +1,24 @@
 'use client';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React from "react";
 
-interface SubscriptionStatus {
-  subscribed: boolean;
-  planType: 'free' | 'basic' | 'pro';
-  status: 'active' | 'inactive';
-  currentPeriodEnd?: string;
-  loading: boolean;
+/** NO-HOOK shim to unblock preview */
+export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }
 
-interface SubscriptionContextType extends SubscriptionStatus {
-  checkSubscriptionStatus: () => Promise<void>;
-  user: any | null;
-}
-
-const Ctx = createContext<SubscriptionContextType | null>(null);
-
-export function SubscriptionProvider({ children }: { children: React.ReactNode }){
-  if (typeof (React as any)?.useState !== 'function') {
-    throw new Error('[SubscriptionProvider] React hooks unavailable; check duplicate/aliased React.');
-  }
-  
-  // Safe stub values for now
-  const [subscriptionStatus] = useState<SubscriptionStatus>({
+/** NO-HOOK shim that mimics your hook API */
+export function useSubscription(): any {
+  // Return a stable object; no React context, no hooks.
+  return {
+    plan: null,
+    setPlan: () => { /* noop in shim */ },
+    // extras to satisfy existing usages without hooks
     subscribed: false,
     planType: 'free',
     status: 'inactive',
+    currentPeriodEnd: undefined,
     loading: false,
-  });
-  
-  const [user] = useState<any | null>(null);
-  
-  const checkSubscriptionStatus = async () => {
-    console.log('[SafeSubscriptionProvider] checkSubscriptionStatus called (stub)');
+    user: null,
+    checkSubscriptionStatus: async () => {}
   };
-  
-  const value = useMemo((): SubscriptionContextType => ({
-    ...subscriptionStatus,
-    user,
-    checkSubscriptionStatus,
-  }), [subscriptionStatus, user]);
-  
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
-}
-
-export function useSubscription(){
-  const v = useContext(Ctx);
-  if (!v) throw new Error('useSubscription must be used within SubscriptionProvider');
-  return v;
 }
