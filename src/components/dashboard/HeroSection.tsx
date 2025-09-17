@@ -7,9 +7,9 @@ export const HeroSection = () => {
   return (
     <div className="py-16 md:py-28 bg-white">
       <div className="max-w-5xl mx-auto px-4 md:px-6">
-        <h2 className="text-4xl md:text-6xl font-reckless font-medium text-center mb-4 text-black" style={{ letterSpacing: '1px', fontSize: 'calc(1em + 0.1px)' }}>
+        <h1 className="text-5xl md:text-7xl font-reckless font-medium text-center mb-4 text-black" style={{ letterSpacing: '1px', fontSize: 'calc(1em + 0.1px)' }}>
           Meet Your AI Blog Content<br />Writing Assistant
-        </h2>
+        </h1>
         <p className="text-lg md:text-xl text-center max-w-2xl mx-auto mb-8 text-black">
           Generate, publish, and scale your blog on auto-pilot with SEO-optimized content, daily.
         </p>
