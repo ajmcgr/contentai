@@ -7,6 +7,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
     
+    <!-- Preload the Reckless faces from local assets -->
+    <link rel="preload" href="/fonts/reckless/Reckless-Medium.otf" as="font" type="font/otf" crossorigin>
+    <link rel="preload" href="/fonts/reckless/Reckless-Regular.otf" as="font" type="font/otf" crossorigin>
+    <link rel="preload" href="/fonts/reckless/Reckless-Bold.otf" as="font" type="font/otf" crossorigin>
+    <!-- Keep woff2 preloads (will be ignored if invalid) -->
+    <link rel="preload" href="/fonts/reckless/Reckless-Medium.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/reckless/Reckless-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/reckless/Reckless-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    
+    <style>
+      @font-face {
+        font-family: 'Reckless';
+        src: url('/fonts/reckless/Reckless-Regular.woff2') format('woff2'),
+             url('/fonts/reckless/Reckless-Regular.otf') format('opentype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      
+      @font-face {
+        font-family: 'Reckless';
+        src: url('/fonts/reckless/Reckless-Medium.woff2') format('woff2'),
+             url('/fonts/reckless/Reckless-Medium.otf') format('opentype');
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+      }
+      
+      @font-face {
+        font-family: 'Reckless';
+        src: url('/fonts/reckless/Reckless-Bold.woff2') format('woff2'),
+             url('/fonts/reckless/Reckless-Bold.otf') format('opentype');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+    </style>
     
     <title>Content AI — AI Blog Content Writing Assistant</title>
     
@@ -44,7 +81,32 @@
     <script src="https://analytics.ahrefs.com/analytics.js" data-key="BCm6/kJuuL/UVQe2bsPVCw" async></script>
     <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="a48ce8f3-735a-4b06-b13c-bcf13695f3fb";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
     
-    
+    <!-- Debug badge for font loading (remove after QA) -->
+    <script>
+      (async function(){
+        try{
+          console.log('🔤 Font debug starting...');
+          await (document.fonts?.ready);
+          console.log('🔤 Fonts ready');
+          
+          const headingEl = document.querySelector("h1,h2,h3,h4,[data-typography=\\"heading\\"],.font-reckless") || document.body;
+          const cs = getComputedStyle(headingEl);
+          console.log('🔤 Heading element:', headingEl.tagName, headingEl.className);
+          console.log('🔤 Computed styles:', { fontFamily: cs.fontFamily, fontWeight: cs.fontWeight });
+          
+          const loaded500 = document.fonts?.check("500 16px Reckless");
+          const loaded400 = document.fonts?.check("400 16px Reckless");
+          console.log('🔤 Font checks:', { loaded500, loaded400 });
+          
+          const b=document.createElement("div");
+          b.style.cssText="position:fixed;left:8px;bottom:8px;padding:6px 10px;background:#000;color:#fff;font:12px/1.2 system-ui;border-radius:8px;z-index:99999;opacity:.85";
+          b.textContent=`El: ${headingEl.tagName} • Reckless 500: ${loaded500?"YES":"NO"} • weight: ${cs.fontWeight} • fam: ${cs.fontFamily.split(',')[0]}`;
+          document.body.appendChild(b);
+        }catch(e){
+          console.error('🔤 Font debug error:', e);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
@@ -70,7 +132,7 @@
         console.error('Failed to install debug hooks', err);
       }
     </script>
-    
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
