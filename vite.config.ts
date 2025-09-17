@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
   ].filter(Boolean),
   resolve: {
-    dedupe: ["react", "react-dom"],
+    dedupe: ["react", "react-dom", "react-dom/client", "react/jsx-runtime"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
