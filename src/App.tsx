@@ -17,8 +17,6 @@ import Verify from "./pages/Verify";
 import ResendVerification from "./pages/ResendVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import FontDiagnostics from "./pages/FontDiagnostics";
-import FontSmokeTest from "./pages/FontSmokeTest";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
@@ -46,8 +44,6 @@ import ReadabilityChecker from "./pages/tools/ReadabilityChecker";
 import TypographyQA from "./pages/TypographyQA";
 import FontDebug from "./pages/admin/FontDebug";
 import NuclearConnect from "./pages/NuclearConnect";
-import HeadingFontLock from "./components/HeadingFontLock";
-import RecklessEverywhere from "./components/RecklessEverywhere";
 
 const queryClient = new QueryClient();
 
@@ -58,9 +54,6 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        {/* Forces headings to Reckless in document + any same-origin iframes */}
-        <HeadingFontLock />
-        <RecklessEverywhere />
         <Header />
         <Routes>
           <Route path="/dashboard/*" element={<AuthenticatedLayout />}>
@@ -109,8 +102,6 @@ const App = () => (
             <Route path="tools/content-outline-generator" element={<ContentOutlineGenerator />} />
             <Route path="tools/readability-checker" element={<ReadabilityChecker />} />
             <Route path="typography-qa" element={<TypographyQA />} />
-            <Route path="font-diagnostics" element={<FontDiagnostics />} />
-            <Route path="font-smoketest" element={<FontSmokeTest />} />
             <Route path="admin/font-debug" element={<FontDebug />} />
             <Route path="nuclear-connect" element={<NuclearConnect />} />
           </Route>

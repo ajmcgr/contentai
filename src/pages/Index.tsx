@@ -9,7 +9,6 @@ import { PricingSection } from "@/components/dashboard/PricingSection";
 import { FAQSection } from "@/components/dashboard/FAQSection";
 import { EnterpriseSection } from "@/components/dashboard/EnterpriseSection";
 
-
 const Index = () => {
   return (
     <>

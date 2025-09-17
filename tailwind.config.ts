@@ -20,17 +20,12 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],   // body
-        heading: ['var(--font-reckless)', 'serif'],               // headings
-        'inter': ['var(--font-inter)', 'sans-serif'],
+        reckless: ['Reckless'],
+        merriweather: ["Merriweather", "serif"],
       },
       fontWeight: {
         'reckless-medium': '500',
         'heading': '500',
-        normal: '400',
-        medium: '500',
-        semibold: '700', // map 600 → 700 so it hits your Bold face
-        bold: '700',
       },
       colors: {
         border: "hsl(var(--border))",
