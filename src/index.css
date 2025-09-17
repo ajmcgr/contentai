@@ -68,8 +68,8 @@
 
     --radius: 0.5rem;
 
-    /* Global heading defaults (match trywrite.ai look) */
-    --heading-font: "Reckless";
+    /* Global heading defaults */
+    --heading-font: "Inter";
     --heading-weight: 500;
     --heading-lh: 1.15;
     --heading-track: 0px;
@@ -150,9 +150,9 @@
     font-variant-ligatures: common-ligatures contextual;
   }
 
-  /* Ensure Reckless font loads properly on all devices */
+  /* Font utility classes */
   .font-reckless {
-    font-family: 'Reckless' !important;
+    font-family: 'Inter', sans-serif !important;
   }
 
 }
@@ -212,17 +212,17 @@
   }
 
   /* Force mode for debugging (toggle via body class) */
-  body.force-reckless h1,
-  body.force-reckless h2,
-  body.force-reckless h3,
-  body.force-reckless h4,
-  body.force-reckless .h1,
-  body.force-reckless .h2,
-  body.force-reckless .h3,
-  body.force-reckless .h4,
-  body.force-reckless [data-typography="heading"],
-  body.force-reckless [data-heading]{
-    font-family:"Reckless" !important;
+  body.force-inter h1,
+  body.force-inter h2,
+  body.force-inter h3,
+  body.force-inter h4,
+  body.force-inter .h1,
+  body.force-inter .h2,
+  body.force-inter .h3,
+  body.force-inter .h4,
+  body.force-inter [data-typography="heading"],
+  body.force-inter [data-heading]{
+    font-family:"Inter", sans-serif !important;
     font-weight:500 !important;
   }
 
