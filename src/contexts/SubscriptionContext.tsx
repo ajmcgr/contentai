@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+if (typeof (React as any)?.useState !== 'function') {
+  throw new Error('[SubscriptionProvider] React hooks unavailable — check duplicate React or Vite aliases.');
+}
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 
