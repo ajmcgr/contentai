@@ -68,8 +68,8 @@
 
     --radius: 0.5rem;
 
-    /* Global heading defaults (Inter Medium) */
-    --heading-font: "Inter";
+    /* Global heading defaults (match trywrite.ai look) */
+    --heading-font: "Reckless";
     --heading-weight: 500;
     --heading-lh: 1.15;
     --heading-track: 0px;
