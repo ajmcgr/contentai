@@ -1,9 +1,7 @@
-
 import React from 'react'
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Index from "./pages/Index";
 import About from "./pages/About";
@@ -20,9 +18,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
-import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import { AuthenticatedLayout } from "./components/layouts/AuthenticatedLayout";
-import DashboardIndex from "./pages/dashboard/Index";
 import ArticlesDashboard from "./pages/dashboard/ArticlesDashboard";
 import Write from "./pages/dashboard/Write";
 import Topics from "./pages/dashboard/Topics";
@@ -45,12 +41,12 @@ import ReadabilityChecker from "./pages/tools/ReadabilityChecker";
 import TypographyQA from "./pages/TypographyQA";
 import FontDebug from "./pages/admin/FontDebug";
 import NuclearConnect from "./pages/NuclearConnect";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const emailSettingsQueryClient = new QueryClient();
 
-const App = () => (
-  <SubscriptionProvider>
-  
+const App = () => {
+  return (
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -79,7 +75,6 @@ const App = () => (
               <Footer />
             </div>
           }>
-
             <Route index element={<Index />} />
             <Route path="about" element={<About />} />
             <Route path="pricing" element={<Pricing />} />
@@ -109,8 +104,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
-  
-  </SubscriptionProvider>
-);
+  );
+};
 
 export default App;
