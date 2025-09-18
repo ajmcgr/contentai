@@ -348,7 +348,7 @@ export default function Write() {
       let articleId = editingId;
 
       // Use new Wix function for better error handling
-      if (selectedConnection && connections.find(c => c.id === selectedConnection)?.provider === 'wix') {
+      if (selectedConnection && connections.find(c => c.id === selectedConnection)?.platform === 'wix') {
         await publishToWix({
           userId: user.id,
           title: title.trim(),

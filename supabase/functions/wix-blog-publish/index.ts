@@ -85,17 +85,19 @@ Deno.serve(async (req) => {
       }
     }
     const wixSiteId = body.wixSiteId || conn?.wix_site_id || Deno.env.get("WIX_SITE_ID") || "";
+    const instanceId = (conn as any)?.instance_id || Deno.env.get("WIX_INSTANCE_ID") || "";
 
     if (!memberId) {
       return J(400, { error: "member_required", msg: "Provide memberId or set WIX_DEFAULT_MEMBER_ID/default_member_id" });
     }
 
-    // 1) Create draft — use explicit content shape and optional site header
+    // 1) Create draft — use explicit content shape and optional site/instance headers
     const createHeaders: Record<string,string> = {
       "authorization": `Bearer ${accessToken}`,
       "content-type": "application/json",
     };
     if (wixSiteId) createHeaders["wix-site-id"] = wixSiteId;
+    if (instanceId) createHeaders["wix-instance-id"] = instanceId;
 
     const createBody = {
       title: body.title,
@@ -123,7 +125,7 @@ Deno.serve(async (req) => {
         status: draftRes.status,
         wix_request_id: reqId,
         response: draftJson,
-        sent: { memberId: !!memberId, hasSiteIdHeader: !!wixSiteId, contentType: "html" },
+        sent: { memberId: !!memberId, hasSiteIdHeader: !!wixSiteId, hasInstanceIdHeader: !!instanceId, contentType: "html" },
       });
     }
 
