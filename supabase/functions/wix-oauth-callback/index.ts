@@ -27,9 +27,10 @@ Deno.serve(async (req) => {
     // Secrets
     const appId = Deno.env.get("WIX_CLIENT_ID");
     const appSecret = Deno.env.get("WIX_CLIENT_SECRET");
-    if (!appId || !appSecret) {
-      console.error("[Wix OAuth] Missing secrets", { hasAppId: !!appId, hasAppSecret: !!appSecret });
-      return html(500, "Callback failed: missing WIX_APP_ID or WIX_APP_SECRET in Supabase secrets.");
+    const redirectUri = Deno.env.get("WIX_REDIRECT_URI");
+    if (!appId || !appSecret || !redirectUri) {
+      console.error("[Wix OAuth] Missing secrets", { hasAppId: !!appId, hasAppSecret: !!appSecret, hasRedirect: !!redirectUri });
+      return html(500, "Callback failed: missing WIX_CLIENT_ID, WIX_CLIENT_SECRET or WIX_REDIRECT_URI in Supabase secrets.");
     }
 
     // Exchange the authorization code for tokens
@@ -39,13 +40,9 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         grant_type: "authorization_code",
         code,
-        client_id: appId,      // Wix docs often show appId/appSecret;
-        client_secret: appSecret, // using OAuth param names keeps libraries happy
-        appId,                 // send both to be safe with Wix variants
-        appSecret,             // (Wix accepts JSON with these keys too)
-        // redirect_uri is usually not required if it matches the one in the app,
-        // but you can include it explicitly:
-        // redirect_uri: "https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-callback",
+        client_id: appId,
+        client_secret: appSecret,
+        redirect_uri: redirectUri
       }),
     });
 
