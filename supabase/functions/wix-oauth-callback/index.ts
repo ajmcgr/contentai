@@ -64,23 +64,29 @@ Deno.serve(async (req) => {
     try {
       const supabase = createClient(SB_URL, SB_SVC, { auth: { persistSession: false } });
       const userId = parseUid(state);
+      
+      if (!userId) {
+        console.error("[Wix OAuth] No user ID found in state:", state);
+        return asHtml(400, "Callback failed: user context missing.");
+      }
+      
       const expiresAt = new Date(Date.now() + Number(expires_in ?? 3600) * 1000).toISOString();
       
       console.log("[Wix OAuth] Storing connection", { 
         userId, 
-        instance_id, 
+        instance_id: instance_id || 'wix-default', 
         has_tokens: !!access_token && !!refresh_token,
         expires_at: expiresAt 
       });
       
       const { error } = await supabase.from("wix_connections").upsert({
         user_id: userId, 
-        instance_id, 
+        instance_id: instance_id || 'wix-default', // fallback if Wix doesn't provide instance_id
         access_token, 
         refresh_token,
         expires_at: expiresAt, 
         updated_at: new Date().toISOString(),
-      }, { onConflict: "instance_id" });
+      }, { onConflict: "user_id" }); // Use user_id as conflict resolution since we added unique constraint
       
       if (error) {
         console.error("[Wix OAuth] DB upsert error", error);

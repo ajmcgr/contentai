@@ -640,7 +640,7 @@ export type Database = {
           created_at: string
           expires_at: string | null
           id: string
-          instance_id: string
+          instance_id: string | null
           refresh_token: string | null
           updated_at: string
           user_id: string
@@ -650,7 +650,7 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
-          instance_id: string
+          instance_id?: string | null
           refresh_token?: string | null
           updated_at?: string
           user_id: string
@@ -660,7 +660,7 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
-          instance_id?: string
+          instance_id?: string | null
           refresh_token?: string | null
           updated_at?: string
           user_id?: string
