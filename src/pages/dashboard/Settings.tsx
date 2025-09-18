@@ -1843,6 +1843,47 @@ export default function Settings() {
                             </div>
                           </div>
 
+                          {/* Wix Integration - Featured */}
+                          <div className="relative border border-green-200 bg-green-50/50 rounded-lg p-4">
+                            <div className="absolute top-4 right-4">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Live
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 mb-4">
+                              <img 
+                                src="/lovable-uploads/4a03d01f-8a2e-4efb-9cbc-a7fd87e0ce20.png"
+                                alt="Wix logo"
+                                className="w-12 h-12 object-contain"
+                              />
+                              <div className="flex-1 pr-16">
+                                <h4 className="font-semibold text-lg">Wix</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Publish your blogs directly to your Wix site blog.
+                                </p>
+                              </div>
+                            </div>
+                            {integrations.wix?.connected ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-green-600 font-medium">Connected</span>
+                                <Button 
+                                  variant="outline"
+                                  onClick={() => handleDisconnect('wix')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                onClick={onConnectWix}
+                                disabled={busy === 'wix'}
+                                className="bg-primary hover:bg-primary/90"
+                              >
+                                {busy === 'wix' ? 'Redirecting…' : 'Connect'}
+                              </Button>
+                            )}
+                          </div>
+
                           {/* Shopify Integration - Featured */}
                           <div className="relative border border-green-200 bg-green-50/50 rounded-lg p-4">
                             <div className="absolute top-4 right-4">
@@ -1891,47 +1932,6 @@ export default function Settings() {
                                   </Button>
                                 </div>
                               </div>
-                            )}
-                          </div>
-
-                          {/* Wix Integration - Featured */}
-                          <div className="relative border border-green-200 bg-green-50/50 rounded-lg p-4">
-                            <div className="absolute top-4 right-4">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Live
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3 mb-4">
-                              <img 
-                                src="/lovable-uploads/4a03d01f-8a2e-4efb-9cbc-a7fd87e0ce20.png"
-                                alt="Wix logo"
-                                className="w-12 h-12 object-contain"
-                              />
-                              <div className="flex-1 pr-16">
-                                <h4 className="font-semibold text-lg">Wix</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  Publish your blogs directly to your Wix site blog.
-                                </p>
-                              </div>
-                            </div>
-                            {integrations.wix?.connected ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-green-600 font-medium">Connected</span>
-                                <Button 
-                                  variant="outline"
-                                  onClick={() => handleDisconnect('wix')}
-                                >
-                                  Disconnect
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button
-                                onClick={onConnectWix}
-                                disabled={busy === 'wix'}
-                                className="bg-primary hover:bg-primary/90"
-                              >
-                                {busy === 'wix' ? 'Redirecting…' : 'Connect'}
-                              </Button>
                             )}
                           </div>
                         </div>
