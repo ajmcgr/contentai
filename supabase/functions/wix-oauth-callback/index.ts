@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 // deno-lint-ignore no-explicit-any
 const json = (status: number, body: any, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
@@ -10,6 +12,43 @@ const html = (status: number, body: string) =>
     status,
     headers: { "content-type": "text/html; charset=utf-8" },
   });
+
+// Load Wix secrets: prefer Edge Function env vars, fallback to app_secrets table
+async function getSecrets() {
+  const envId = Deno.env.get("WIX_CLIENT_ID");
+  const envSecret = Deno.env.get("WIX_CLIENT_SECRET");
+  const envRedirect = Deno.env.get("WIX_REDIRECT_URI");
+  if (envId && envSecret && envRedirect) {
+    return { appId: envId, appSecret: envSecret, redirectUri: envRedirect };
+  }
+
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY to load secrets from DB");
+  }
+
+  const sb = createClient(url, key);
+  const { data, error } = await sb
+    .from("app_secrets")
+    .select("key,value")
+    .eq("namespace", "cms_integrations");
+
+  if (error) {
+    throw new Error("Failed to fetch secrets from app_secrets: " + error.message);
+  }
+
+  const map = Object.fromEntries((data || []).map((r: any) => [r.key, String(r.value || "").trim()]));
+  const appId = map.WIX_CLIENT_ID;
+  const appSecret = map.WIX_CLIENT_SECRET;
+  const redirectUri = map.WIX_REDIRECT_URI || envRedirect; // allow env override for redirect
+
+  if (!appId || !appSecret || !redirectUri) {
+    throw new Error("Missing Wix secrets (client_id, client_secret, or redirect_uri)");
+  }
+
+  return { appId, appSecret, redirectUri };
+}
 
 Deno.serve(async (req) => {
   try {
@@ -25,12 +64,12 @@ Deno.serve(async (req) => {
     // (Optional) If you stored expected state in a cookie/session, validate here.
 
     // Secrets
-    const appId = Deno.env.get("WIX_CLIENT_ID");
-    const appSecret = Deno.env.get("WIX_CLIENT_SECRET");
-    const redirectUri = Deno.env.get("WIX_REDIRECT_URI");
-    if (!appId || !appSecret || !redirectUri) {
-      console.error("[Wix OAuth] Missing secrets", { hasAppId: !!appId, hasAppSecret: !!appSecret, hasRedirect: !!redirectUri });
-      return html(500, "Callback failed: missing WIX_CLIENT_ID, WIX_CLIENT_SECRET or WIX_REDIRECT_URI in Supabase secrets.");
+    let appId: string, appSecret: string, redirectUri: string;
+    try {
+      ({ appId, appSecret, redirectUri } = await getSecrets());
+    } catch (e) {
+      console.error("[Wix OAuth] Secrets error", e);
+      return html(500, "Callback failed: Wix secrets missing or invalid. Configure WIX_CLIENT_ID, WIX_CLIENT_SECRET, WIX_REDIRECT_URI in Edge Function secrets or app_secrets.");
     }
 
     // Exchange the authorization code for tokens
