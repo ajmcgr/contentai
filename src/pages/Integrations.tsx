@@ -73,7 +73,6 @@ const Integrations = () => {
     // Get current user ID
     const getCurrentUserId = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('[Integrations] Current session:', session?.user?.id);
       if (session?.user?.id) {
         setCurrentUserId(session.user.id);
       }
