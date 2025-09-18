@@ -15,9 +15,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { WysiwygEditor, formatForWordPress, stripHtml } from "@/components/WysiwygEditor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingDialog } from "@/components/LoadingDialog";
+import { safeJson } from "@/lib/safeJson";
 
 // Safe publishing function for Wix
-async function publishToWix({ userId, title, html, excerpt, tags, categoryIds, memberId }: {
+async function publishToWix(params: {
   userId: string;
   title: string;
   html: string;
@@ -25,21 +26,22 @@ async function publishToWix({ userId, title, html, excerpt, tags, categoryIds, m
   tags?: string[];
   categoryIds?: string[];
   memberId?: string;
+  wixSiteId?: string;
 }) {
   const res = await fetch('https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-blog-publish', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      userId,
-      title,
-      contentHtml: html, // <-- raw HTML string is fine; we JSON.stringify it
-      excerpt, 
-      tags, 
-      categoryIds, 
-      memberId
+      userId: params.userId,
+      title: params.title,
+      contentHtml: params.html,
+      excerpt: params.excerpt,
+      tags: params.tags,
+      categoryIds: params.categoryIds,
+      memberId: params.memberId,
+      wixSiteId: params.wixSiteId,
     })
   });
-  
   const j = await res.json();
   if (!res.ok || !j?.ok) {
     throw new Error(`Wix publish failed: ${res.status} ${res.statusText} - ${JSON.stringify(j)}`);
@@ -353,7 +355,9 @@ export default function Write() {
           html: formattedContent,
           excerpt: '',
           tags: [],
-          categoryIds: []
+          categoryIds: [],
+          memberId: undefined,
+          wixSiteId: undefined
         });
         
         toast({
