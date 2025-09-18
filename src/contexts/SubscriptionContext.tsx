@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 
@@ -26,10 +26,10 @@ export const useSubscription = () => {
 };
 
 interface SubscriptionProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ children }) => {
+export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>({
     subscribed: false,
     planType: 'free',

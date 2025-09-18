@@ -541,15 +541,30 @@ export default function Settings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
       
+      console.log('[Wix Settings] Starting OAuth with user:', user.id);
+      
       // Use the same approach as WixConnectButton with proper popup
       const q = `?uid=${encodeURIComponent(user.id)}`;
-      const res = await fetch(
-        `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-start${q}`,
-        { method: "GET" }
-      );
+      const startUrl = `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-start${q}`;
+      
+      console.log('[Wix Settings] Fetching from:', startUrl);
+      
+      const res = await fetch(startUrl, { 
+        method: "GET",
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('[Wix Settings] Response status:', res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('[Wix Settings] Error response:', errorText);
+        throw new Error(`HTTP ${res.status}: ${errorText}`);
+      }
+      
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to get installer URL");
-
       console.log("[Wix Settings] start debug", data.debug);
 
       // Always open in new window with better popup settings
