@@ -27,9 +27,17 @@ export default function WixConnectButton({ userId }: { userId?: string }) {
 
       console.log("[Wix] start debug", data.debug); // shows appId_tail + redirectUri
 
-      const popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
-      if (popup) popup.location.href = data.installerUrl;
-      else window.location.href = data.installerUrl;
+      // Always open in new window with better popup settings
+      const popup = window.open(
+        data.installerUrl, 
+        '_blank', 
+        'width=600,height=700,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,directories=no,status=no'
+      );
+      
+      if (!popup) {
+        alert('Popup blocked! Please allow popups for this site and try again.');
+        return;
+      }
     } catch (e) {
       console.error("[Wix] start error:", e);
       alert(String(e));
