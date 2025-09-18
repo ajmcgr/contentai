@@ -890,6 +890,12 @@ async function publishToWix(article: any, connection: any, options: any) {
     throw new Error('Wix publish failed: missing required memberId for third-party app. Please connect Wix with proper permissions.');
   }
 
+  // Extract instanceId from connection config
+  const instanceId = connection.config?.instance_id || connection.instance_id;
+  if (!instanceId) {
+    throw new Error('Wix publish failed: missing instanceId. Please reconnect your Wix integration.');
+  }
+
   const draftPostData = {
     draftPost: {
       title: article.title,
@@ -917,21 +923,23 @@ async function publishToWix(article: any, connection: any, options: any) {
     }
   };
 
+  const headers = {
+    'Authorization': `Bearer ${connection.access_token}`,
+    'Content-Type': 'application/json',
+    'wix-instance-id': instanceId // Required for Wix Blog API authentication
+  };
+
   console.log('Wix API request:', {
     endpoint,
+    instanceId,
+    memberId,
     data: JSON.stringify(draftPostData, null, 2),
-    headers: {
-      'Authorization': `Bearer ${connection.access_token}`,
-      'Content-Type': 'application/json'
-    }
+    headers
   });
 
   const response = await fetch(endpoint, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${connection.access_token}`,
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify(draftPostData)
   });
 
