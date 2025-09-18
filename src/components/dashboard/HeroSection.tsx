@@ -2,6 +2,7 @@
 import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import heroContentEditor from "@/assets/hero-content-editor.png";
 
 export const HeroSection = () => {
   return (
@@ -41,8 +42,8 @@ export const HeroSection = () => {
             {/* Image content */}
             <div className="relative overflow-hidden rounded-b-lg">
               <img 
-                src="/lovable-uploads/93eecacc-6d25-4081-aa2b-f474192de5dd.png" 
-                alt="Content AI Dashboard Preview"
+                src={heroContentEditor} 
+                alt="Content AI Editor Interface"
                 className="w-full h-auto"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent"></div>
