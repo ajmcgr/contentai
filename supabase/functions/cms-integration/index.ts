@@ -804,25 +804,42 @@ async function publishToWebflow(article: any, connection: any, options: any) {
 }
 
 async function publishToWix(article: any, connection: any, options: any) {
-  const endpoint = `https://www.wixapis.com/blog/v3/posts`;
+  const endpoint = `https://www.wixapis.com/blog/v3/draft-posts`;
   
-  const postData = {
-    title: article.title,
-    excerpt: article.meta_description,
-    content: {
-      type: 'RICH_TEXT',
-      nodes: [{
-        type: 'PARAGRAPH',
+  const draftPostData = {
+    draftPost: {
+      title: article.title,
+      excerpt: article.meta_description || '',
+      richContent: {
         nodes: [{
-          type: 'TEXT',
-          textData: {
-            text: article.content
+          type: 'PARAGRAPH',
+          id: '',
+          nodes: [{
+            type: 'TEXT',
+            id: '',
+            nodes: [],
+            textData: {
+              text: article.content,
+              decorations: []
+            }
+          }],
+          paragraphData: {
+            textStyle: { textAlignment: 'AUTO' },
+            indentation: 0
           }
         }]
-      }]
-    },
-    status: options.status || 'DRAFT'
+      }
+    }
   };
+
+  console.log('Wix API request:', {
+    endpoint,
+    data: JSON.stringify(draftPostData, null, 2),
+    headers: {
+      'Authorization': `Bearer ${connection.access_token}`,
+      'Content-Type': 'application/json'
+    }
+  });
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -830,14 +847,21 @@ async function publishToWix(article: any, connection: any, options: any) {
       'Authorization': `Bearer ${connection.access_token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(postData)
+    body: JSON.stringify(draftPostData)
+  });
+
+  const responseText = await response.text();
+  console.log('Wix API response:', {
+    status: response.status,
+    statusText: response.statusText,
+    body: responseText
   });
 
   if (!response.ok) {
-    throw new Error(`Wix publish failed: ${response.statusText}`);
+    throw new Error(`Wix publish failed: ${response.status} ${response.statusText} - ${responseText}`);
   }
 
-  return await response.json();
+  return JSON.parse(responseText);
 }
 
 async function publishToNotion(article: any, connection: any, options: any) {
