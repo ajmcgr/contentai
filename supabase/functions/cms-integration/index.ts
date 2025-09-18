@@ -277,14 +277,47 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
   }
 
   // Get CMS connection
-  const { data: connection, error: connectionError } = await supabaseClient
+  let connection;
+  const { data: cmsConnection, error: connectionError } = await supabaseClient
     .from('cms_connections')
     .select('*')
     .eq('id', connectionId)
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (connectionError || !connection) {
+  if (cmsConnection) {
+    connection = cmsConnection;
+  } else {
+    // Check if it's a Wix connection
+    const { data: wixConnection, error: wixError } = await supabaseClient
+      .from('wix_connections')
+      .select('*')
+      .eq('id', connectionId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (wixConnection) {
+      // Convert Wix connection to cms_connections format for compatibility
+      connection = {
+        id: wixConnection.id,
+        user_id: user.id,
+        platform: 'wix',
+        site_url: `wix-site-${wixConnection.instance_id || 'default'}`,
+        access_token: wixConnection.access_token,
+        api_key: null,
+        config: {
+          endpoint: 'https://www.wixapis.com/blog/v3/',
+          instance_id: wixConnection.instance_id,
+          expires_at: wixConnection.expires_at
+        },
+        is_active: true,
+        connected_at: wixConnection.created_at,
+        last_sync: wixConnection.created_at
+      };
+    }
+  }
+
+  if (!connection) {
     throw new Error('CMS connection not found');
   }
 
