@@ -100,13 +100,14 @@ Deno.serve(async (req) => {
     if (instanceId) createHeaders["wix-instance-id"] = instanceId;
 
     const createBody = {
-      title: body.title,
-      // Be explicit: some Wix tenants require a type wrapper
-      content: { type: "html", html: body.contentHtml },
-      excerpt: body.excerpt ?? "",
-      tags: body.tags ?? [],
-      categoryIds: body.categoryIds ?? [],
-      memberId, // required for 3rd-party app drafts
+      draftPost: {
+        title: body.title,
+        content: { type: "html", html: body.contentHtml },
+        excerpt: body.excerpt ?? "",
+        tags: body.tags ?? [],
+        categoryIds: body.categoryIds ?? [],
+        memberId, // required for 3rd-party app drafts
+      }
     };
 
     const draftRes = await fetch("https://www.wixapis.com/blog/v3/draft-posts", {
