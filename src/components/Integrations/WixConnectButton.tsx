@@ -1,31 +1,28 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function WixConnectButton() {
-  // Your Wix app configuration
-  const appId = 'f769a0b6-320b-486d-aa51-e465e3a7817e'; // Wix App ID
-  const redirectUrl =
-    'https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-callback'; // OAuth redirect URI (exact)
-  const appUrl = 'https://hmrzmafwvhifjhsoizil.supabase.co'; // App homepage URL
-
-  const onConnect = () => {
+  const onConnect = async () => {
     try {
-      const u = new URL('https://www.wix.com/installer/install');
-      u.searchParams.set('appId', appId);
-      u.searchParams.set('redirectUrl', redirectUrl);
-      u.searchParams.set('state', crypto.randomUUID());
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Please sign in first');
+        return;
+      }
 
-      console.log('[Wix] Using appId:', appId);
-      console.log('[Wix] Using redirectUrl:', redirectUrl);
-      console.log('[Wix] App homepage URL:', appUrl);
-      console.log('[Wix] Installer URL:', u.toString());
+      // Use wix-oauth-start edge function to ensure consistent appId
+      const startUrl = `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-start?userId=${user.id}`;
+      
+      console.log('[Wix] Starting OAuth via edge function:', startUrl);
 
       // Popup-safe open
       const popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
       if (popup) {
-        popup.location.href = u.toString();
+        popup.location.href = startUrl;
       } else {
-        window.location.href = u.toString(); // fallback same-tab
+        window.location.href = startUrl; // fallback same-tab
       }
     } catch (e) {
       console.error('[Wix] Connect error:', e);
