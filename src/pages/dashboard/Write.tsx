@@ -16,6 +16,37 @@ import { WysiwygEditor, formatForWordPress, stripHtml } from "@/components/Wysiw
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingDialog } from "@/components/LoadingDialog";
 
+// Safe publishing function for Wix
+async function publishToWix({ userId, title, html, excerpt, tags, categoryIds, memberId }: {
+  userId: string;
+  title: string;
+  html: string;
+  excerpt?: string;
+  tags?: string[];
+  categoryIds?: string[];
+  memberId?: string;
+}) {
+  const res = await fetch('https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-blog-publish', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      userId,
+      title,
+      contentHtml: html, // <-- raw HTML string is fine; we JSON.stringify it
+      excerpt, 
+      tags, 
+      categoryIds, 
+      memberId
+    })
+  });
+  
+  const j = await res.json();
+  if (!res.ok || !j?.ok) {
+    throw new Error(`Wix publish failed: ${res.status} ${res.statusText} - ${JSON.stringify(j)}`);
+  }
+  return j;
+}
+
 export default function Write() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -308,21 +339,42 @@ export default function Write() {
       }
       setPublishing(true);
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Please sign in to publish');
+
+      const formattedContent = editorMode === "wysiwyg" ? formatForWordPress(content) : content;
       let articleId = editingId;
-      if (!articleId) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Please sign in to publish');
 
-        // Check if user can create article (monthly limit check)
-        const { data: canCreate, error: limitError } = await supabase.rpc('can_create_article', {
-          user_uuid: user.id
+      // Use new Wix function for better error handling
+      if (selectedConnection && connections.find(c => c.id === selectedConnection)?.provider === 'wix') {
+        await publishToWix({
+          userId: user.id,
+          title: title.trim(),
+          html: formattedContent,
+          excerpt: '',
+          tags: [],
+          categoryIds: []
         });
+        
+        toast({
+          title: "Published successfully!",
+          description: "Article published to Wix."
+        });
+        setIsPublishOpen(false);
+        return;
+      }
 
-        if (limitError || !canCreate) {
-          throw new Error('Monthly limit reached. Upgrade to Pro for unlimited articles.');
-        }
+      // For other platforms, continue with existing logic
+      // Check if user can create article (monthly limit check)  
+      const { data: canCreate, error: limitError } = await supabase.rpc('can_create_article', {
+        user_uuid: user.id
+      });
 
-        const formattedContent = editorMode === "wysiwyg" ? formatForWordPress(content) : content;
+      if (limitError || !canCreate) {
+        throw new Error('Monthly limit reached. Upgrade to Pro for unlimited articles.');
+      }
+
+      if (!articleId) {
         const { data: inserted, error } = await supabase
           .from('articles')
           .insert({ title: title.trim(), content: formattedContent.trim(), status: 'draft', user_id: user.id })
