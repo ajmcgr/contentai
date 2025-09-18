@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Check cms_installs for legacy connections
     const { data, error } = await supabaseClient
       .from('cms_installs')
       .select('provider, external_id, scope, updated_at, extra')
@@ -42,9 +43,30 @@ Deno.serve(async (req) => {
 
     if (error) throw error
 
+    // Check wix_connections for new Wix OAuth connections
+    const { data: wixConnections, error: wixError } = await supabaseClient
+      .from('wix_connections')
+      .select('instance_id, created_at, expires_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (wixError) throw wixError
+
     const byProvider: any = { shopify: null, wix: null }
     for (const row of (data || [])) {
       byProvider[row.provider] = row
+    }
+
+    // Add Wix connection from wix_connections table if exists
+    if (wixConnections && wixConnections.length > 0) {
+      const wixConn = wixConnections[0]
+      byProvider.wix = {
+        provider: 'wix',
+        external_id: wixConn.instance_id,
+        updated_at: wixConn.created_at,
+        extra: { expires_at: wixConn.expires_at }
+      }
     }
 
     return new Response(JSON.stringify({ 
