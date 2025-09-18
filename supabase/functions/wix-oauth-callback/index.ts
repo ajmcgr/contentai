@@ -5,33 +5,30 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const asHtml = (s: number, msg: string) =>
-  new Response(`<!doctype html><html><body><pre>${msg}</pre></body></html>`, {
-    status: s, headers: { "content-type": "text/html; charset=utf-8" },
+const asHtml = (status: number, html: string) =>
+  new Response(`<!doctype html><html><head><meta charset="utf-8"/></head><body>${html}</body></html>`, {
+    status,
+    headers: { "content-type": "text/html; charset=utf-8" },
   });
 
-function parseUid(state: string | null){ 
-  const m = state && /^uid:(.+)$/.exec(state || ""); 
-  return m ? m[1] : null; 
+function parseUid(state: string | null) {
+  const m = state && /^uid:(.+)$/.exec(state);
+  return m ? m[1] : null;
 }
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state") || "no-state";
-  if (!code) return asHtml(400, "Callback failed: missing ?code");
+  const expectedRedirect = Deno.env.get("WIX_REDIRECT_URI") ?? `${url.origin}${url.pathname}`;
+
+  if (!code) return asHtml(400, `<pre>Missing ?code</pre>`);
 
   const appId = Deno.env.get("WIX_APP_ID") || Deno.env.get("WIX_CLIENT_ID") || "";
   const appSecret = Deno.env.get("WIX_APP_SECRET") || Deno.env.get("WIX_CLIENT_SECRET") || "";
-  const redirectUri = Deno.env.get("WIX_REDIRECT_URI") || `${url.origin}${url.pathname}`;
-  if (!appId || !appSecret) return asHtml(500, "Callback failed: missing WIX_APP_ID / WIX_APP_SECRET (Edge env).");
+  if (!appId || !appSecret) return asHtml(500, `<pre>Missing WIX_APP_ID / WIX_APP_SECRET</pre>`);
 
-  console.log("[Wix OAuth] Will exchange", {
-    appId_tail: appId.slice(-4),
-    redirect_uri: redirectUri,
-    state,
-  });
-
+  // Exchange code → tokens (JSON, not form-encoded)
   const res = await fetch("https://www.wixapis.com/oauth/access", {
     method: "POST",
     headers: { "content-type": "application/json", accept: "application/json" },
@@ -40,64 +37,65 @@ Deno.serve(async (req) => {
       code,
       client_id: appId,
       client_secret: appSecret,
-      redirect_uri: redirectUri,
+      redirect_uri: expectedRedirect,
     }),
   });
 
   const raw = await res.text();
   let payload: any = raw; try { payload = JSON.parse(raw); } catch {}
-
   if (!res.ok) {
-    console.error("[Wix OAuth] Token exchange failed", {
-      status: res.status, payload,
-      hint: "Installer appId & redirect must match WIX_APP_ID/WIX_REDIRECT_URI (same Wix app & environment).",
-    });
-    return asHtml(400, "Callback failed: unauthorized_client. See logs for details.");
+    console.error("[Wix OAuth] Token exchange failed", { status: res.status, payload });
+    return asHtml(400, `<pre>OAuth failed: ${res.status}</pre>`);
   }
 
-  const { access_token, refresh_token, instance_id, expires_in } = payload || {};
-  if (!access_token || !refresh_token) return asHtml(502, "Callback failed: missing tokens in response.");
+  const { access_token, refresh_token, instance_id, expires_in, scope } = payload || {};
+  if (!access_token || !refresh_token) {
+    console.error("[Wix OAuth] Missing tokens", payload);
+    return asHtml(502, `<pre>Missing tokens</pre>`);
+  }
 
+  // Optional: store in Supabase
   const SB_URL = Deno.env.get("SUPABASE_URL");
   const SB_SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const userId = parseUid(state);
   if (SB_URL && SB_SVC) {
     try {
       const supabase = createClient(SB_URL, SB_SVC, { auth: { persistSession: false } });
-      const userId = parseUid(state);
-      
-      if (!userId) {
-        console.error("[Wix OAuth] No user ID found in state:", state);
-        return asHtml(400, "Callback failed: user context missing.");
-      }
-      
       const expiresAt = new Date(Date.now() + Number(expires_in ?? 3600) * 1000).toISOString();
-      
-      console.log("[Wix OAuth] Storing connection", { 
-        userId, 
-        instance_id: instance_id || 'wix-default', 
-        has_tokens: !!access_token && !!refresh_token,
-        expires_at: expiresAt 
-      });
-      
       const { error } = await supabase.from("wix_connections").upsert({
-        user_id: userId, 
-        instance_id: instance_id || 'wix-default', // fallback if Wix doesn't provide instance_id
-        access_token, 
+        user_id: userId,
+        instance_id: instance_id || 'wix-default',
+        access_token,
         refresh_token,
-        expires_at: expiresAt, 
+        expires_at: expiresAt,
         updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" }); // Use user_id as conflict resolution since we added unique constraint
-      
-      if (error) {
-        console.error("[Wix OAuth] DB upsert error", error);
-      } else {
-        console.log("[Wix OAuth] Successfully stored in wix_connections table");
-      }
-    } catch (e) { 
-      console.error("[Wix OAuth] DB persist fatal", e); 
+      }, { onConflict: "user_id" });
+      if (error) console.error("[Wix OAuth] DB upsert error", error);
+    } catch (e) {
+      console.error("[Wix OAuth] DB persist fatal", e);
     }
   }
 
-  console.log("[Wix OAuth] Success", { instance_id, has_access: !!access_token, has_refresh: !!refresh_token });
-  return asHtml(200, "Wix connected! You can close this tab.");
+  // ✅ Notify opener and close
+  const msg = {
+    provider: "wix",
+    status: "connected",
+    instance_id,
+    state,
+  };
+  const script = `
+    <script>
+      (function(){
+        try {
+          var msg = ${JSON.stringify(msg)};
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(msg, "*");
+          }
+        } catch (e) {}
+        document.body.innerHTML = '<pre>Wix connected! You can close this tab.</pre>';
+        setTimeout(function(){ window.close(); }, 300);
+      })();
+    </script>
+  `;
+  return asHtml(200, script);
 });

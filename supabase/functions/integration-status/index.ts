@@ -58,16 +58,16 @@ Deno.serve(async (req) => {
       byProvider[row.provider] = row
     }
 
-    // Add Wix connection from wix_connections table if exists
-    if (wixConnections && wixConnections.length > 0) {
-      const wixConn = wixConnections[0]
-      byProvider.wix = {
-        provider: 'wix',
-        external_id: wixConn.instance_id,
-        updated_at: wixConn.created_at,
-        extra: { expires_at: wixConn.expires_at }
+      // Add Wix connection from wix_connections table if exists
+      if (wixConnections && wixConnections.length > 0) {
+        const wixConn = wixConnections[0]
+        byProvider.wix = {
+          provider: 'wix',
+          external_id: wixConn.instance_id || 'wix-default',
+          updated_at: wixConn.created_at,
+          extra: { expires_at: wixConn.expires_at }
+        }
       }
-    }
 
     return new Response(JSON.stringify({ 
       ok: true, 
