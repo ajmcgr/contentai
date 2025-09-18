@@ -33,15 +33,30 @@ export default function WixConnectButton({ userId }: { userId: string }) {
       if (msg && msg.provider === 'wix' && msg.status === 'connected') {
         // Got success from callback
         setConnecting(false);
+        setConnected(true); // optimistic UI
         // Final recheck against server
         refreshStatus();
-        // Close popup if still open
+        // Close popup if still open and clear any timers
         try { popupRef.current?.close(); } catch {}
+        if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
       }
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, []);
+
+  // Fallback: when window regains focus or tab becomes visible, re-check and stop spinner
+  useEffect(() => {
+    const onFocus = () => { refreshStatus(); setConnecting(false); };
+    const onVisibility = () => { if (!document.hidden) onFocus(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    };
+  }, [userId]);
 
   const onConnect = async () => {
     setConnecting(true);
