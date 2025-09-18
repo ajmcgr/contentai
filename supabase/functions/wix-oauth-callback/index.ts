@@ -43,40 +43,95 @@ Deno.serve(async (req) => {
   const { access_token, refresh_token, instance_id, expires_in, scope } = payload || {};
   if (!access_token || !refresh_token) return asHtml(502, "<pre>Missing tokens</pre>");
 
-  // ✅ persist to DB under the real user id
-  const SB_URL = Deno.env.get("SUPABASE_URL");
-  const SB_SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const userId = parseUid(state);
-  if (SB_URL && SB_SVC) {
-    try {
-      const supabase = createClient(SB_URL, SB_SVC, { auth: { persistSession: false } });
-      // ✅ Upsert by user_id (one connection row per user)
-      const { error } = await supabase
-        .from("wix_connections")
-        .upsert(
-          {
-            user_id: userId,
-            instance_id,
-            access_token,
-            refresh_token,
-            scope,
-            expires_at: new Date(Date.now() + Number(expires_in ?? 3600) * 1000).toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" } // <-- fix: conflict on user_id instead of instance_id
-        );
-
-      if (error) {
-        console.error("[Wix OAuth] DB upsert error", error);
-      } else {
-        console.log("[Wix OAuth] Saved/Updated", { user_id: userId, instance_id });
-      }
-    } catch (e) {
-      console.error("[Wix OAuth] DB persist fatal", e);
-    }
+// Attempt to resolve the Wix memberId associated with this access token (required by Blog API)
+let memberId: string | null = null;
+try {
+  const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+    body: JSON.stringify({ token: access_token })
+  });
+  const triJson: any = await tri.json().catch(() => ({}));
+  if (tri.ok) {
+    memberId = triJson?.subjectId || null; // subjectId corresponds to the member/site subject
+    console.log('[Wix OAuth] token-info', { subjectType: triJson?.subjectType, subjectId: memberId, siteId: triJson?.siteId });
   } else {
-    console.warn("[Wix OAuth] Skipping DB persist (missing service role)");
+    console.warn('[Wix OAuth] token-info failed', { status: tri.status, body: triJson });
   }
+} catch (e) {
+  console.warn('[Wix OAuth] token-info error', e);
+}
+
+// ✅ persist to DB under the real user id
+const SB_URL = Deno.env.get("SUPABASE_URL");
+const SB_SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const userId = parseUid(state);
+if (SB_URL && SB_SVC) {
+  try {
+    const supabase = createClient(SB_URL, SB_SVC, { auth: { persistSession: false } });
+    // ✅ Upsert by user_id (one connection row per user)
+    const { error: connErr } = await supabase
+      .from("wix_connections")
+      .upsert(
+        {
+          user_id: userId,
+          instance_id,
+          access_token,
+          refresh_token,
+          scope,
+          expires_at: new Date(Date.now() + Number(expires_in ?? 3600) * 1000).toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+
+    if (connErr) {
+      console.error("[Wix OAuth] wix_connections upsert error", connErr);
+    } else {
+      console.log("[Wix OAuth] wix_connections saved/updated", { user_id: userId, instance_id });
+    }
+
+    // 🔹 Store (or update) a cms_installs record with memberId for easy retrieval later
+    const { data: existingInstall } = await supabase
+      .from('cms_installs')
+      .select('id, extra')
+      .eq('user_id', userId as any)
+      .eq('provider', 'wix')
+      .maybeSingle();
+
+    const nextExtra = { ...(existingInstall?.extra || {}), scope, instanceId: instance_id, memberId } as any;
+
+    if (existingInstall?.id) {
+      const { error: updErr } = await supabase
+        .from('cms_installs')
+        .update({
+          external_id: instance_id || (nextExtra.instanceId ?? 'unknown'),
+          access_token,
+          refresh_token,
+          extra: nextExtra,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingInstall.id);
+      if (updErr) console.error('[Wix OAuth] cms_installs update error', updErr);
+    } else {
+      const { error: insErr } = await supabase
+        .from('cms_installs')
+        .insert({
+          user_id: userId,
+          provider: 'wix',
+          external_id: instance_id || 'unknown',
+          access_token,
+          refresh_token,
+          extra: nextExtra,
+        });
+      if (insErr) console.error('[Wix OAuth] cms_installs insert error', insErr);
+    }
+  } catch (e) {
+    console.error("[Wix OAuth] DB persist fatal", e);
+  }
+} else {
+  console.warn("[Wix OAuth] Skipping DB persist (missing service role)");
+}
 
   // ✅ tell opener + close
   const msg = { provider: "wix", status: "connected", instance_id, state };

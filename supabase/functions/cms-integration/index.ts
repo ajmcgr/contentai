@@ -339,11 +339,47 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
       if (!memberId) {
         const { data: install } = await supabaseClient
           .from('cms_installs')
-          .select('extra')
+          .select('id, extra')
           .eq('user_id', user.id)
           .eq('provider', 'wix')
           .maybeSingle();
         memberId = install?.extra?.memberId;
+
+        // Fallback: introspect token to retrieve subjectId (memberId)
+        if (!memberId && connection.access_token) {
+          try {
+            const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+              body: JSON.stringify({ token: connection.access_token })
+            });
+            const triJson: any = await tri.json().catch(() => ({}));
+            if (tri.ok) {
+              memberId = triJson?.subjectId || undefined;
+              console.log('[CMS Integration][Wix] token-info', { subjectType: triJson?.subjectType, subjectId: memberId, siteId: triJson?.siteId });
+
+              // Persist for future publishes
+              if (memberId) {
+                if (install?.id) {
+                  const nextExtra = { ...(install.extra || {}), memberId } as any;
+                  await supabaseClient.from('cms_installs').update({ extra: nextExtra }).eq('id', install.id);
+                } else {
+                  await supabaseClient.from('cms_installs').insert({
+                    user_id: user.id,
+                    provider: 'wix',
+                    external_id: connection?.config?.instance_id || 'unknown',
+                    access_token: connection.access_token,
+                    extra: { memberId },
+                  });
+                }
+              }
+            } else {
+              console.warn('[CMS Integration][Wix] token-info failed', { status: tri.status, body: triJson });
+            }
+          } catch (e) {
+            console.warn('[CMS Integration][Wix] token-info error', e);
+          }
+        }
       }
       publishResult = await publishToWix(article, connection, { ...publishOptions, memberId });
       break;
