@@ -333,9 +333,21 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
     case 'webflow':
       publishResult = await publishToWebflow(article, connection, publishOptions);
       break;
-    case 'wix':
-      publishResult = await publishToWix(article, connection, publishOptions);
+    case 'wix': {
+      // Ensure Wix memberId is provided (required for 3rd-party apps)
+      let memberId = (connection.config && connection.config.memberId) || undefined;
+      if (!memberId) {
+        const { data: install } = await supabaseClient
+          .from('cms_installs')
+          .select('extra')
+          .eq('user_id', user.id)
+          .eq('provider', 'wix')
+          .maybeSingle();
+        memberId = install?.extra?.memberId;
+      }
+      publishResult = await publishToWix(article, connection, { ...publishOptions, memberId });
       break;
+    }
     case 'notion':
       publishResult = await publishToNotion(article, connection, publishOptions);
       break;
@@ -806,10 +818,16 @@ async function publishToWebflow(article: any, connection: any, options: any) {
 async function publishToWix(article: any, connection: any, options: any) {
   const endpoint = `https://www.wixapis.com/blog/v3/draft-posts`;
   
+  const memberId = options?.memberId;
+  if (!memberId) {
+    throw new Error('Wix publish failed: missing required memberId for third-party app. Please connect Wix with proper permissions.');
+  }
+
   const draftPostData = {
     draftPost: {
       title: article.title,
       excerpt: article.meta_description || '',
+      memberId,
       richContent: {
         nodes: [{
           type: 'PARAGRAPH',
