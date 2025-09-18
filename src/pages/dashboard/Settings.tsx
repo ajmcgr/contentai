@@ -750,15 +750,12 @@ export default function Settings() {
   // Fetch existing connections and handle OAuth return
   const fetchConnections = async () => {
     try {
-      console.log('[Settings] Fetching connections...');
       const status = await getIntegrationStatus();
-      console.log('[Settings] Integration status response:', status);
       if (status?.ok && status.installs) {
         setIntegrations(prev => {
           const next: typeof prev = { ...prev };
 
           const wix = (status.installs as any).wix;
-          console.log('[Settings] Wix install data:', wix);
           if (wix) {
             next.wix = {
               connected: true,

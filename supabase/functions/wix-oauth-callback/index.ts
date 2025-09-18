@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
   }
 
   const { access_token, refresh_token, instance_id, expires_in, scope } = payload || {};
-  console.log("[Wix OAuth] Received tokens:", { access_token: !!access_token, refresh_token: !!refresh_token, instance_id, expires_in, scope });
+  if (!access_token || !refresh_token) return asHtml(502, "<pre>Missing tokens</pre>");
 
   // ✅ persist to DB under the real user id
   const SB_URL = Deno.env.get("SUPABASE_URL");
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
         .upsert(
           {
             user_id: userId,
-            instance_id: instance_id || 'wix-default',
+            instance_id,
             access_token,
             refresh_token,
             scope,
