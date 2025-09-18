@@ -751,20 +751,32 @@ export default function Settings() {
   const fetchConnections = async () => {
     try {
       const status = await getIntegrationStatus();
-      if (status?.success && Array.isArray(status.connections)) {
+      if (status?.ok && status.installs) {
         setIntegrations(prev => {
           const next: typeof prev = { ...prev };
-          for (const c of status.connections as any[]) {
-            if ((next as any)[c.platform]) {
-              (next as any)[c.platform] = {
-                connected: true,
-                siteUrl: c.site_url,
-                apiKey: '',
-                accessToken: '',
-                name: c.site_url
-              } as any;
-            }
+
+          const wix = (status.installs as any).wix;
+          if (wix) {
+            next.wix = {
+              connected: true,
+              siteUrl: wix.external_id || '',
+              accessToken: '',
+              name: wix.external_id || ''
+            } as any;
+          } else {
+            next.wix = { connected: false, siteUrl: '', accessToken: '', apiKey: '', name: '' } as any;
           }
+
+          const shopify = (status.installs as any).shopify;
+          if (shopify) {
+            next.shopify = {
+              connected: true,
+              siteUrl: shopify.external_id || '',
+              accessToken: '',
+              name: shopify.external_id || ''
+            } as any;
+          }
+
           return next;
         });
       }
