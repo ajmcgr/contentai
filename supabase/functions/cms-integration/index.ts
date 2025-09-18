@@ -51,22 +51,44 @@ serve(async (req) => {
       });
     }
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !user) {
-      return new Response(JSON.stringify({ 
-        error: 'Unauthorized: invalid session',
-        success: false
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    const userIdHeader = req.headers.get('X-User-Id');
+    
+    // Check if this is a service role request with user context
+    const isServiceRole = token === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    let supabaseClient;
+    let user;
+    
+    if (isServiceRole && userIdHeader) {
+      // Service role with user context - create admin client
+      supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      // Mock user object for service role operations
+      user = { id: userIdHeader };
+      console.log('[CMS Integration] Service role request for user:', userIdHeader);
+    } else {
+      // Regular user token
+      supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: { user: authUser }, error: userError } = await supabaseClient.auth.getUser(token);
+      if (userError || !authUser) {
+        return new Response(JSON.stringify({ 
+          error: 'Unauthorized: invalid session',
+          success: false
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      user = authUser;
     }
 
     switch (action) {

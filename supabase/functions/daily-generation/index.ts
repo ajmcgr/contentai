@@ -448,17 +448,29 @@ Title: [Compelling SEO title under 60 chars]
             // Publish to each connected platform
             for (const connection of connections) {
               try {
+                // Create a user-scoped supabase client for this operation
+                const userAdmin = createClient(supabaseUrl, serviceRoleKey, {
+                  auth: { persistSession: false },
+                  global: { 
+                    headers: { 
+                      'Authorization': `Bearer ${serviceRoleKey}`
+                    } 
+                  }
+                });
+
+                // Call the publish function directly instead of through HTTP
                 const publishResponse = await fetch(`${supabaseUrl}/functions/v1/cms-integration`, {
                   method: 'POST',
                   headers: {
                     'Authorization': `Bearer ${serviceRoleKey}`,
                     'Content-Type': 'application/json',
+                    'X-User-Id': userId, // Pass user ID in header for cms-integration to use
                   },
                   body: JSON.stringify({
                     action: 'publish',
                     articleId: article.id,
                     connectionId: connection.id,
-                    publishOptions: {}
+                    publishOptions: { status: 'publish' } // Publish immediately
                   })
                 });
 
