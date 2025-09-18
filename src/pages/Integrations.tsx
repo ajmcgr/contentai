@@ -67,6 +67,9 @@ const Integrations = () => {
   useEffect(() => {
     loadInstalls();
     loadStatus();
+    const onFocus = () => loadStatus();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   const loadInstalls = async () => {
@@ -131,6 +134,9 @@ const Integrations = () => {
       if (!session) {
         throw new Error('Not authenticated');
       }
+      
+      // Reset the button after launching the flow so UI doesn't stay stuck
+      setTimeout(() => setConnecting(null), 1500);
       
       startWixOAuth({ userId: session.user.id });
     } catch (error: any) {

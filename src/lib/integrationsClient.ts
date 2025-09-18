@@ -34,7 +34,7 @@ export function startShopifyOAuth({ shop, userId }: { shop: string; userId: stri
 }
 
 export function startWixOAuth({ userId }: { userId: string }) {
-  const url = `${EDGE_BASE}/wix-oauth-start?userId=${encodeURIComponent(userId)}`;
+  const url = `${EDGE_BASE}/wix-oauth-start?uid=${encodeURIComponent(userId)}`;
   console.log('🔵 Starting Wix OAuth with userId:', userId);
   goTop(url);
 }

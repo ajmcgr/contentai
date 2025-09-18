@@ -818,7 +818,7 @@ export default function Settings() {
 
       if (platform === 'wix') {
         // Use dedicated Edge Function for Wix to guarantee function activity + redirect
-        targetUrl = `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-start?userId=${encodeURIComponent(session.user.id)}`;
+        targetUrl = `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-start?uid=${encodeURIComponent(session.user.id)}`;
         console.log('[OAuth] Redirecting via wix-oauth-start', { targetUrl });
       } else {
         console.log(`[OAuth] Starting ${platform} oauth-start with`, { siteUrl: connectionDialog.siteUrl });
