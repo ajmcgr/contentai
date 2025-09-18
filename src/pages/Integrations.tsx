@@ -65,6 +65,8 @@ const Integrations = () => {
   const [toast, setToast] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const { toast: showToast } = useToast();
+  const [wixSiteIdInput, setWixSiteIdInput] = useState('');
+  const [savingWixSiteId, setSavingWixSiteId] = useState(false);
 
   useEffect(() => {
     loadInstalls();
@@ -83,6 +85,19 @@ const Integrations = () => {
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, []);
+
+  useEffect(() => {
+    const loadWix = async () => {
+      if (!currentUserId) return;
+      const { data } = await supabase
+        .from('wix_connections')
+        .select('wix_site_id')
+        .eq('user_id', currentUserId)
+        .maybeSingle();
+      setWixSiteIdInput(data?.wix_site_id || '');
+    };
+    loadWix();
+  }, [currentUserId]);
 
   const loadInstalls = async () => {
     try {
@@ -117,6 +132,21 @@ const Integrations = () => {
     }
   };
 
+  const saveWixSiteId = async () => {
+    try {
+      setSavingWixSiteId(true);
+      const val = wixSiteIdInput.trim();
+      await supabase
+        .from('wix_connections')
+        .update({ wix_site_id: val || null })
+        .eq('user_id', currentUserId);
+      showToast({ title: 'Saved', description: 'Wix Site ID saved. Try publishing again.' });
+    } catch (error: any) {
+      showToast({ title: 'Save failed', description: error.message || 'Could not save Wix Site ID', variant: 'destructive' });
+    } finally {
+      setSavingWixSiteId(false);
+    }
+  };
   const onShopifyConnect = async () => {
     try {
       setConnecting('shopify');
@@ -375,6 +405,20 @@ const Integrations = () => {
         <p className="text-sm opacity-80">Draft → Publish via Wix Blog API (Manage Blog permission required).</p>
         <div className="mt-3">
           <WixConnectSection userId={currentUserId} />
+        </div>
+        <div className="mt-4 space-y-2">
+          <label className="text-sm font-medium">Wix Site ID (required for Blog API)</label>
+          <div className="flex gap-2">
+            <Input
+              placeholder="e.g. 1234abcd-..."
+              value={wixSiteIdInput}
+              onChange={(e) => setWixSiteIdInput(e.target.value)}
+            />
+            <Button variant="outline" disabled={!currentUserId || savingWixSiteId} onClick={saveWixSiteId}>
+              {savingWixSiteId ? 'Saving…' : 'Save'}
+            </Button>
+          </div>
+          <p className="text-xs opacity-70">Find it in Wix Dashboard → Site Settings → Advanced → Site ID. We’ll send it as the wix-site-id header.</p>
         </div>
       </section>
 
