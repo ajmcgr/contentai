@@ -50,18 +50,27 @@ Deno.serve(async (req) => {
   if (SB_URL && SB_SVC) {
     try {
       const supabase = createClient(SB_URL, SB_SVC, { auth: { persistSession: false } });
-      const expiresAt = new Date(Date.now() + Number(expires_in ?? 3600) * 1000).toISOString();
-      const { error } = await supabase.from("wix_connections").upsert({
-        user_id: userId,
-        instance_id,
-        access_token,
-        refresh_token,
-        scope,
-        expires_at: expiresAt,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "instance_id" });
-      if (error) console.error("[Wix OAuth] DB upsert error", error);
-      else console.log("[Wix OAuth] Saved", { user_id: userId, instance_id });
+      // ✅ Upsert by user_id (one connection row per user)
+      const { error } = await supabase
+        .from("wix_connections")
+        .upsert(
+          {
+            user_id: userId,
+            instance_id,
+            access_token,
+            refresh_token,
+            scope,
+            expires_at: new Date(Date.now() + Number(expires_in ?? 3600) * 1000).toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" } // <-- fix: conflict on user_id instead of instance_id
+        );
+
+      if (error) {
+        console.error("[Wix OAuth] DB upsert error", error);
+      } else {
+        console.log("[Wix OAuth] Saved/Updated", { user_id: userId, instance_id });
+      }
     } catch (e) {
       console.error("[Wix OAuth] DB persist fatal", e);
     }
