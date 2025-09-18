@@ -74,9 +74,17 @@ Deno.serve(async (req) => {
   const html = `
   <script>
     (function(){
-      try { window.opener && window.opener.postMessage(${JSON.stringify(msg)}, "*"); } catch(e){}
-      document.body.innerHTML = '<pre>Wix connected! You can close this tab.</pre>';
-      setTimeout(function(){ window.close(); }, 300);
+      try { 
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(${JSON.stringify(msg)}, "*");
+        }
+      } catch(e){ console.log("postMessage failed:", e); }
+      document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:sans-serif;"><h2 style="color:green;">✅ Wix Connected Successfully!</h2><p>This window will close automatically...</p></div>';
+      setTimeout(function(){ 
+        try { window.close(); } catch(e) { 
+          document.body.innerHTML += '<p><a href="#" onclick="window.close()">Click here to close this window</a></p>';
+        }
+      }, 1000);
     })();
   </script>`;
   return asHtml(200, html);

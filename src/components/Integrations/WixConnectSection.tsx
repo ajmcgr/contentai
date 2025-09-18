@@ -21,9 +21,21 @@ export default function WixConnectSection({ userId }: { userId: string }) {
       const m = ev.data;
       if (m?.provider === 'wix' && m.status === 'connected') {
         setConnecting(false);
+        setConnected(true);
         setInstanceId(m.instance_id ?? null);
-        getStatus(userId).then(j=>{ setConnected(j.connected); setInstanceId(j.instance_id||null); });
-        try { popupRef.current?.close(); } catch {}
+        // Close popup immediately
+        try { 
+          if (popupRef.current && !popupRef.current.closed) {
+            popupRef.current.close(); 
+          }
+        } catch {}
+        // Refresh status after a short delay
+        setTimeout(() => {
+          getStatus(userId).then(j=>{ 
+            setConnected(j.connected); 
+            setInstanceId(j.instance_id||null); 
+          });
+        }, 500);
       }
     }
     window.addEventListener('message', onMsg);

@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, CheckCircle, XCircle, ExternalLink, Plus, Activity, FileText, Clock } from 'lucide-react';
 import { startShopifyOAuth, startWixOAuth, getIntegrationStatus } from '@/lib/integrationsClient';
+import WixConnectSection from '@/components/Integrations/WixConnectSection';
 
 type Install = { 
   provider: 'shopify' | 'wix'; 
@@ -62,11 +63,22 @@ const Integrations = () => {
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [highlightedCorrelationId, setHighlightedCorrelationId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
   const { toast: showToast } = useToast();
 
   useEffect(() => {
     loadInstalls();
     loadStatus();
+    
+    // Get current user ID
+    const getCurrentUserId = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        setCurrentUserId(session.user.id);
+      }
+    };
+    getCurrentUserId();
+    
     const onFocus = () => loadStatus();
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
@@ -361,19 +373,8 @@ const Integrations = () => {
       <section className="border rounded-xl p-4">
         <h2 className="text-lg font-medium">Wix Blog</h2>
         <p className="text-sm opacity-80">Draft → Publish via Wix Blog API (Manage Blog permission required).</p>
-        <div className="mt-3 flex items-center gap-3">
-          <Button
-            disabled={connecting === 'wix'}
-            onClick={onWixConnect}
-            variant="default"
-          >
-            {connecting === 'wix' ? 'Redirecting…' : (wixInstall ? 'Re-connect' : 'Connect')}
-          </Button>
-        </div>
-        <div className="mt-2 text-sm">
-          {statusLoading ? 'Loading status…' : wixInstall
-            ? <span className="text-green-700">Connected: {wixInstall.external_id}</span>
-            : <span className="text-red-700">Not connected</span>}
+        <div className="mt-3">
+          <WixConnectSection userId={currentUserId} />
         </div>
       </section>
 
