@@ -1,71 +1,58 @@
-// Deno / Supabase Edge
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-type Secrets = { WIX_CLIENT_ID: string; WIX_CLIENT_SECRET: string; WIX_REDIRECT_URI: string; };
-
-function topRedirectHtml(targetUrl: string) {
-  const safe = targetUrl.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  return new Response(
-`<!doctype html><html><head><meta charset="utf-8"><title>Redirecting…</title></head>
-<body>
-  <noscript><p>Click <a href="${safe}" target="_top" rel="noopener">continue</a>.</p></noscript>
-  <script>
-    (function(){
-      var u="${safe}";
-      try{ if(window.top && window.top!==window.self){ window.top.location.href=u; } else { window.location.href=u; } }
-      catch(e){ window.open(u,"_blank","noopener,noreferrer"); }
-    })();
-  </script>
-</body></html>`,
-    { status: 200, headers: { "content-type":"text/html; charset=utf-8", "cache-control":"no-store" } }
-  );
-}
-
-async function getSecrets(): Promise<Secrets> {
-  const url = Deno.env.get("SUPABASE_URL")!;
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const sb = createClient(url, key);
-  const { data, error } = await sb.from("app_secrets").select("key,value").eq("namespace","cms_integrations");
-  if (error) throw new Error("secrets fetch failed: "+error.message);
-  const map = Object.fromEntries((data||[]).map((r:any)=>[r.key, String(r.value||"").trim()]));
-  for (const k of ["WIX_CLIENT_ID","WIX_CLIENT_SECRET","WIX_REDIRECT_URI"]) if (!map[k]) throw new Error(`missing secret: ${k}`);
-  return { WIX_CLIENT_ID: map.WIX_CLIENT_ID, WIX_CLIENT_SECRET: map.WIX_CLIENT_SECRET, WIX_REDIRECT_URI: map.WIX_REDIRECT_URI };
-}
+// Supabase Edge Function (Deno) — Wix OAuth start
+// Returns the exact Wix installer URL using the *same* appId/redirect the callback will use.
+// Set these in Edge Function env: WIX_APP_ID, WIX_APP_SECRET, WIX_REDIRECT_URI (optional)
 
 Deno.serve(async (req) => {
-  const u = new URL(req.url);
-  const userId = String(u.searchParams.get("userId") || "unknown");
-  const rid = crypto.randomUUID();
   try {
-    const { WIX_CLIENT_ID, WIX_REDIRECT_URI } = await getSecrets();
+    const appId =
+      Deno.env.get("WIX_APP_ID") || Deno.env.get("WIX_CLIENT_ID") || "";
+    const redirectUri =
+      Deno.env.get("WIX_REDIRECT_URI") ||
+      // default to your callback path on this project
+      `https://${new URL(req.url).host}/functions/v1/wix-oauth-callback`;
 
-    // Wix Installer URL (lets user pick the site)
-    const auth = new URL("https://www.wix.com/installer/install");
-    auth.searchParams.set("appId", WIX_CLIENT_ID);
-    auth.searchParams.set("redirectUrl", WIX_REDIRECT_URI);
-    // carry userId as state for round-trip (optional, you can encode JSON/base64 if needed)
-    auth.searchParams.set("state", userId);
+    if (!appId) {
+      return new Response(
+        JSON.stringify({ error: "Missing WIX_APP_ID in Edge Function env." }),
+        { status: 500, headers: { "content-type": "application/json" } }
+      );
+    }
+    // Optional: assert secret exists too (helps avoid 400 at exchange time)
+    const hasSecret = !!(
+      Deno.env.get("WIX_APP_SECRET") || Deno.env.get("WIX_CLIENT_SECRET")
+    );
+    if (!hasSecret) {
+      return new Response(
+        JSON.stringify({ error: "Missing WIX_APP_SECRET in Edge Function env." }),
+        { status: 500, headers: { "content-type": "application/json" } }
+      );
+    }
 
-    console.log("[wix-start]", rid, { appId: WIX_CLIENT_ID.slice(0,6)+"…", redirect: WIX_REDIRECT_URI, state: userId });
-    
-    // Return iframe-safe redirect that opens new tab if top navigation fails
-    const installerUrl = auth.toString();
-    return new Response(`<!doctype html><meta charset="utf-8">
-<script>
- (function(){
-   var u=${JSON.stringify(installerUrl)};
-   try {
-     if (window.top && window.top !== window.self) {
-       // Try top-nav; if any policy blocks it, fallback opens a new tab.
-       try { window.top.location.href = u; return; } catch(e){}
-       window.open(u, "_blank", "noopener,noreferrer"); return;
-     }
-     window.location.href = u;
-   } catch (e) { window.open(u, "_blank", "noopener,noreferrer"); }
- })();
-</script>`, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }});
+    const u = new URL("https://www.wix.com/installer/install");
+    u.searchParams.set("appId", appId);
+    u.searchParams.set("redirectUrl", redirectUri);
+
+    // Optional: carry a user id in state so callback can associate tokens
+    const { searchParams } = new URL(req.url);
+    const uid = searchParams.get("uid") || "";
+    const state = uid ? `uid:${uid}` : crypto.randomUUID();
+    u.searchParams.set("state", state);
+
+    const body = {
+      installerUrl: u.toString(),
+      debug: {
+        appId_tail: appId.slice(-4),
+        redirectUri,
+        state,
+      },
+    };
+    return new Response(JSON.stringify(body), {
+      headers: { "content-type": "application/json" },
+    });
   } catch (e) {
-    console.error("[wix-start]", rid, "error", e?.message || String(e));
-    return new Response("wix_start_failed", { status: 500, headers: { "content-type":"text/plain" } });
+    return new Response(
+      JSON.stringify({ error: String(e) }),
+      { status: 500, headers: { "content-type": "application/json" } }
+    );
   }
 });
