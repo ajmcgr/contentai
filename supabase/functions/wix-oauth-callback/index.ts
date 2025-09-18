@@ -1,79 +1,89 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// deno-lint-ignore no-explicit-any
+const json = (status: number, body: any, headers: Record<string, string> = {}) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8", ...headers },
+  });
 
-type Secrets = { WIX_CLIENT_ID: string; WIX_CLIENT_SECRET: string; WIX_REDIRECT_URI: string; };
-
-function html(msg: string, back?: string) {
-  const s = back ? `<script>setTimeout(()=>{location.href='${back}'},1200)</script>` : "";
-  return new Response(`<!doctype html><html><body><pre>${msg}</pre>${s}</body></html>`,
-    { status: 200, headers: { "content-type":"text/html; charset=utf-8", "cache-control":"no-store" } });
-}
-
-async function getSecrets(): Promise<Secrets> {
-  const url = Deno.env.get("SUPABASE_URL")!;
-  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const sb = createClient(url, key);
-  const { data, error } = await sb.from("app_secrets").select("key,value").eq("namespace","cms_integrations");
-  if (error) throw new Error("secrets fetch failed: "+error.message);
-  const map = Object.fromEntries((data||[]).map((r:any)=>[r.key, String(r.value||"").trim()]));
-  return { WIX_CLIENT_ID: map.WIX_CLIENT_ID, WIX_CLIENT_SECRET: map.WIX_CLIENT_SECRET, WIX_REDIRECT_URI: map.WIX_REDIRECT_URI };
-}
+const html = (status: number, body: string) =>
+  new Response(`<!doctype html><html><body><pre>${body}</pre></body></html>`, {
+    status,
+    headers: { "content-type": "text/html; charset=utf-8" },
+  });
 
 Deno.serve(async (req) => {
-  const url = new URL(req.url);
-  const rid = crypto.randomUUID();
   try {
-    const code = String(url.searchParams.get("code") || "");
-    const state = String(url.searchParams.get("state") || "unknown"); // we used userId as state
-    if (!code) return html("Missing code");
+    const url = new URL(req.url);
+    const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
 
-    const { WIX_CLIENT_ID, WIX_CLIENT_SECRET, WIX_REDIRECT_URI } = await getSecrets();
+    if (!code) {
+      console.error("[Wix OAuth] Missing ?code");
+      return html(400, "Callback failed: missing ?code. Check installer URL and Wix Dev Center.");
+    }
 
-    // Exchange code → tokens
-    const tokenRes = await fetch("https://www.wix.com/oauth/access", {
+    // (Optional) If you stored expected state in a cookie/session, validate here.
+
+    // Secrets
+    const appId = Deno.env.get("WIX_APP_ID");
+    const appSecret = Deno.env.get("WIX_APP_SECRET");
+    if (!appId || !appSecret) {
+      console.error("[Wix OAuth] Missing secrets", { hasAppId: !!appId, hasAppSecret: !!appSecret });
+      return html(500, "Callback failed: missing WIX_APP_ID or WIX_APP_SECRET in Supabase secrets.");
+    }
+
+    // Exchange the authorization code for tokens
+    const tokenRes = await fetch("https://www.wixapis.com/oauth/access", {
       method: "POST",
-      headers: { "content-type":"application/json" },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({
         grant_type: "authorization_code",
-        client_id: WIX_CLIENT_ID,
-        client_secret: WIX_CLIENT_SECRET,
         code,
-        redirect_uri: WIX_REDIRECT_URI
-      })
+        client_id: appId,      // Wix docs often show appId/appSecret;
+        client_secret: appSecret, // using OAuth param names keeps libraries happy
+        appId,                 // send both to be safe with Wix variants
+        appSecret,             // (Wix accepts JSON with these keys too)
+        // redirect_uri is usually not required if it matches the one in the app,
+        // but you can include it explicitly:
+        // redirect_uri: "https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-callback",
+      }),
     });
-    const tok = await tokenRes.json();
-    if (!tokenRes.ok || !tok.access_token) {
-      console.error("[wix-cb]", rid, "token error", tok);
-      return html("Token exchange failed. See logs.");
+
+    const text = await tokenRes.text();
+    let payload: any = null;
+    try { payload = JSON.parse(text); } catch {
+      console.error("[Wix OAuth] Non-JSON token response:", text);
+      return html(502, "Callback failed: token endpoint returned non-JSON. See logs.");
     }
-    const access_token = tok.access_token as string;
-    const refresh_token = tok.refresh_token as (string | undefined);
 
-    // Health probe: Blog Posts API
-    const probe = await fetch("https://www.wixapis.com/blog/v3/posts?limit=1", {
-      headers: { "Authorization": `Bearer ${access_token}` }
-    });
-    const probeJson = await probe.json();
-    const ok = probe.ok;
+    if (!tokenRes.ok) {
+      console.error("[Wix OAuth] Token exchange failed", { status: tokenRes.status, payload });
+      return html(502, `Callback failed: token exchange error ${tokenRes.status}. See logs.`);
+    }
 
-    // Store install record
-    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { error: upErr } = await sb.from("cms_installs").upsert({
-      user_id: state || "unknown",
-      provider: "wix",
-      external_id: "wix-site",        // optional: replace with actual siteId later
-      access_token,
-      refresh_token,
-      scope: "",
-      extra: {}
-    }, { onConflict: "user_id,provider,external_id" });
-    if (upErr) console.error("[wix-cb]", rid, "upsert error", upErr);
+    const { access_token, refresh_token, instance_id, expires_in, ...rest } = payload;
 
-    const msg = ok ? `✅ Wix access OK. Posts len: ${(probeJson?.posts?.length ?? 0)}`
-                   : `⚠️ Wix blog probe failed: ${JSON.stringify(probeJson).slice(0,400)}`;
-    const back = `https://hmrzmafwvhifjhsoizil.lovable.app/dashboard/settings?wix_ok=${ok ? "1" : "0"}`;
-    return html(msg, back);
-  } catch (e) {
-    console.error("[wix-cb]", rid, "error", e?.message || String(e));
-    return html("Callback failed. See logs.");
+    if (!access_token || !refresh_token) {
+      console.error("[Wix OAuth] Missing tokens in response", payload);
+      return html(502, "Callback failed: missing access/refresh tokens. See logs.");
+    }
+
+    // TODO: persist tokens to your DB (by user/site). Example with Supabase (pseudo):
+    // const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // await supabase.from('wix_connections').upsert({
+    //   user_id: <currentUserId>,
+    //   instance_id,
+    //   access_token,
+    //   refresh_token,
+    //   expires_at: Date.now() + (expires_in ?? 3600) * 1000,
+    // });
+
+    console.log("[Wix OAuth] Success", { instance_id, has_access: !!access_token, has_refresh: !!refresh_token, extra: rest });
+
+    // Simple success page
+    return html(200, "Wix connected! You can close this tab.");
+  } catch (err) {
+    console.error("[Wix OAuth] Fatal error", err);
+    return html(500, "Callback failed: unexpected error. See logs.");
   }
 });
