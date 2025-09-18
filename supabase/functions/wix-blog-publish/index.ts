@@ -84,8 +84,27 @@ Deno.serve(async (req) => {
         console.log("Error fetching memberId from Wix API:", e);
       }
     }
-    const wixSiteId = body.wixSiteId || conn?.wix_site_id || Deno.env.get("WIX_SITE_ID") || "";
-    const instanceId = (conn as any)?.instance_id || Deno.env.get("WIX_INSTANCE_ID") || "";
+let wixSiteId = body.wixSiteId || conn?.wix_site_id || Deno.env.get("WIX_SITE_ID") || "";
+const instanceId = (conn as any)?.instance_id || Deno.env.get("WIX_INSTANCE_ID") || "";
+
+// Fallback: try to discover wix-site-id from token if missing
+if (!wixSiteId) {
+  try {
+    const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+      body: JSON.stringify({ token: accessToken })
+    });
+    const triJson: any = await tri.json().catch(() => ({}));
+    if (tri.ok && triJson?.siteId) {
+      wixSiteId = triJson.siteId;
+      // Persist for future publishes
+      await supabase.from('wix_connections').update({ wix_site_id: wixSiteId }).eq('user_id', body.userId);
+    }
+  } catch (_) {
+    // ignore
+  }
+}
 
     if (!memberId) {
       return J(400, { error: "member_required", msg: "Provide memberId or set WIX_DEFAULT_MEMBER_ID/default_member_id" });

@@ -43,8 +43,9 @@ Deno.serve(async (req) => {
   const { access_token, refresh_token, instance_id, expires_in, scope } = payload || {};
   if (!access_token || !refresh_token) return asHtml(502, "<pre>Missing tokens</pre>");
 
-// Attempt to resolve the Wix memberId associated with this access token (required by Blog API)
+// Attempt to resolve the Wix memberId and siteId associated with this access token (required by Blog API)
 let memberId: string | null = null;
+let siteId: string | null = null;
 try {
   const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
     method: 'POST',
@@ -54,7 +55,8 @@ try {
   const triJson: any = await tri.json().catch(() => ({}));
   if (tri.ok) {
     memberId = triJson?.subjectId || null; // may or may not be a member id depending on subjectType
-    console.log('[Wix OAuth] token-info', { subjectType: triJson?.subjectType, subjectId: memberId, siteId: triJson?.siteId });
+    siteId = triJson?.siteId || null;
+    console.log('[Wix OAuth] token-info', { subjectType: triJson?.subjectType, subjectId: memberId, siteId });
   } else {
     console.warn('[Wix OAuth] token-info failed', { status: tri.status, body: triJson });
   }
@@ -99,6 +101,8 @@ if (SB_URL && SB_SVC) {
           access_token,
           refresh_token,
           scope,
+          default_member_id: memberId,
+          wix_site_id: siteId,
           expires_at: new Date(Date.now() + Number(expires_in ?? 3600) * 1000).toISOString(),
           updated_at: new Date().toISOString(),
         },
