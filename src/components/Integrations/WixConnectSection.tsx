@@ -3,9 +3,13 @@ import React, { useEffect, useRef, useState } from 'react';
 const SUPABASE_URL = 'https://hmrzmafwvhifjhsoizil.supabase.co';
 
 async function getStatus(uid:string){
+  console.log('[WixConnect] Checking status for user:', uid);
   const u = new URL(`${SUPABASE_URL}/functions/v1/wix-connection-status`);
   u.searchParams.set('uid', uid);
-  const r = await fetch(u.toString()); return r.json();
+  const r = await fetch(u.toString()); 
+  const result = await r.json();
+  console.log('[WixConnect] Status result:', result);
+  return result;
 }
 
 export default function WixConnectSection({ userId }: { userId: string }) {
