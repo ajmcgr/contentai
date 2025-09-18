@@ -48,7 +48,42 @@ Deno.serve(async (req) => {
     if (!conn?.access_token) return J(401, { error: "not_connected", msg: "Reconnect Wix" });
 
     const accessToken = conn.access_token as string;
-    const memberId = body.memberId || conn?.default_member_id || Deno.env.get("WIX_DEFAULT_MEMBER_ID") || "";
+    // Get memberId from cms_installs or use provided one
+    let memberId = body.memberId || conn?.default_member_id || Deno.env.get("WIX_DEFAULT_MEMBER_ID") || "";
+    
+    // If no memberId found, try to get it from the Wix Members API
+    if (!memberId) {
+      try {
+        console.log("No memberId found, attempting to fetch from Wix Members API...");
+        const membersRes = await fetch("https://www.wixapis.com/members/v1/members", {
+          method: "GET",
+          headers: {
+            "authorization": `Bearer ${accessToken}`,
+            "content-type": "application/json",
+          },
+        });
+        
+        if (membersRes.ok) {
+          const membersData = await membersRes.json();
+          const members = membersData?.members || [];
+          if (members.length > 0) {
+            memberId = members[0].id; // Use first member as default
+            
+            // Save this memberId for future use
+            await supabase
+              .from("wix_connections")
+              .update({ default_member_id: memberId })
+              .eq("user_id", body.userId);
+            
+            console.log(`Found and saved memberId: ${memberId}`);
+          }
+        } else {
+          console.log("Failed to fetch members:", membersRes.status, await membersRes.text());
+        }
+      } catch (e) {
+        console.log("Error fetching memberId from Wix API:", e);
+      }
+    }
     const wixSiteId = body.wixSiteId || conn?.wix_site_id || Deno.env.get("WIX_SITE_ID") || "";
 
     if (!memberId) {

@@ -638,32 +638,38 @@ export type Database = {
         Row: {
           access_token: string
           created_at: string
+          default_member_id: string | null
           expires_at: string | null
           id: string
           instance_id: string | null
           refresh_token: string | null
           updated_at: string
           user_id: string
+          wix_site_id: string | null
         }
         Insert: {
           access_token: string
           created_at?: string
+          default_member_id?: string | null
           expires_at?: string | null
           id?: string
           instance_id?: string | null
           refresh_token?: string | null
           updated_at?: string
           user_id: string
+          wix_site_id?: string | null
         }
         Update: {
           access_token?: string
           created_at?: string
+          default_member_id?: string | null
           expires_at?: string | null
           id?: string
           instance_id?: string | null
           refresh_token?: string | null
           updated_at?: string
           user_id?: string
+          wix_site_id?: string | null
         }
         Relationships: []
       }
