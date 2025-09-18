@@ -351,9 +351,40 @@ async function handleStatus(req: Request, supabaseClient: any, user: any) {
     throw new Error(`Failed to fetch connections: ${error.message}`);
   }
 
+  let allConnections = connections || [];
+
+  // Check for Wix connections in the wix_connections table
+  const { data: wixConnections, error: wixError } = await supabaseClient
+    .from('wix_connections')
+    .select('id, access_token, instance_id, created_at, expires_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (!wixError && wixConnections && wixConnections.length > 0) {
+    const wixConn = wixConnections[0];
+    // Add Wix connection in cms_connections format for compatibility
+    allConnections.push({
+      id: wixConn.id,
+      user_id: user.id,
+      platform: 'wix',
+      site_url: `wix-site-${wixConn.instance_id || 'default'}`,
+      access_token: wixConn.access_token,
+      api_key: null,
+      config: { 
+        endpoint: 'https://www.wixapis.com/blog/v3/',
+        instance_id: wixConn.instance_id,
+        expires_at: wixConn.expires_at
+      },
+      is_active: true,
+      connected_at: wixConn.created_at,
+      last_sync: wixConn.created_at
+    });
+  }
+
   return new Response(JSON.stringify({
     success: true,
-    connections
+    connections: allConnections
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
