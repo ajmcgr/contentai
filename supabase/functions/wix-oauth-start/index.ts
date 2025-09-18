@@ -1,85 +1,35 @@
-// Supabase Edge Function (Deno) — Wix OAuth start
-// Returns the exact Wix installer URL using the *same* appId/redirect the callback will use.
-// Set these in Edge Function env: WIX_APP_ID, WIX_APP_SECRET, WIX_REDIRECT_URI (optional)
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Max-Age': '86400',
+const cors = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET,OPTIONS",
+  "access-control-allow-headers": "authorization,apikey,content-type",
+  "access-control-max-age": "86400",
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+
+  const appId = Deno.env.get("WIX_APP_ID") || "";
+  const secret = Deno.env.get("WIX_APP_SECRET") || "";
+  const redirectUri = Deno.env.get("WIX_REDIRECT_URI") || "";
+  if (!appId || !secret || !redirectUri) {
+    return new Response(JSON.stringify({ error: "Missing WIX_* env (APP_ID/APP_SECRET/REDIRECT_URI)." }),
+      { status: 500, headers: { ...cors, "content-type": "application/json" } });
   }
 
-  try {
-    console.log('[wix-oauth-start] Request received:', req.method, req.url);
-    
-    const appId =
-      Deno.env.get("WIX_APP_ID") || Deno.env.get("WIX_CLIENT_ID") || "";
-    const redirectUri =
-      Deno.env.get("WIX_REDIRECT_URI") ||
-      // default to your callback path on this project
-      `https://${new URL(req.url).host}/functions/v1/wix-oauth-callback`;
-
-    console.log('[wix-oauth-start] Environment check:', {
-      hasAppId: !!appId,
-      appIdTail: appId ? appId.slice(-4) : 'none',
-      redirectUri
-    });
-
-    if (!appId) {
-      console.error('[wix-oauth-start] Missing WIX_APP_ID');
-      return new Response(
-        JSON.stringify({ error: "Missing WIX_APP_ID in Edge Function env." }),
-        { status: 500, headers: { ...corsHeaders, "content-type": "application/json" } }
-      );
-    }
-    
-    // Optional: assert secret exists too (helps avoid 400 at exchange time)
-    const hasSecret = !!(
-      Deno.env.get("WIX_APP_SECRET") || Deno.env.get("WIX_CLIENT_SECRET")
-    );
-    if (!hasSecret) {
-      console.error('[wix-oauth-start] Missing WIX_APP_SECRET');
-      return new Response(
-        JSON.stringify({ error: "Missing WIX_APP_SECRET in Edge Function env." }),
-        { status: 500, headers: { ...corsHeaders, "content-type": "application/json" } }
-      );
-    }
-
-    const u = new URL("https://www.wix.com/installer/install");
-    u.searchParams.set("appId", appId);
-    u.searchParams.set("redirectUrl", redirectUri);
-
-    // Optional: carry a user id in state so callback can associate tokens
-    const { searchParams } = new URL(req.url);
-    const uid = searchParams.get("uid") || "";
-    const state = uid ? `uid:${uid}` : crypto.randomUUID();
-    u.searchParams.set("state", state);
-
-    const body = {
-      installerUrl: u.toString(),
-      debug: {
-        appId_tail: appId.slice(-4),
-        redirectUri,
-        state,
-      },
-    };
-    
-    console.log('[wix-oauth-start] Success response:', body);
-    
-    return new Response(JSON.stringify(body), {
-      headers: { ...corsHeaders, "content-type": "application/json" },
-    });
-  } catch (e) {
-    console.error('[wix-oauth-start] Error:', e);
-    return new Response(
-      JSON.stringify({ error: String(e) }),
-      { status: 500, headers: { ...corsHeaders, "content-type": "application/json" } }
-    );
+  const url = new URL(req.url);
+  const uid = url.searchParams.get("uid");
+  if (!uid) {
+    return new Response(JSON.stringify({ error: "Missing uid query param" }),
+      { status: 400, headers: { ...cors, "content-type": "application/json" } });
   }
+
+  const u = new URL("https://www.wix.com/installer/install");
+  u.searchParams.set("appId", appId);
+  u.searchParams.set("redirectUrl", redirectUri);
+  u.searchParams.set("state", `uid:${uid}`); // ✅ embed user id
+
+  return new Response(JSON.stringify({
+    installerUrl: u.toString(),
+    debug: { appId_tail: appId.slice(-4), redirectUri, state: `uid:${uid}` }
+  }), { headers: { ...cors, "content-type": "application/json" } });
 });
