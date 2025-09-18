@@ -53,13 +53,33 @@ try {
   });
   const triJson: any = await tri.json().catch(() => ({}));
   if (tri.ok) {
-    memberId = triJson?.subjectId || null; // subjectId corresponds to the member/site subject
+    memberId = triJson?.subjectId || null; // may or may not be a member id depending on subjectType
     console.log('[Wix OAuth] token-info', { subjectType: triJson?.subjectType, subjectId: memberId, siteId: triJson?.siteId });
   } else {
     console.warn('[Wix OAuth] token-info failed', { status: tri.status, body: triJson });
   }
 } catch (e) {
   console.warn('[Wix OAuth] token-info error', e);
+}
+
+// Fallback: try listing members and take the first admin/owner (requires Members read permission)
+if (!memberId) {
+  try {
+    const list = await fetch('https://www.wixapis.com/members/v1/members?paging.limit=1', {
+      method: 'GET',
+      headers: { 'accept': 'application/json', 'authorization': `Bearer ${access_token}` }
+    });
+    const listJson: any = await list.json().catch(() => ({}));
+    if (list.ok) {
+      const items = listJson?.members || listJson?.items || [];
+      memberId = items?.[0]?.id || null;
+      console.log('[Wix OAuth] members.list', { count: items?.length ?? 0, memberId });
+    } else {
+      console.warn('[Wix OAuth] members.list failed', { status: list.status, body: listJson });
+    }
+  } catch (e) {
+    console.warn('[Wix OAuth] members.list error', e);
+  }
 }
 
 // ✅ persist to DB under the real user id

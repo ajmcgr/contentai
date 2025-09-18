@@ -336,6 +336,7 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
     case 'wix': {
       // Ensure Wix memberId is provided (required for 3rd-party apps)
       let memberId = (connection.config && connection.config.memberId) || undefined;
+      let installRec: any = null;
       if (!memberId) {
         const { data: install } = await supabaseClient
           .from('cms_installs')
@@ -343,9 +344,10 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
           .eq('user_id', user.id)
           .eq('provider', 'wix')
           .maybeSingle();
+        installRec = install || null;
         memberId = install?.extra?.memberId;
 
-        // Fallback: introspect token to retrieve subjectId (memberId)
+        // Fallback 1: introspect token to retrieve subjectId (may equal memberId depending on subjectType)
         if (!memberId && connection.access_token) {
           try {
             const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
@@ -357,22 +359,6 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
             if (tri.ok) {
               memberId = triJson?.subjectId || undefined;
               console.log('[CMS Integration][Wix] token-info', { subjectType: triJson?.subjectType, subjectId: memberId, siteId: triJson?.siteId });
-
-              // Persist for future publishes
-              if (memberId) {
-                if (install?.id) {
-                  const nextExtra = { ...(install.extra || {}), memberId } as any;
-                  await supabaseClient.from('cms_installs').update({ extra: nextExtra }).eq('id', install.id);
-                } else {
-                  await supabaseClient.from('cms_installs').insert({
-                    user_id: user.id,
-                    provider: 'wix',
-                    external_id: connection?.config?.instance_id || 'unknown',
-                    access_token: connection.access_token,
-                    extra: { memberId },
-                  });
-                }
-              }
             } else {
               console.warn('[CMS Integration][Wix] token-info failed', { status: tri.status, body: triJson });
             }
@@ -380,7 +366,52 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
             console.warn('[CMS Integration][Wix] token-info error', e);
           }
         }
+
+        // Fallback 2: list members (requires Members read permission)
+        if (!memberId && connection.access_token) {
+          try {
+            const list = await fetch('https://www.wixapis.com/members/v1/members?paging.limit=1', {
+              method: 'GET',
+              headers: { 'accept': 'application/json', 'authorization': `Bearer ${connection.access_token}` }
+            });
+            const listJson: any = await list.json().catch(() => ({}));
+            if (list.ok) {
+              const items = listJson?.members || listJson?.items || [];
+              memberId = items?.[0]?.id || undefined;
+              console.log('[CMS Integration][Wix] members.list', { count: items?.length ?? 0, memberId });
+            } else {
+              console.warn('[CMS Integration][Wix] members.list failed', { status: list.status, body: listJson });
+            }
+          } catch (e) {
+            console.warn('[CMS Integration][Wix] members.list error', e);
+          }
+        }
+
+        // Persist discovered memberId for future publishes
+        if (memberId) {
+          try {
+            if (installRec?.id) {
+              const nextExtra = { ...(installRec.extra || {}), memberId } as any;
+              await supabaseClient.from('cms_installs').update({ extra: nextExtra }).eq('id', installRec.id);
+            } else {
+              await supabaseClient.from('cms_installs').insert({
+                user_id: user.id,
+                provider: 'wix',
+                external_id: connection?.config?.instance_id || 'unknown',
+                access_token: connection.access_token,
+                extra: { memberId },
+              });
+            }
+          } catch (e) {
+            console.warn('[CMS Integration][Wix] persist memberId failed', e);
+          }
+        }
       }
+
+      if (!memberId) {
+        throw new Error('Wix publish failed: missing required memberId for third-party app. Please reconnect Wix and ensure "Read Members and Contacts" and "Manage Blog" permissions.');
+      }
+
       publishResult = await publishToWix(article, connection, { ...publishOptions, memberId });
       break;
     }
