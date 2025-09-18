@@ -17,15 +17,15 @@ const html = (status: number, body: string) =>
 async function getSecrets() {
   const envId = Deno.env.get("WIX_CLIENT_ID");
   const envSecret = Deno.env.get("WIX_CLIENT_SECRET");
-  const envRedirect = Deno.env.get("WIX_REDIRECT_URI");
-  if (envId && envSecret && envRedirect) {
-    return { appId: envId, appSecret: envSecret, redirectUri: envRedirect };
+  if (envId && envSecret) {
+    return { appId: envId, appSecret: envSecret };
   }
 
+  // Fallback to DB if service role is available
   const url = Deno.env.get("SUPABASE_URL");
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) {
-    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY to load secrets from DB");
+    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY to load Wix secrets from DB");
   }
 
   const sb = createClient(url, key);
@@ -41,13 +41,12 @@ async function getSecrets() {
   const map = Object.fromEntries((data || []).map((r: any) => [r.key, String(r.value || "").trim()]));
   const appId = map.WIX_CLIENT_ID;
   const appSecret = map.WIX_CLIENT_SECRET;
-  const redirectUri = map.WIX_REDIRECT_URI || envRedirect; // allow env override for redirect
 
-  if (!appId || !appSecret || !redirectUri) {
-    throw new Error("Missing Wix secrets (client_id, client_secret, or redirect_uri)");
+  if (!appId || !appSecret) {
+    throw new Error("Missing Wix secrets (WIX_CLIENT_ID or WIX_CLIENT_SECRET)");
   }
 
-  return { appId, appSecret, redirectUri };
+  return { appId, appSecret };
 }
 
 Deno.serve(async (req) => {
@@ -61,33 +60,43 @@ Deno.serve(async (req) => {
       return html(400, "Callback failed: missing ?code. Check installer URL and Wix Dev Center.");
     }
 
-    // (Optional) If you stored expected state in a cookie/session, validate here.
+    // Compute redirect_uri from the current request URL (origin + path, no query)
+    const computedRedirectUri = `${url.origin}${url.pathname}`;
 
-    // Secrets
-    let appId: string, appSecret: string, redirectUri: string;
+    // Load secrets
+    let appId: string, appSecret: string;
     try {
-      ({ appId, appSecret, redirectUri } = await getSecrets());
+      ({ appId, appSecret } = await getSecrets() as { appId: string; appSecret: string });
     } catch (e) {
       console.error("[Wix OAuth] Secrets error", e);
-      return html(500, "Callback failed: Wix secrets missing or invalid. Configure WIX_CLIENT_ID, WIX_CLIENT_SECRET, WIX_REDIRECT_URI in Edge Function secrets or app_secrets.");
+      return html(500, "Callback failed: Wix secrets missing or invalid. Ensure WIX_CLIENT_ID and WIX_CLIENT_SECRET are configured (env or app_secrets). WIX_REDIRECT_URI is no longer required.");
     }
+
+    console.log("[Wix OAuth] Exchanging code for tokens", {
+      hasAppId: !!appId,
+      hasSecret: !!appSecret,
+      redirectUri: computedRedirectUri,
+      hasState: !!state,
+    });
 
     // Exchange the authorization code for tokens
     const tokenRes = await fetch("https://www.wixapis.com/oauth/access", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "accept": "application/json" },
       body: JSON.stringify({
         grant_type: "authorization_code",
         code,
         client_id: appId,
         client_secret: appSecret,
-        redirect_uri: redirectUri
+        redirect_uri: computedRedirectUri,
       }),
     });
 
     const text = await tokenRes.text();
     let payload: any = null;
-    try { payload = JSON.parse(text); } catch {
+    try {
+      payload = JSON.parse(text);
+    } catch {
       console.error("[Wix OAuth] Non-JSON token response:", text);
       return html(502, "Callback failed: token endpoint returned non-JSON. See logs.");
     }
