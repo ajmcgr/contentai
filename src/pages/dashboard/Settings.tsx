@@ -540,7 +540,29 @@ export default function Settings() {
       setBusy('wix');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
-      startWixFromSettings(user.id);
+      
+      // Use the same approach as WixConnectButton with proper popup
+      const q = `?uid=${encodeURIComponent(user.id)}`;
+      const res = await fetch(
+        `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-oauth-start${q}`,
+        { method: "GET" }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to get installer URL");
+
+      console.log("[Wix Settings] start debug", data.debug);
+
+      // Always open in new window with better popup settings
+      const popup = window.open(
+        data.installerUrl, 
+        '_blank', 
+        'width=600,height=700,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,directories=no,status=no'
+      );
+      
+      if (!popup) {
+        alert('Popup blocked! Please allow popups for this site and try again.');
+        return;
+      }
     } catch (e: any) {
       console.error('Wix connect failed:', e);
       toast({
