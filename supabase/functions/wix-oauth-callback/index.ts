@@ -79,19 +79,17 @@ Deno.serve(async (req) => {
       hasState: !!state,
     });
 
-    // Exchange the authorization code for tokens (use x-www-form-urlencoded per OAuth spec)
-    const body = new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      client_id: appId,
-      client_secret: appSecret,
-      redirect_uri: computedRedirectUri,
-    });
-
+    // Exchange the authorization code for tokens (Wix requires JSON)
     const tokenRes = await fetch("https://www.wixapis.com/oauth/access", {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded", "accept": "application/json" },
-      body: body.toString(),
+      headers: { "content-type": "application/json", "accept": "application/json" },
+      body: JSON.stringify({
+        grant_type: "authorization_code",
+        code,
+        client_id: appId,
+        client_secret: appSecret,
+        redirect_uri: computedRedirectUri,
+      }),
     });
 
     const text = await tokenRes.text();
