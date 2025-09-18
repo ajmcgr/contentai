@@ -25,8 +25,8 @@ Deno.serve(async (req) => {
     // (Optional) If you stored expected state in a cookie/session, validate here.
 
     // Secrets
-    const appId = Deno.env.get("WIX_APP_ID");
-    const appSecret = Deno.env.get("WIX_APP_SECRET");
+    const appId = Deno.env.get("WIX_CLIENT_ID");
+    const appSecret = Deno.env.get("WIX_CLIENT_SECRET");
     if (!appId || !appSecret) {
       console.error("[Wix OAuth] Missing secrets", { hasAppId: !!appId, hasAppSecret: !!appSecret });
       return html(500, "Callback failed: missing WIX_APP_ID or WIX_APP_SECRET in Supabase secrets.");
