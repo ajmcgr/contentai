@@ -645,6 +645,7 @@ export type Database = {
           refresh_token: string | null
           updated_at: string
           user_id: string
+          wix_author_member_id: string | null
           wix_host: string | null
           wix_site_id: string | null
         }
@@ -658,6 +659,7 @@ export type Database = {
           refresh_token?: string | null
           updated_at?: string
           user_id: string
+          wix_author_member_id?: string | null
           wix_host?: string | null
           wix_site_id?: string | null
         }
@@ -671,6 +673,7 @@ export type Database = {
           refresh_token?: string | null
           updated_at?: string
           user_id?: string
+          wix_author_member_id?: string | null
           wix_host?: string | null
           wix_site_id?: string | null
         }
@@ -718,6 +721,10 @@ export type Database = {
       cleanup_expired_oauth_states: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_shopify_install_debug: {
+        Args: { shop_domain: string; user_uuid: string }
+        Returns: Json
       }
       has_role: {
         Args: {
