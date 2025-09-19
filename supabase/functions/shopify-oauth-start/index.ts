@@ -146,6 +146,16 @@ Deno.serve(async (req) => {
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString()
       })
 
+    // Log start of OAuth for visibility
+    try {
+      await supabaseServiceRole.from('app_logs').insert({
+        provider: 'shopify',
+        stage: 'oauth.start',
+        user_id: userId,
+        detail: JSON.stringify({ shop, state })
+      });
+    } catch (_) {}
+
     const { apiKey, apiSecret, appUrl, redirectUri, scopes } = await getShopifySecrets()
     const hRedirect = host(redirectUri)
     const hApp = host(appUrl)
@@ -172,6 +182,19 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Shopify OAuth start error:', error)
+    // Attempt to log error to app_logs
+    try {
+      const supabaseServiceRole = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
+      await supabaseServiceRole.from('app_logs').insert({
+        provider: 'shopify',
+        stage: 'oauth.start.error',
+        level: 'error',
+        detail: String((error as any)?.message || error)
+      });
+    } catch (_) {}
     const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
     return new Response(null, {
       status: 302,
