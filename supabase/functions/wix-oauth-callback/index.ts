@@ -203,6 +203,14 @@ if (!siteId && instance_id) {
   }
 }
 
+async function pickDefaultMemberId(headers: Record<string,string>) {
+  // Grab first approved member (or the first item as fallback)
+  const res = await fetch("https://www.wixapis.com/members/v1/members?limit=1&fieldsets=FULL", { headers });
+  const js = await res.json().catch(()=> ({}));
+  const m = js?.members?.[0];
+  return m?.id || null;
+}
+
 // ✅ persist to DB under the real user id
 const SB_URL = Deno.env.get("SUPABASE_URL");
 const SB_SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -246,6 +254,37 @@ if (SB_URL && SB_SVC) {
         wix_site_id: siteId,
         success: true
       });
+    }
+
+    // Auto-pick a default author member if wix_author_member_id is null
+    try {
+      const { data: existingConn } = await supabase
+        .from('wix_connections')
+        .select('wix_author_member_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!existingConn?.wix_author_member_id) {
+        const authHeaders: Record<string,string> = {
+          authorization: `Bearer ${access_token}`,
+          'content-type': 'application/json',
+        };
+        if (instance_id) authHeaders['wix-instance-id'] = instance_id;
+
+        const defaultMemberId = await pickDefaultMemberId(authHeaders);
+        if (defaultMemberId) {
+          await supabase
+            .from('wix_connections')
+            .update({ 
+              wix_author_member_id: defaultMemberId,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', userId);
+          console.log('[Wix OAuth] Set default author member', { defaultMemberId });
+        }
+      }
+    } catch (e) {
+      console.warn('[Wix OAuth] Failed to set default author member', String(e));
     }
 
     // Detect which site/blog this token is bound to and store its host
