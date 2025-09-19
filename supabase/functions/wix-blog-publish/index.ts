@@ -236,13 +236,44 @@ if (!wixSiteId && accessToken && instanceId) {
               .eq('user_id', body.userId);
           } catch {}
         } else {
-          return J(retryRes.status, {
-            error: "create_draft_failed",
-            status: retryRes.status,
-            wix_request_id: retryRes.headers.get("x-wix-request-id") || createReqId,
-            response: retryJson,
-            sent_headers: { hasInstanceId: !!instanceId, hasSiteId: !!siteIdRetry }
-          });
+          // Keep latest failure details for downstream error payload
+          createRes = retryRes;
+          createText = retryText;
+          createJson = retryJson;
+          createReqId = retryRes.headers.get("x-wix-request-id") || createReqId;
+        }
+      }
+
+      // If still not ok, try a heuristic: use instanceId as wix-site-id header once
+      if (!createRes.ok && instanceId) {
+        const retryHeaders2 = { ...headers, 'wix-site-id': instanceId } as Record<string,string>;
+        const retryRes2 = await fetch("https://www.wixapis.com/blog/v3/draft-posts", {
+          method: "POST",
+          headers: retryHeaders2,
+          body: JSON.stringify({
+            draftPost: {
+              title: body.title,
+              content: { type: "html", html: body.contentHtml },
+              excerpt: body.excerpt ?? "",
+              tags: body.tags ?? [],
+              categoryIds: body.categoryIds ?? [],
+              ...(memberId && { memberId }),
+            }
+          }),
+        });
+        const retryText2 = await retryRes2.text();
+        let retryJson2: any = retryText2; try { retryJson2 = JSON.parse(retryText2); } catch {}
+        if (retryRes2.ok) {
+          createRes = retryRes2;
+          createText = retryText2;
+          createJson = retryJson2;
+          createReqId = retryRes2.headers.get("x-wix-request-id") || createReqId;
+        } else {
+          // Keep latest failure for error response
+          createRes = retryRes2;
+          createText = retryText2;
+          createJson = retryJson2;
+          createReqId = retryRes2.headers.get("x-wix-request-id") || createReqId;
         }
       }
     }
