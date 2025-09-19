@@ -48,29 +48,65 @@ Deno.serve(async (req) => {
     if (!conn?.access_token) return J(401, { error: "not_connected", msg: "Reconnect Wix" });
 
     const accessToken = conn.access_token as string;
-    const instanceId = (conn.instance_id as string | null) ?? "";
-    const wixSiteId = body.wixSiteId || (conn.wix_site_id as string | null) || (Deno.env.get("WIX_SITE_ID") ?? "");
+    let instanceId = (conn.instance_id as string | null) ?? "";
+    let wixSiteId = body.wixSiteId || (conn.wix_site_id as string | null) || (Deno.env.get("WIX_SITE_ID") ?? "");
     const memberId = body.memberId || conn?.default_member_id || null;
+
+    // Try to auto-resolve missing wixSiteId using the current token/instance
+    if (!wixSiteId && accessToken && instanceId) {
+      try {
+        // 1) token-info
+        const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+          body: JSON.stringify({ token: accessToken })
+        });
+        if (tri.ok) {
+          const ti: any = await tri.json().catch(() => ({}));
+          if (ti?.siteId) wixSiteId = ti.siteId;
+        }
+        // 2) site-properties (requires instance header)
+        if (!wixSiteId) {
+          const pr = await fetch('https://www.wixapis.com/site-properties/v4/properties', {
+            method: 'GET',
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              'content-type': 'application/json',
+              'wix-instance-id': instanceId,
+            },
+          });
+          if (pr.ok) {
+            const props: any = await pr.json().catch(() => ({}));
+            wixSiteId = props?.properties?.siteId || props?.properties?.metaSiteId || props?.siteId || props?.site?.id || '';
+          }
+        }
+        // Persist if we managed to discover it
+        if (wixSiteId) {
+          await supabase
+            .from('wix_connections')
+            .update({ wix_site_id: wixSiteId, updated_at: new Date().toISOString() })
+            .eq('user_id', body.userId);
+        }
+      } catch {}
+    }
 
     // Check for missing critical identifiers
     if (!instanceId && !wixSiteId) {
       return J(400, { 
-        error: "missing_site_info", 
-        msg: "Missing instance_id and wix_site_id. Please reconnect your Wix account to capture these identifiers.",
+        error: 'missing_site_info', 
+        msg: 'Missing instance_id and wix_site_id. Please reconnect your Wix account to capture these identifiers.',
         debug: { hasInstanceId: !!instanceId, hasWixSiteId: !!wixSiteId }
       });
     }
 
-    // Skip member ID validation for now - let Wix handle it automatically
-
     // Build common headers — IMPORTANT: include instance and (if known) site id
     const headers: Record<string,string> = {
       authorization: `Bearer ${accessToken}`,
-      "content-type": "application/json",
+      'content-type': 'application/json',
     };
     // Only add these headers if we have them (some older connections may not have them)
-    if (instanceId) headers["wix-instance-id"] = instanceId;
-    if (wixSiteId) headers["wix-site-id"] = wixSiteId;
+    if (instanceId) headers['wix-instance-id'] = instanceId;
+    if (wixSiteId) headers['wix-site-id'] = wixSiteId;
 
     // --- Preflight: confirm this token points at the blog we expect ---
     const expectedHost = "alex33379.wixsite.com";
