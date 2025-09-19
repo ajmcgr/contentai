@@ -44,6 +44,7 @@ import ReadabilityChecker from "./pages/tools/ReadabilityChecker";
 import TypographyQA from "./pages/TypographyQA";
 import FontDebug from "./pages/admin/FontDebug";
 import NuclearConnect from "./pages/NuclearConnect";
+import WixInstalled from "./pages/WixInstalled";
 
 const queryClient = new QueryClient();
 
@@ -104,6 +105,7 @@ const App = () => (
             <Route path="typography-qa" element={<TypographyQA />} />
             <Route path="admin/font-debug" element={<FontDebug />} />
             <Route path="nuclear-connect" element={<NuclearConnect />} />
+            <Route path="wix-installed" element={<WixInstalled />} />
           </Route>
         </Routes>
       </BrowserRouter>
