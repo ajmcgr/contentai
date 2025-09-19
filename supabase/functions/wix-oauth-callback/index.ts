@@ -14,12 +14,20 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state") || "";
+  const instanceIdFromUrl = url.searchParams.get("instanceId") || url.searchParams.get("instance_id");
   if (!code) return asHtml(400, "<pre>Missing ?code</pre>");
 
   const appId = Deno.env.get("WIX_APP_ID") || Deno.env.get("WIX_CLIENT_ID") || "";
   const appSecret = Deno.env.get("WIX_APP_SECRET") || Deno.env.get("WIX_CLIENT_SECRET") || "";
   const redirectUri = Deno.env.get("WIX_REDIRECT_URI") || `${url.origin}${url.pathname}`;
   if (!appId || !appSecret) return asHtml(500, "<pre>Missing WIX_APP_ID / WIX_APP_SECRET</pre>");
+
+  console.log('[Wix OAuth] Starting callback', { 
+    hasCode: !!code, 
+    state, 
+    instanceIdFromUrl,
+    allParams: Object.fromEntries(url.searchParams.entries())
+  });
 
   // --- Token exchange (verbatim JSON; Wix expects application/json) ---
   const reqBody = {
@@ -81,8 +89,39 @@ Deno.serve(async (req) => {
     );
   }
 
-const { access_token, refresh_token, instance_id, expires_in, scope } = payload || {};
+const { access_token, refresh_token, expires_in, scope } = payload || {};
 if (!access_token || !refresh_token) return asHtml(502, "<pre>Missing tokens</pre>");
+
+console.log('[Wix OAuth] Token exchange successful', { 
+  hasAccessToken: !!access_token, 
+  scope,
+  tokenPayload: { ...payload, access_token: "***", refresh_token: "***" }
+});
+
+// Extract instance_id - try URL params first, then token response, then API call
+let instance_id = instanceIdFromUrl || payload?.instance_id || null;
+
+// If no instance_id, try to get it from Wix APIs
+if (!instance_id) {
+  try {
+    const instanceRes = await fetch("https://www.wixapis.com/apps/v1/instance", {
+      method: "GET",
+      headers: {
+        authorization: `Bearer ${access_token}`,
+        "accept": "application/json"
+      }
+    });
+    if (instanceRes.ok) {
+      const instanceData = await instanceRes.json();
+      instance_id = instanceData?.instance?.instanceId || instanceData?.instanceId || null;
+      console.log('[Wix OAuth] Instance API result', { instance_id, success: true });
+    } else {
+      console.warn('[Wix OAuth] Instance API failed', { status: instanceRes.status });
+    }
+  } catch (e) {
+    console.warn('[Wix OAuth] Instance API error', String(e));
+  }
+}
 
 // Try to detect the connected site's host
 let connectedHost: string | null = null;
@@ -120,30 +159,47 @@ try {
     console.warn('[Wix OAuth] token-info failed', { status: tri.status, body: triJson });
   }
 } catch (e) {
-  console.warn('[Wix OAuth] token-info error', e);
+  console.warn('[Wix OAuth] token-info error', String(e));
 }
 
 // Try to get site properties to extract siteId if we don't have it
-if (!siteId) {
+if (!siteId && instance_id) {
   try {
     const headers: Record<string,string> = {
       authorization: `Bearer ${access_token}`,
       "content-type": "application/json",
+      "wix-instance-id": instance_id,
     };
-    if (instance_id) headers["wix-instance-id"] = instance_id;
 
-    const propsRes = await fetch("https://www.wixapis.com/site-properties/v4/properties", {
-      method: "GET", 
-      headers,
-    });
-    
-    if (propsRes.ok) {
-      const propsData = await propsRes.json();
-      siteId = propsData?.properties?.metaSiteId || propsData?.namespace || null;
-      console.log('[Wix OAuth] site-properties', { siteId, props: propsData });
+    // Try multiple endpoints to get site info
+    const endpoints = [
+      "https://www.wixapis.com/site-properties/v4/properties",
+      "https://www.wixapis.com/apps/v1/bi-event/site-created", 
+      "https://www.wixapis.com/wix-users/v1/members"
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        const propsRes = await fetch(endpoint, { method: "GET", headers });
+        if (propsRes.ok) {
+          const propsData = await propsRes.json();
+          siteId = propsData?.properties?.metaSiteId || 
+                   propsData?.namespace || 
+                   propsData?.siteId ||
+                   propsData?.site?.id || null;
+          if (siteId) {
+            console.log('[Wix OAuth] Got siteId from', { endpoint, siteId });
+            break;
+          }
+        }
+      } catch (e) {
+        console.warn(`[Wix OAuth] ${endpoint} failed:`, String(e));
+      }
     }
+    
+    console.log('[Wix OAuth] Final site resolution', { siteId, instance_id, memberId });
   } catch (e) {
-    console.warn('[Wix OAuth] site-properties error', e);
+    console.warn('[Wix OAuth] site-properties error', String(e));
   }
 }
 
@@ -151,6 +207,15 @@ if (!siteId) {
 const SB_URL = Deno.env.get("SUPABASE_URL");
 const SB_SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const userId = parseUid(state);
+
+console.log('[Wix OAuth] Saving connection data', {
+  userId,
+  hasInstanceId: !!instance_id,
+  hasSiteId: !!siteId,
+  hasMemberId: !!memberId,
+  connectedHost
+});
+
 if (SB_URL && SB_SVC) {
   try {
     const supabase = createClient(SB_URL, SB_SVC, { auth: { persistSession: false } });
@@ -175,7 +240,12 @@ if (SB_URL && SB_SVC) {
     if (connErr) {
       console.error("[Wix OAuth] wix_connections upsert error", connErr);
     } else {
-      console.log("[Wix OAuth] wix_connections saved/updated", { user_id: userId, instance_id });
+      console.log("[Wix OAuth] wix_connections saved/updated", { 
+        user_id: userId, 
+        instance_id, 
+        wix_site_id: siteId,
+        success: true
+      });
     }
 
     // Detect which site/blog this token is bound to and store its host
@@ -212,7 +282,7 @@ if (SB_URL && SB_SVC) {
       .eq('provider', 'wix')
       .maybeSingle();
 
-    const nextExtra = { ...(existingInstall?.extra || {}), scope, instanceId: instance_id, memberId } as any;
+    const nextExtra = { ...(existingInstall?.extra || {}), scope, instanceId: instance_id, memberId, siteId } as any;
 
     if (existingInstall?.id) {
       const { error: updErr } = await supabase
@@ -251,7 +321,9 @@ if (SB_URL && SB_SVC) {
   <div style="font-family:system-ui;max-width:640px;margin:40px auto;line-height:1.5">
     <h1>Wix connected ✅</h1>
     <p><b>Site:</b> <code>${connectedHost ?? 'unknown'}</code></p>
-    <p>You can close this tab.</p>
+    <p><b>Instance ID:</b> <code>${instance_id ?? 'not found'}</code></p>
+    <p><b>Site ID:</b> <code>${siteId ?? 'not found'}</code></p>
+    <p>You can close this tab and try publishing again.</p>
   </div>
   <script>
     (function(){
