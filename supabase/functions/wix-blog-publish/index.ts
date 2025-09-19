@@ -15,7 +15,7 @@ type PublishBody = {
   tags?: string[];
   categoryIds?: string[];
   memberId?: string;
-  wixSiteId?: string; // optional explicit site id
+  wixSiteId?: string; // optional override
 };
 
 function J(status: number, data: unknown) {
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     const SB_SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SB_URL, SB_SVC, { auth: { persistSession: false } });
 
-    // Pull tokens (and optional default member/site) saved during OAuth
+    // Pull connection (saved at OAuth callback)
     const { data: conn, error: selErr } = await supabase
       .from("wix_connections")
       .select("access_token, instance_id, default_member_id, wix_site_id")
@@ -48,137 +48,111 @@ Deno.serve(async (req) => {
     if (!conn?.access_token) return J(401, { error: "not_connected", msg: "Reconnect Wix" });
 
     const accessToken = conn.access_token as string;
-    // Get memberId from cms_installs or use provided one
-    let memberId = body.memberId || conn?.default_member_id || Deno.env.get("WIX_DEFAULT_MEMBER_ID") || "";
-    
-    // If no memberId found, try to get it from the Wix Members API
-    if (!memberId) {
-      try {
-        console.log("No memberId found, attempting to fetch from Wix Members API...");
-        const membersRes = await fetch("https://www.wixapis.com/members/v1/members", {
-          method: "GET",
-          headers: {
-            "authorization": `Bearer ${accessToken}`,
-            "content-type": "application/json",
-          },
-        });
-        
-        if (membersRes.ok) {
-          const membersData = await membersRes.json();
-          const members = membersData?.members || [];
-          if (members.length > 0) {
-            memberId = members[0].id; // Use first member as default
-            
-            // Save this memberId for future use
-            await supabase
-              .from("wix_connections")
-              .update({ default_member_id: memberId })
-              .eq("user_id", body.userId);
-            
-            console.log(`Found and saved memberId: ${memberId}`);
-          }
-        } else {
-          console.log("Failed to fetch members:", membersRes.status, await membersRes.text());
-        }
-      } catch (e) {
-        console.log("Error fetching memberId from Wix API:", e);
-      }
-    }
-let wixSiteId = body.wixSiteId || conn?.wix_site_id || Deno.env.get("WIX_SITE_ID") || "";
-const instanceId = (conn as any)?.instance_id || Deno.env.get("WIX_INSTANCE_ID") || "";
-
-// Fallback: try to discover wix-site-id from token if missing
-if (!wixSiteId) {
-  try {
-    const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'accept': 'application/json' },
-      body: JSON.stringify({ token: accessToken })
-    });
-    const triJson: any = await tri.json().catch(() => ({}));
-    if (tri.ok && triJson?.siteId) {
-      wixSiteId = triJson.siteId;
-      // Persist for future publishes
-      await supabase.from('wix_connections').update({ wix_site_id: wixSiteId }).eq('user_id', body.userId);
-    }
-  } catch (_) {
-    // ignore
-  }
-}
+    const instanceId = (conn.instance_id as string | null) ?? "";
+    const wixSiteId = body.wixSiteId || (conn.wix_site_id as string | null) || (Deno.env.get("WIX_SITE_ID") ?? "");
+    const memberId = body.memberId || conn?.default_member_id || (Deno.env.get("WIX_DEFAULT_MEMBER_ID") ?? "");
 
     if (!memberId) {
       return J(400, { error: "member_required", msg: "Provide memberId or set WIX_DEFAULT_MEMBER_ID/default_member_id" });
     }
 
-    // 1) Create draft — use explicit content shape and optional site/instance headers
-    const createHeaders: Record<string,string> = {
-      "authorization": `Bearer ${accessToken}`,
+    // Build common headers — IMPORTANT: include instance and (if known) site id
+    const headers: Record<string,string> = {
+      authorization: `Bearer ${accessToken}`,
       "content-type": "application/json",
     };
-    if (wixSiteId) createHeaders["wix-site-id"] = wixSiteId;
-    if (instanceId) createHeaders["wix-instance-id"] = instanceId;
+    if (instanceId) headers["wix-instance-id"] = instanceId;
+    if (wixSiteId)  headers["wix-site-id"] = wixSiteId;
 
-    const createBody = {
-      draftPost: {
+    // Preflight: verify blog instance exists for this site
+    // Small, cheap call that fails clearly if the Blog app isn't installed.
+    const settingsRes = await fetch("https://www.wixapis.com/blog/v3/settings", {
+      method: "GET",
+      headers,
+    });
+    const settingsText = await settingsRes.text();
+    let settingsJson: any = settingsText; try { settingsJson = JSON.parse(settingsText); } catch {}
+    const settingsReqId = settingsRes.headers.get("x-wix-request-id") || null;
+
+    if (settingsRes.status === 401 || settingsRes.status === 403) {
+      return J(settingsRes.status, {
+        error: "unauthenticated_or_forbidden",
+        msg: "Token/site/instance mismatch. Ensure Wix Blog is installed for this site and headers include wix-instance-id (and wix-site-id if needed).",
+        wix_request_id: settingsReqId,
+        response: settingsJson,
+        sent_headers: { hasInstanceId: !!instanceId, hasSiteId: !!wixSiteId }
+      });
+    }
+    if (settingsRes.status === 404 || (settingsJson && settingsJson.message?.toLowerCase?.().includes("no blog"))) {
+      return J(404, {
+        error: "no_blog_instance",
+        msg: "This site has no Wix Blog instance. Install the 'Wix Blog' app on your site, then retry.",
+        wix_request_id: settingsReqId,
+        sent_headers: { hasInstanceId: !!instanceId, hasSiteId: !!wixSiteId }
+      });
+    }
+    if (!settingsRes.ok) {
+      return J(settingsRes.status, {
+        error: "blog_settings_failed",
+        wix_request_id: settingsReqId,
+        response: settingsJson
+      });
+    }
+
+    // 1) Create draft
+    const createRes = await fetch("https://www.wixapis.com/blog/v3/draft-posts", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
         title: body.title,
         content: { type: "html", html: body.contentHtml },
         excerpt: body.excerpt ?? "",
         tags: body.tags ?? [],
         categoryIds: body.categoryIds ?? [],
-        memberId, // required for 3rd-party app drafts
-      }
-    };
-
-    const draftRes = await fetch("https://www.wixapis.com/blog/v3/draft-posts", {
-      method: "POST",
-      headers: createHeaders,
-      body: JSON.stringify(createBody),
+        memberId, // required for 3rd-party apps
+      }),
     });
+    const createText = await createRes.text();
+    let createJson: any = createText; try { createJson = JSON.parse(createText); } catch {}
+    const createReqId = createRes.headers.get("x-wix-request-id") || null;
 
-    const reqId = draftRes.headers.get("x-wix-request-id") || null;
-    const draftText = await draftRes.text();
-    let draftJson: any = draftText; try { draftJson = JSON.parse(draftText); } catch {}
-
-    if (!draftRes.ok) {
-      return J(draftRes.status, {
+    if (!createRes.ok) {
+      return J(createRes.status, {
         error: "create_draft_failed",
-        status: draftRes.status,
-        wix_request_id: reqId,
-        response: draftJson,
-        sent: { memberId: !!memberId, hasSiteIdHeader: !!wixSiteId, hasInstanceIdHeader: !!instanceId, contentType: "html" },
+        status: createRes.status,
+        wix_request_id: createReqId,
+        response: createJson,
+        sent_headers: { hasInstanceId: !!instanceId, hasSiteId: !!wixSiteId }
       });
     }
 
-    const draftId = draftJson?.draftPost?._id || draftJson?._id || draftJson?.id;
-    if (!draftId) {
-      return J(502, { error: "missing_draft_id", wix_request_id: reqId, response: draftJson });
-    }
+    const draftId = createJson?.draftPost?._id || createJson?._id || createJson?.id;
+    if (!draftId) return J(502, { error: "missing_draft_id", wix_request_id: createReqId, response: createJson });
 
-    // 2) Publish draft
-    const pubRes = await fetch(`https://www.wixapis.com/blog/v3/draft-posts/${encodeURIComponent(draftId)}/publish`, {
+    // 2) Publish
+    const publishRes = await fetch(`https://www.wixapis.com/blog/v3/draft-posts/${encodeURIComponent(draftId)}/publish`, {
       method: "POST",
-      headers: createHeaders,
+      headers,
       body: JSON.stringify({}),
     });
+    const publishText = await publishRes.text();
+    let publishJson: any = publishText; try { publishJson = JSON.parse(publishText); } catch {}
+    const publishReqId = publishRes.headers.get("x-wix-request-id") || null;
 
-    const pubReqId = pubRes.headers.get("x-wix-request-id") || null;
-    const pubText = await pubRes.text();
-    let pubJson: any = pubText; try { pubJson = JSON.parse(pubText); } catch {}
-
-    if (!pubRes.ok) {
-      return J(pubRes.status, {
+    if (!publishRes.ok) {
+      return J(publishRes.status, {
         error: "publish_failed",
-        status: pubRes.status,
-        wix_request_id: pubReqId,
-        response: pubJson,
+        status: publishRes.status,
+        wix_request_id: publishReqId,
+        response: publishJson,
       });
     }
 
     return J(200, {
       ok: true,
       draftId,
-      wix_request_id: pubReqId || reqId,
-      result: pubJson,
+      wix_request_id: publishReqId || createReqId || settingsReqId,
+      result: publishJson
     });
 
   } catch (e) {
