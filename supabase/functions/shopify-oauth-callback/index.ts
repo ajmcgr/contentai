@@ -167,12 +167,13 @@ Deno.serve(async (req) => {
 
     console.log('Shopify installation successful for user:', stateRecord.user_id, 'shop:', shop)
 
+    // Redirect to app UI as required by Shopify
     const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        Location: `${appBase}/integrations?connected=shopify`
+        Location: `${appBase}/shopify-app?shop=${encodeURIComponent(shop)}&installed=true`
       }
     })
 

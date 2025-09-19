@@ -46,6 +46,7 @@ import FontDebug from "./pages/admin/FontDebug";
 import NuclearConnect from "./pages/NuclearConnect";
 import WixInstalled from "./pages/WixInstalled";
 import ShopifyDebug from "./pages/ShopifyDebug";
+import ShopifyApp from "./pages/ShopifyApp";
 
 const queryClient = new QueryClient();
 
@@ -108,6 +109,7 @@ const App = () => (
             <Route path="nuclear-connect" element={<NuclearConnect />} />
             <Route path="wix-installed" element={<WixInstalled />} />
             <Route path="shopify-debug" element={<ShopifyDebug />} />
+            <Route path="shopify-app" element={<ShopifyApp />} />
           </Route>
         </Routes>
       </BrowserRouter>
