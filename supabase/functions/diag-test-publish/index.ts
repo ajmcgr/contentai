@@ -178,8 +178,15 @@ Deno.serve(async (req) => {
     }
 
     const url = new URL(req.url)
-    const userId = url.searchParams.get('userId') || user.id
-    const provider = url.searchParams.get('provider')
+    let body: any = {}
+    try {
+      if (req.headers.get('content-type')?.includes('application/json')) {
+        body = await req.json()
+      }
+    } catch (_) {}
+
+    const userId = url.searchParams.get('userId') || body.userId || user.id
+    const provider = url.searchParams.get('provider') || body.provider
 
     if (!['shopify', 'wix'].includes(provider || '')) {
       return new Response(JSON.stringify({
