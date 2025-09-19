@@ -156,6 +156,32 @@ if (SB_URL && SB_SVC) {
       console.log("[Wix OAuth] wix_connections saved/updated", { user_id: userId, instance_id });
     }
 
+    // Detect which site/blog this token is bound to and store its host
+    try {
+      const headers: Record<string,string> = {
+        authorization: `Bearer ${access_token}`,
+        "content-type": "application/json",
+      };
+      if (instance_id) headers["wix-instance-id"] = instance_id;
+
+      // Blog settings usually has a canonical URL
+      const sRes = await fetch("https://www.wixapis.com/blog/v3/settings", { method: "GET", headers });
+      const sTxt = await sRes.text();
+      let s: any = sTxt; try { s = JSON.parse(sTxt); } catch {}
+      const rawUrl = s?.blogUrl?.url || s?.siteUrl || "";
+      const wix_host = (() => { try { return new URL(rawUrl).host; } catch { return null; } })();
+
+      await supabase
+        .from("wix_connections")
+        .update({
+          wix_host,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
+    } catch (e) {
+      console.log("[Wix OAuth] host-detect skipped", String(e));
+    }
+
     // 🔹 Store (or update) a cms_installs record with memberId for easy retrieval later
     const { data: existingInstall } = await supabase
       .from('cms_installs')

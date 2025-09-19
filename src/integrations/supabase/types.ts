@@ -645,6 +645,7 @@ export type Database = {
           refresh_token: string | null
           updated_at: string
           user_id: string
+          wix_host: string | null
           wix_site_id: string | null
         }
         Insert: {
@@ -657,6 +658,7 @@ export type Database = {
           refresh_token?: string | null
           updated_at?: string
           user_id: string
+          wix_host?: string | null
           wix_site_id?: string | null
         }
         Update: {
@@ -669,6 +671,7 @@ export type Database = {
           refresh_token?: string | null
           updated_at?: string
           user_id?: string
+          wix_host?: string | null
           wix_site_id?: string | null
         }
         Relationships: []
