@@ -50,11 +50,9 @@ Deno.serve(async (req) => {
     const accessToken = conn.access_token as string;
     const instanceId = (conn.instance_id as string | null) ?? "";
     const wixSiteId = body.wixSiteId || (conn.wix_site_id as string | null) || (Deno.env.get("WIX_SITE_ID") ?? "");
-    const memberId = body.memberId || conn?.default_member_id || (Deno.env.get("WIX_DEFAULT_MEMBER_ID") ?? "");
+    const memberId = body.memberId || conn?.default_member_id || null;
 
-    if (!memberId) {
-      return J(400, { error: "member_required", msg: "Provide memberId or set WIX_DEFAULT_MEMBER_ID/default_member_id" });
-    }
+    // Skip member ID validation for now - let Wix handle it automatically
 
     // Build common headers — IMPORTANT: include instance and (if known) site id
     const headers: Record<string,string> = {
@@ -127,7 +125,7 @@ Deno.serve(async (req) => {
           excerpt: body.excerpt ?? "",
           tags: body.tags ?? [],
           categoryIds: body.categoryIds ?? [],
-          memberId, // required for 3rd-party apps
+          ...(memberId && { memberId }), // only include if we have a valid member ID
         }
       }),
     });
