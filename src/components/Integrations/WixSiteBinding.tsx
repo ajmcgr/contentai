@@ -6,8 +6,12 @@ const SB = 'https://hmrzmafwvhifjhsoizil.supabase.co';
 async function fetchSiteInfo(uid: string) {
   const u = new URL(`${SB}/functions/v1/wix-site-info`);
   u.searchParams.set('uid', uid);
+  console.log('[WixSiteBinding] Fetching site info from:', u.toString());
   const r = await fetch(u.toString());
-  return r.json();
+  console.log('[WixSiteBinding] Response status:', r.status);
+  const json = await r.json();
+  console.log('[WixSiteBinding] Response data:', json);
+  return json;
 }
 
 async function startInstall(uid: string) {
