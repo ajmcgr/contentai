@@ -21,23 +21,64 @@ Deno.serve(async (req) => {
   const redirectUri = Deno.env.get("WIX_REDIRECT_URI") || `${url.origin}${url.pathname}`;
   if (!appId || !appSecret) return asHtml(500, "<pre>Missing WIX_APP_ID / WIX_APP_SECRET</pre>");
 
-  const r = await fetch("https://www.wixapis.com/oauth/access", {
+  // --- Token exchange (verbatim JSON; Wix expects application/json) ---
+  const reqBody = {
+    grant_type: "authorization_code",
+    code,
+    client_id: appId,
+    client_secret: appSecret,
+    redirect_uri: redirectUri,
+  };
+
+  const tokenRes = await fetch("https://www.wixapis.com/oauth/access", {
     method: "POST",
     headers: { "content-type": "application/json", "accept": "application/json" },
-    body: JSON.stringify({
-      grant_type: "authorization_code",
-      code,
-      client_id: appId,
-      client_secret: appSecret,
-      redirect_uri: redirectUri,
-    }),
+    body: JSON.stringify(reqBody),
   });
-  const raw = await r.text();
-  let payload:any = raw; try { payload = JSON.parse(raw); } catch {}
 
-  if (!r.ok) {
-    console.error("[Wix OAuth] Exchange failed", { status: r.status, payload });
-    return asHtml(400, `<pre>OAuth failed: ${r.status}</pre>`);
+  const wixReqId = tokenRes.headers.get("x-wix-request-id") || null;
+  const raw = await tokenRes.text();
+  let payload: any = raw;
+  try { payload = JSON.parse(raw); } catch {}
+
+  if (!tokenRes.ok) {
+    console.error("[Wix OAuth] Token exchange failed", {
+      status: tokenRes.status,
+      wix_request_id: wixReqId,
+      payload,
+      reqBody: { ...reqBody, client_secret: "***" }, // don't log secret
+      meta: {
+        got_code: !!code,
+        used_redirect_uri: redirectUri,
+        app_id_tail: appId.slice(-6),
+        state,
+        query: url.search,
+      },
+    });
+
+    const hint = `
+<h3>Why 400 happens (common):</h3>
+<ol>
+  <li><b>Redirect URL mismatch</b> – In Wix Dev Center, OAuth Redirect URL must be
+    <code>${redirectUri}</code> (exactly, https + path).</li>
+  <li><b>Wrong App</b> – The installer's <code>appId</code> must equal your <code>WIX_APP_ID</code> (same environment).</li>
+  <li><b>App not installed on this site</b> – install the app on the site you picked.</li>
+  <li><b>App Secret mismatch</b> – ensure <code>WIX_APP_SECRET</code> matches the same app.</li>
+</ol>`.trim();
+
+    return new Response(
+      `<!doctype html><html><head><meta charset="utf-8"><title>Wix OAuth Error</title></head><body>
+        <h1>OAuth failed: ${tokenRes.status}</h1>
+        <p><b>x-wix-request-id:</b> ${wixReqId ?? "n/a"}</p>
+        <p><b>Used redirect_uri:</b> <code>${redirectUri}</code></p>
+        <p><b>AppId (tail):</b> …${appId.slice(-6)}</p>
+        <p><b>State:</b> ${state}</p>
+        <h3>Wix response</h3>
+        <pre style="white-space:pre-wrap">${typeof payload === "string" ? payload : JSON.stringify(payload, null, 2)}</pre>
+        ${hint}
+      </body></html>`,
+      { status: 400, headers: { "content-type": "text/html; charset=utf-8" } }
+    );
   }
 
   const { access_token, refresh_token, instance_id, expires_in, scope } = payload || {};
