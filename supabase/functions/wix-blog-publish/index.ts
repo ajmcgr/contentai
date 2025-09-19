@@ -64,38 +64,48 @@ Deno.serve(async (req) => {
     if (instanceId) headers["wix-instance-id"] = instanceId;
     if (wixSiteId)  headers["wix-site-id"] = wixSiteId;
 
-    // Preflight: verify blog instance exists for this site
-    // Small, cheap call that fails clearly if the Blog app isn't installed.
-    const settingsRes = await fetch("https://www.wixapis.com/blog/v3/settings", {
-      method: "GET",
-      headers,
-    });
-    const settingsText = await settingsRes.text();
-    let settingsJson: any = settingsText; try { settingsJson = JSON.parse(settingsText); } catch {}
-    const settingsReqId = settingsRes.headers.get("x-wix-request-id") || null;
+    // --- Preflight: confirm this token points at the blog we expect ---
+    const expectedHost = "alex33379.wixsite.com";
 
-    if (settingsRes.status === 401 || settingsRes.status === 403) {
-      return J(settingsRes.status, {
-        error: "unauthenticated_or_forbidden",
-        msg: "Token/site/instance mismatch. Ensure Wix Blog is installed for this site and headers include wix-instance-id (and wix-site-id if needed).",
-        wix_request_id: settingsReqId,
-        response: settingsJson,
-        sent_headers: { hasInstanceId: !!instanceId, hasSiteId: !!wixSiteId }
-      });
-    }
-    if (settingsRes.status === 404 || (settingsJson && settingsJson.message?.toLowerCase?.().includes("no blog"))) {
+    const pre = await fetch("https://www.wixapis.com/blog/v3/settings", {
+      method: "GET",
+      headers, // must include Bearer token (+ wix-instance-id / wix-site-id if you have them)
+    });
+    const preText = await pre.text();
+    let preJson: any = preText; try { preJson = JSON.parse(preText); } catch {}
+    const wixReqId = pre.headers.get("x-wix-request-id") || null;
+
+    // Derive the connected host for this token
+    const rawUrl = preJson?.blogUrl?.url || preJson?.siteUrl || "";
+    let connectedHost = "unknown";
+    try { connectedHost = new URL(rawUrl).host; } catch {}
+
+    if (pre.status === 404) {
+      // No Blog app on the connected site
       return J(404, {
         error: "no_blog_instance",
-        msg: "This site has no Wix Blog instance. Install the 'Wix Blog' app on your site, then retry.",
-        wix_request_id: settingsReqId,
-        sent_headers: { hasInstanceId: !!instanceId, hasSiteId: !!wixSiteId }
+        message: "This site has no Wix Blog installed. In your Wix site: Apps → Add Apps → 'Blog by Wix' → Add, then Publish the site.",
+        wix_request_id: wixReqId,
+        sent_headers: { hasInstanceId: !!headers["wix-instance-id"], hasSiteId: !!headers["wix-site-id"] }
       });
     }
-    if (!settingsRes.ok) {
-      return J(settingsRes.status, {
+
+    if (!pre.ok) {
+      // Auth/permission problems
+      return J(pre.status, {
         error: "blog_settings_failed",
-        wix_request_id: settingsReqId,
-        response: settingsJson
+        wix_request_id: wixReqId,
+        response: preJson,
+        hint: "If 401/403: ensure app is installed on this site and headers include wix-instance-id (and wix-site-id if available)."
+      });
+    }
+
+    // Guard: refuse to publish if we're bound to a different site
+    if (!String(connectedHost).includes(expectedHost)) {
+      return J(412, {
+        error: "wrong_site_bound",
+        msg: `Connected to "${connectedHost}", but this project targets "${expectedHost}". Reconnect the Wix app and select the correct site.`,
+        wix_request_id: wixReqId
       });
     }
 
