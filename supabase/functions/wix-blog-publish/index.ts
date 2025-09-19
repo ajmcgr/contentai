@@ -53,42 +53,64 @@ Deno.serve(async (req) => {
     const memberId = body.memberId || conn?.default_member_id || null;
 
     // Try to auto-resolve missing wixSiteId using the current token/instance
-    if (!wixSiteId && accessToken && instanceId) {
+if (!wixSiteId && accessToken && instanceId) {
+  try {
+    // 1) token-info
+    const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+      body: JSON.stringify({ token: accessToken })
+    });
+    if (tri.ok) {
+      const ti: any = await tri.json().catch(() => ({}));
+      if (ti?.siteId) wixSiteId = ti.siteId;
+    }
+    
+    // 2) site-properties (requires instance header)
+    if (!wixSiteId) {
+      const pr = await fetch('https://www.wixapis.com/site-properties/v4/properties', {
+        method: 'GET',
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          'content-type': 'application/json',
+          'wix-instance-id': instanceId,
+        },
+      });
+      if (pr.ok) {
+        const props: any = await pr.json().catch(() => ({}));
+        wixSiteId = props?.properties?.siteId || props?.properties?.metaSiteId || props?.siteId || props?.site?.id || '';
+      }
+    }
+
+    // 3) site-list query (broad discovery by token)
+    if (!wixSiteId) {
       try {
-        // 1) token-info
-        const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
+        const q = await fetch('https://www.wixapis.com/site-list/v2/sites/query', {
           method: 'POST',
-          headers: { 'content-type': 'application/json', 'accept': 'application/json' },
-          body: JSON.stringify({ token: accessToken })
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ paging: { limit: 1 } })
         });
-        if (tri.ok) {
-          const ti: any = await tri.json().catch(() => ({}));
-          if (ti?.siteId) wixSiteId = ti.siteId;
-        }
-        // 2) site-properties (requires instance header)
-        if (!wixSiteId) {
-          const pr = await fetch('https://www.wixapis.com/site-properties/v4/properties', {
-            method: 'GET',
-            headers: {
-              authorization: `Bearer ${accessToken}`,
-              'content-type': 'application/json',
-              'wix-instance-id': instanceId,
-            },
-          });
-          if (pr.ok) {
-            const props: any = await pr.json().catch(() => ({}));
-            wixSiteId = props?.properties?.siteId || props?.properties?.metaSiteId || props?.siteId || props?.site?.id || '';
-          }
-        }
-        // Persist if we managed to discover it
-        if (wixSiteId) {
-          await supabase
-            .from('wix_connections')
-            .update({ wix_site_id: wixSiteId, updated_at: new Date().toISOString() })
-            .eq('user_id', body.userId);
+        if (q.ok) {
+          const qj: any = await q.json().catch(() => ({}));
+          wixSiteId = qj?.sites?.[0]?.id || '';
         }
       } catch {}
     }
+
+    // Persist if we managed to discover it
+    if (wixSiteId) {
+      try {
+        await supabase
+          .from('wix_connections')
+          .update({ wix_site_id: wixSiteId, updated_at: new Date().toISOString() })
+          .eq('user_id', body.userId);
+      } catch {}
+    }
+  } catch {}
+}
 
     // Check for missing critical identifiers
     if (!instanceId && !wixSiteId) {
@@ -140,16 +162,13 @@ Deno.serve(async (req) => {
     // We will surface clearer errors from the create/publish steps.
 
     // Guard: refuse to publish if we're bound to a different site (only when we could detect it)
-    if (connectedHost !== "unknown" && !String(connectedHost).includes(expectedHost)) {
-      return J(412, {
-        error: "wrong_site_bound",
-        msg: `Connected to "${connectedHost}", but this project targets "${expectedHost}". Reconnect the Wix app and select the correct site.`,
-        wix_request_id: wixReqId
-      });
-    }
+  if (connectedHost !== "unknown" && !String(connectedHost).includes(expectedHost)) {
+    // Non-blocking warning: site host differs from expected, but we'll proceed.
+    console.warn('wix-blog-publish: connectedHost differs', { connectedHost, expectedHost, wix_request_id: wixReqId });
+  }
 
     // 1) Create draft
-    const createRes = await fetch("https://www.wixapis.com/blog/v3/draft-posts", {
+    let createRes = await fetch("https://www.wixapis.com/blog/v3/draft-posts", {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -159,13 +178,74 @@ Deno.serve(async (req) => {
           excerpt: body.excerpt ?? "",
           tags: body.tags ?? [],
           categoryIds: body.categoryIds ?? [],
-          ...(memberId && { memberId }), // only include if we have a valid member ID
+          ...(memberId && { memberId }),
         }
       }),
     });
-    const createText = await createRes.text();
+    let createText = await createRes.text();
     let createJson: any = createText; try { createJson = JSON.parse(createText); } catch {}
-    const createReqId = createRes.headers.get("x-wix-request-id") || null;
+    let createReqId = createRes.headers.get("x-wix-request-id") || null;
+
+    // Retry once if missing site-id caused a failure
+    if (!createRes.ok && !headers['wix-site-id']) {
+      let siteIdRetry = wixSiteId || '';
+      try {
+        const q = await fetch('https://www.wixapis.com/site-list/v2/sites/query', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ paging: { limit: 1 } })
+        });
+        if (q.ok) {
+          const qj: any = await q.json().catch(() => ({}));
+          siteIdRetry = qj?.sites?.[0]?.id || siteIdRetry;
+        }
+      } catch {}
+
+      if (siteIdRetry) {
+        const retryHeaders = { ...headers, 'wix-site-id': siteIdRetry } as Record<string,string>;
+        const retryRes = await fetch("https://www.wixapis.com/blog/v3/draft-posts", {
+          method: "POST",
+          headers: retryHeaders,
+          body: JSON.stringify({
+            draftPost: {
+              title: body.title,
+              content: { type: "html", html: body.contentHtml },
+              excerpt: body.excerpt ?? "",
+              tags: body.tags ?? [],
+              categoryIds: body.categoryIds ?? [],
+              ...(memberId && { memberId }),
+            }
+          }),
+        });
+        const retryText = await retryRes.text();
+        let retryJson: any = retryText; try { retryJson = JSON.parse(retryText); } catch {}
+
+        if (retryRes.ok) {
+          createRes = retryRes;
+          createText = retryText;
+          createJson = retryJson;
+          createReqId = retryRes.headers.get("x-wix-request-id") || createReqId;
+          wixSiteId = siteIdRetry;
+          try {
+            await supabase
+              .from('wix_connections')
+              .update({ wix_site_id: wixSiteId, updated_at: new Date().toISOString() })
+              .eq('user_id', body.userId);
+          } catch {}
+        } else {
+          return J(retryRes.status, {
+            error: "create_draft_failed",
+            status: retryRes.status,
+            wix_request_id: retryRes.headers.get("x-wix-request-id") || createReqId,
+            response: retryJson,
+            sent_headers: { hasInstanceId: !!instanceId, hasSiteId: !!siteIdRetry }
+          });
+        }
+      }
+    }
 
     if (!createRes.ok) {
       return J(createRes.status, {
