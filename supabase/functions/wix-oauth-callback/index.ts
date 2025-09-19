@@ -81,8 +81,24 @@ Deno.serve(async (req) => {
     );
   }
 
-  const { access_token, refresh_token, instance_id, expires_in, scope } = payload || {};
-  if (!access_token || !refresh_token) return asHtml(502, "<pre>Missing tokens</pre>");
+const { access_token, refresh_token, instance_id, expires_in, scope } = payload || {};
+if (!access_token || !refresh_token) return asHtml(502, "<pre>Missing tokens</pre>");
+
+// Try to detect the connected site's host
+let connectedHost: string | null = null;
+try {
+  const headers: Record<string,string> = {
+    authorization: `Bearer ${access_token}`,
+    "content-type": "application/json",
+  };
+  if (instance_id) headers["wix-instance-id"] = instance_id;
+
+  const sRes = await fetch("https://www.wixapis.com/blog/v3/settings", { method: "GET", headers });
+  const sTxt = await sRes.text();
+  let s: any = sTxt; try { s = JSON.parse(sTxt); } catch {}
+  const url = s?.blogUrl?.url || s?.siteUrl || "";
+  connectedHost = (() => { try { return new URL(url).host; } catch { return null; } })();
+} catch { /* ignore; we'll show 'unknown' */ }
 
 // Attempt to resolve the Wix memberId and siteId associated with this access token (required by Blog API)
 let memberId: string | null = null;
@@ -225,22 +241,25 @@ if (SB_URL && SB_SVC) {
 }
 
   // ✅ tell opener + close
-  const msg = { provider: "wix", status: "connected", instance_id, state };
-  const html = `
+  return new Response(`<!doctype html><html><head><meta charset="utf-8"/></head><body>
+  <div style="font-family:system-ui;max-width:640px;margin:40px auto;line-height:1.5">
+    <h1>Wix connected ✅</h1>
+    <p><b>Site:</b> <code>${connectedHost ?? 'unknown'}</code></p>
+    <p>You can close this tab.</p>
+  </div>
   <script>
     (function(){
-      try { 
+      try {
+        var msg = { provider: 'wix', status: 'connected', host: ${JSON.stringify(connectedHost)} };
         if (window.opener && !window.opener.closed) {
-          window.opener.postMessage(${JSON.stringify(msg)}, "*");
+          window.opener.postMessage(msg, "*");
         }
-      } catch(e){ console.log("postMessage failed:", e); }
-      document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:sans-serif;"><h2 style="color:green;">✅ Wix Connected Successfully!</h2><p>This window will close automatically...</p></div>';
-      setTimeout(function(){ 
-        try { window.close(); } catch(e) { 
-          document.body.innerHTML += '<p><a href="#" onclick="window.close()">Click here to close this window</a></p>';
-        }
-      }, 1000);
+      } catch (e) {}
+      setTimeout(function(){ window.close(); }, 600);
     })();
-  </script>`;
-  return asHtml(200, html);
+  </script>
+</body></html>`, {
+  status: 200,
+  headers: { "content-type": "text/html; charset=utf-8" }
+});
 });
