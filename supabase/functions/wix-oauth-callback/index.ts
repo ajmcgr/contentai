@@ -103,6 +103,8 @@ try {
 // Attempt to resolve the Wix memberId and siteId associated with this access token (required by Blog API)
 let memberId: string | null = null;
 let siteId: string | null = null;
+
+// First try token-info
 try {
   const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
     method: 'POST',
@@ -111,7 +113,7 @@ try {
   });
   const triJson: any = await tri.json().catch(() => ({}));
   if (tri.ok) {
-    memberId = triJson?.subjectId || null; // may or may not be a member id depending on subjectType
+    memberId = triJson?.subjectId || null;
     siteId = triJson?.siteId || null;
     console.log('[Wix OAuth] token-info', { subjectType: triJson?.subjectType, subjectId: memberId, siteId });
   } else {
@@ -121,23 +123,27 @@ try {
   console.warn('[Wix OAuth] token-info error', e);
 }
 
-// Fallback: try listing members and take the first admin/owner (requires Members read permission)
-if (!memberId) {
+// Try to get site properties to extract siteId if we don't have it
+if (!siteId) {
   try {
-    const list = await fetch('https://www.wixapis.com/members/v1/members?paging.limit=1', {
-      method: 'GET',
-      headers: { 'accept': 'application/json', 'authorization': `Bearer ${access_token}` }
+    const headers: Record<string,string> = {
+      authorization: `Bearer ${access_token}`,
+      "content-type": "application/json",
+    };
+    if (instance_id) headers["wix-instance-id"] = instance_id;
+
+    const propsRes = await fetch("https://www.wixapis.com/site-properties/v4/properties", {
+      method: "GET", 
+      headers,
     });
-    const listJson: any = await list.json().catch(() => ({}));
-    if (list.ok) {
-      const items = listJson?.members || listJson?.items || [];
-      memberId = items?.[0]?.id || null;
-      console.log('[Wix OAuth] members.list', { count: items?.length ?? 0, memberId });
-    } else {
-      console.warn('[Wix OAuth] members.list failed', { status: list.status, body: listJson });
+    
+    if (propsRes.ok) {
+      const propsData = await propsRes.json();
+      siteId = propsData?.properties?.metaSiteId || propsData?.namespace || null;
+      console.log('[Wix OAuth] site-properties', { siteId, props: propsData });
     }
   } catch (e) {
-    console.warn('[Wix OAuth] members.list error', e);
+    console.warn('[Wix OAuth] site-properties error', e);
   }
 }
 

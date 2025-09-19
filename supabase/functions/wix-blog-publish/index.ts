@@ -61,8 +61,9 @@ Deno.serve(async (req) => {
       authorization: `Bearer ${accessToken}`,
       "content-type": "application/json",
     };
+    // Only add these headers if we have them (some older connections may not have them)
     if (instanceId) headers["wix-instance-id"] = instanceId;
-    if (wixSiteId)  headers["wix-site-id"] = wixSiteId;
+    if (wixSiteId) headers["wix-site-id"] = wixSiteId;
 
     // --- Preflight: confirm this token points at the blog we expect ---
     const expectedHost = "alex33379.wixsite.com";
