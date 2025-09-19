@@ -136,31 +136,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (pre.status === 404) {
-      // If we lack instance/site headers, don't block here — Wix may need these to resolve the blog
-      if (headers["wix-instance-id"] || headers["wix-site-id"]) {
-        return J(404, {
-          error: "no_blog_instance",
-          message: "This site has no Wix Blog installed. In your Wix site: Apps → Add Apps → 'Blog by Wix' → Add, then Publish the site.",
-          wix_request_id: wixReqId,
-          sent_headers: { hasInstanceId: !!headers["wix-instance-id"], hasSiteId: !!headers["wix-site-id"] }
-        });
-      }
-      // proceed without preflight; subsequent calls will surface clearer errors
-    }
-
-    if (!pre.ok) {
-      // If we have proper context headers, bubble the error; otherwise continue
-      if (headers["wix-instance-id"] || headers["wix-site-id"]) {
-        return J(pre.status, {
-          error: "blog_settings_failed",
-          wix_request_id: wixReqId,
-          response: preJson,
-          hint: "If 401/403: ensure app is installed on this site and headers include wix-instance-id (and wix-site-id if available)."
-        });
-      }
-      // proceed without preflight
-    }
+    // Do not block on preflight errors; continue to attempt draft creation.
+    // We will surface clearer errors from the create/publish steps.
 
     // Guard: refuse to publish if we're bound to a different site (only when we could detect it)
     if (connectedHost !== "unknown" && !String(connectedHost).includes(expectedHost)) {
