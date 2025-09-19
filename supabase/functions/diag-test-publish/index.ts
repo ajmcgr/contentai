@@ -152,6 +152,13 @@ Deno.serve(async (req) => {
 
   const correlationId = crypto.randomUUID();
 
+  // Start log for every invocation
+  await logEvent({
+    provider: 'sys',
+    stage: 'diag.testPublish.start',
+    correlationId,
+  });
+ 
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -160,6 +167,7 @@ Deno.serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
+      await logEvent({ provider: 'sys', stage: 'diag.testPublish.noAuth', level: 'warn', correlationId });
       return new Response('Missing authorization header', { 
         status: 401, 
         headers: corsHeaders 

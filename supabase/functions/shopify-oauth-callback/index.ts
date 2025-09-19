@@ -165,8 +165,16 @@ Deno.serve(async (req) => {
       .delete()
       .eq('state', state)
 
+    // Log success to app_logs
+    await supabaseServiceRole.from('app_logs').insert({
+      provider: 'shopify',
+      stage: 'oauth.callback.success',
+      user_id: stateRecord.user_id,
+      detail: JSON.stringify({ shop })
+    });
+ 
     console.log('Shopify installation successful for user:', stateRecord.user_id, 'shop:', shop)
-
+ 
     // Redirect to app UI as required by Shopify
     const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
     return new Response(null, {
@@ -179,6 +187,18 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Shopify OAuth callback error:', error)
+    try {
+      const supabaseServiceRole = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
+      await supabaseServiceRole.from('app_logs').insert({
+        provider: 'shopify',
+        stage: 'oauth.callback.error',
+        level: 'error',
+        detail: String(error && (error as any).message || error)
+      });
+    } catch (_) {}
     const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
     return new Response(null, { 
       status: 302, 
