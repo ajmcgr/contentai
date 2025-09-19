@@ -52,6 +52,15 @@ Deno.serve(async (req) => {
     const wixSiteId = body.wixSiteId || (conn.wix_site_id as string | null) || (Deno.env.get("WIX_SITE_ID") ?? "");
     const memberId = body.memberId || conn?.default_member_id || null;
 
+    // Check for missing critical identifiers
+    if (!instanceId && !wixSiteId) {
+      return J(400, { 
+        error: "missing_site_info", 
+        msg: "Missing instance_id and wix_site_id. Please reconnect your Wix account to capture these identifiers.",
+        debug: { hasInstanceId: !!instanceId, hasWixSiteId: !!wixSiteId }
+      });
+    }
+
     // Skip member ID validation for now - let Wix handle it automatically
 
     // Build common headers — IMPORTANT: include instance and (if known) site id
