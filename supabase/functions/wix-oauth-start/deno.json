@@ -1,0 +1,7 @@
+{
+  "deploy": {
+    "env": {
+      "VERIFY_JWT": "false"
+    }
+  }
+}
