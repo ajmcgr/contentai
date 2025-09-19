@@ -121,12 +121,14 @@ Deno.serve(async (req) => {
       method: "POST",
       headers,
       body: JSON.stringify({
-        title: body.title,
-        content: { type: "html", html: body.contentHtml },
-        excerpt: body.excerpt ?? "",
-        tags: body.tags ?? [],
-        categoryIds: body.categoryIds ?? [],
-        memberId, // required for 3rd-party apps
+        draftPost: {
+          title: body.title,
+          content: { type: "html", html: body.contentHtml },
+          excerpt: body.excerpt ?? "",
+          tags: body.tags ?? [],
+          categoryIds: body.categoryIds ?? [],
+          memberId, // required for 3rd-party apps
+        }
       }),
     });
     const createText = await createRes.text();
