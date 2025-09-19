@@ -111,18 +111,30 @@ Deno.serve(async (req) => {
     // --- Preflight: confirm this token points at the blog we expect ---
     const expectedHost = "alex33379.wixsite.com";
 
-    const pre = await fetch("https://www.wixapis.com/blog/v3/settings", {
-      method: "GET",
-      headers, // must include Bearer token (+ wix-instance-id / wix-site-id if you have them)
-    });
-    const preText = await pre.text();
-    let preJson: any = preText; try { preJson = JSON.parse(preText); } catch {}
+    async function fetchSettings(h: Record<string,string>) {
+      const r = await fetch("https://www.wixapis.com/blog/v3/settings", { method: "GET", headers: h });
+      const text = await r.text();
+      let json: any = text; try { json = JSON.parse(text); } catch {}
+      return { r, json, text };
+    }
+
+    let { r: pre, json: preJson } = await fetchSettings(headers);
     const wixReqId = pre.headers.get("x-wix-request-id") || null;
 
     // Derive the connected host for this token
     const rawUrl = preJson?.blogUrl?.url || preJson?.siteUrl || "";
     let connectedHost = "unknown";
     try { connectedHost = new URL(rawUrl).host; } catch {}
+
+    // If 404 and we don't have wix-site-id, attempt a best-effort retry using instanceId as a fallback site header
+    if (pre.status === 404 && instanceId && !wixSiteId) {
+      const retryHeaders = { ...headers, "wix-site-id": instanceId };
+      const retry = await fetchSettings(retryHeaders);
+      if (retry.r.ok) {
+        pre = retry.r; preJson = retry.json;
+        wixSiteId = instanceId; // persist this heuristic for this request only
+      }
+    }
 
     if (pre.status === 404) {
       // If we lack instance/site headers, don't block here — Wix may need these to resolve the blog
