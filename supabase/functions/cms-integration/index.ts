@@ -472,10 +472,66 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
     })
     .eq('id', articleId);
 
+  // Platform-specific success messages
+  let successMessage = '';
+  let detailMessage = '';
+  
+  switch (connection.platform) {
+    case 'wordpress':
+      successMessage = 'Article successfully published to WordPress!';
+      detailMessage = publishOptions.status === 'publish' 
+        ? 'Your article is now live on your WordPress site.' 
+        : 'Your article has been saved as a draft on WordPress.';
+      break;
+    case 'shopify':
+      successMessage = 'Article successfully published to Shopify!';
+      detailMessage = (publishOptions.status === 'publish' || publishOptions.published === true)
+        ? 'Your article is now live on your Shopify blog.' 
+        : 'Your article has been saved as a draft on Shopify.';
+      break;
+    case 'wix':
+      successMessage = 'Article successfully published to Wix!';
+      detailMessage = 'Your article has been created as a draft post on your Wix blog. You can publish it from your Wix dashboard.';
+      break;
+    case 'webflow':
+      successMessage = 'Article successfully published to Webflow!';
+      detailMessage = publishOptions.draft === false 
+        ? 'Your article is now live on your Webflow site.' 
+        : 'Your article has been saved as a draft on Webflow.';
+      break;
+    case 'notion':
+      successMessage = 'Article successfully published to Notion!';
+      detailMessage = 'Your article has been added to your Notion database.';
+      break;
+    case 'ghost':
+      successMessage = 'Article successfully published to Ghost!';
+      detailMessage = publishOptions.status === 'published' 
+        ? 'Your article is now live on your Ghost blog.' 
+        : 'Your article has been saved as a draft on Ghost.';
+      break;
+    case 'zapier':
+      successMessage = 'Article successfully sent to Zapier!';
+      detailMessage = 'Your article data has been sent to your Zapier webhook for processing.';
+      break;
+    case 'squarespace':
+      successMessage = 'Article successfully published to Squarespace!';
+      detailMessage = 'Your article has been added to your Squarespace blog.';
+      break;
+    case 'webhook':
+      successMessage = 'Article successfully sent to webhook!';
+      detailMessage = 'Your article data has been sent to your custom webhook endpoint.';
+      break;
+    default:
+      successMessage = `Successfully published to ${connection.platform}`;
+      detailMessage = 'Your article has been published.';
+  }
+
   return new Response(JSON.stringify({
     success: true,
     publishResult,
-    message: `Successfully published to ${connection.platform}`
+    message: successMessage,
+    details: detailMessage,
+    platform: connection.platform
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
