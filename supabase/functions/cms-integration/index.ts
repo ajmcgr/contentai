@@ -314,6 +314,35 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
         connected_at: wixConnection.created_at,
         last_sync: wixConnection.created_at
       };
+    } else {
+      // Check if it's a Shopify install
+      const { data: shopifyInstall, error: shopifyError } = await supabaseClient
+        .from('cms_installs')
+        .select('*')
+        .eq('id', connectionId)
+        .eq('user_id', user.id)
+        .eq('provider', 'shopify')
+        .maybeSingle();
+
+      if (shopifyInstall) {
+        // Convert Shopify install to cms_connections format for compatibility
+        connection = {
+          id: shopifyInstall.id,
+          user_id: user.id,
+          platform: 'shopify',
+          site_url: shopifyInstall.external_id,
+          access_token: shopifyInstall.access_token,
+          api_key: null,
+          config: {
+            endpoint: `https://${shopifyInstall.external_id}/admin/api/2024-01/`,
+            shop: shopifyInstall.external_id,
+            scope: shopifyInstall.scope
+          },
+          is_active: true,
+          connected_at: shopifyInstall.created_at,
+          last_sync: shopifyInstall.created_at
+        };
+      }
     }
   }
 
@@ -492,6 +521,36 @@ async function handleStatus(req: Request, supabaseClient: any, user: any) {
       connected_at: wixConn.created_at,
       last_sync: wixConn.created_at
     });
+  }
+
+  // Check for Shopify connections in the cms_installs table
+  const { data: shopifyInstalls, error: shopifyError } = await supabaseClient
+    .from('cms_installs')
+    .select('id, external_id, access_token, created_at, scope')
+    .eq('user_id', user.id)
+    .eq('provider', 'shopify')
+    .order('created_at', { ascending: false });
+
+  if (!shopifyError && shopifyInstalls && shopifyInstalls.length > 0) {
+    for (const shopifyInstall of shopifyInstalls) {
+      // Add Shopify connection in cms_connections format for compatibility
+      allConnections.push({
+        id: shopifyInstall.id,
+        user_id: user.id,
+        platform: 'shopify',
+        site_url: shopifyInstall.external_id,
+        access_token: shopifyInstall.access_token,
+        api_key: null,
+        config: { 
+          endpoint: `https://${shopifyInstall.external_id}/admin/api/2024-01/`,
+          shop: shopifyInstall.external_id,
+          scope: shopifyInstall.scope
+        },
+        is_active: true,
+        connected_at: shopifyInstall.created_at,
+        last_sync: shopifyInstall.created_at
+      });
+    }
   }
 
   return new Response(JSON.stringify({
