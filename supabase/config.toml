@@ -106,3 +106,9 @@ verify_jwt = false
 
 [functions.wix-blog-publish]
 verify_jwt = false
+
+[functions.wix-connection-status]
+verify_jwt = false
+
+[functions.wix-site-info]
+verify_jwt = false
