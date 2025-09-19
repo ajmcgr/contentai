@@ -97,13 +97,69 @@ Deno.serve(async (req) => {
     if (selErr) return J(500, { error: 'db_error', details: selErr });
     if (!conn?.access_token || !conn?.instance_id) return J(401, { error: 'not_connected' });
 
-    // Build required headers
+    // Build required headers and resolve site id if needed
+    const accessToken = conn.access_token as string;
+    const instanceId = conn.instance_id as string;
+    let wixSiteId: string | null = (conn.wix_site_id as string | null) || (body.wixSiteId || null);
+
     const headers: Record<string, string> = {
-      authorization: `Bearer ${conn.access_token}`,
+      authorization: `Bearer ${accessToken}`,
       'content-type': 'application/json',
-      'wix-instance-id': conn.instance_id,
+      'wix-instance-id': instanceId,
     };
-    if (conn.wix_site_id) headers['wix-site-id'] = conn.wix_site_id;
+    if (wixSiteId) headers['wix-site-id'] = wixSiteId;
+
+    // Best-effort discovery of wixSiteId
+    if (!wixSiteId) {
+      // 1) token-info
+      try {
+        const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+          body: JSON.stringify({ token: accessToken })
+        });
+        if (tri.ok) {
+          const ti: any = await tri.json().catch(() => ({}));
+          wixSiteId = ti?.siteId || null;
+        }
+      } catch {}
+      // 2) site-properties (requires instance header)
+      if (!wixSiteId) {
+        try {
+          const pr = await fetch('https://www.wixapis.com/site-properties/v4/properties', {
+            method: 'GET',
+            headers,
+          });
+          if (pr.ok) {
+            const props: any = await pr.json().catch(() => ({}));
+            wixSiteId = props?.properties?.siteId || props?.properties?.metaSiteId || props?.siteId || props?.site?.id || null;
+          }
+        } catch {}
+      }
+      // 3) site-list query
+      if (!wixSiteId) {
+        try {
+          const q = await fetch('https://www.wixapis.com/site-list/v2/sites/query', {
+            method: 'POST',
+            headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
+            body: JSON.stringify({ paging: { limit: 1 } })
+          });
+          if (q.ok) {
+            const qj: any = await q.json().catch(() => ({}));
+            wixSiteId = qj?.sites?.[0]?.id || null;
+          }
+        } catch {}
+      }
+      if (wixSiteId) {
+        headers['wix-site-id'] = wixSiteId;
+        try {
+          await supabase
+            .from('wix_connections')
+            .update({ wix_site_id: wixSiteId, updated_at: new Date().toISOString() })
+            .eq('user_id', body.userId);
+        } catch {}
+      }
+    }
 
     // Ensure we have a VALID memberId
     const resolvedMemberId = await resolveValidMemberId(headers, conn.wix_author_member_id || body.memberId || null);
@@ -119,14 +175,25 @@ Deno.serve(async (req) => {
       } catch {}
     }
 
-    // Preflight: ensure Blog app exists
-    const settingsRes = await fetch('https://www.wixapis.com/blog/v3/settings', { method: 'GET', headers });
-    if (settingsRes.status === 404) {
-      return J(404, { error: 'no_blog_instance', message: 'Install “Blog by Wix” on the connected site.' });
-    }
-    if (!settingsRes.ok) {
-      const t = await settingsRes.text();
-      return J(settingsRes.status, { error: 'blog_settings_failed', response: t });
+    // Preflight: ensure Blog app exists (non-blocking)
+    let settingsOk = true;
+    try {
+      let sRes = await fetch('https://www.wixapis.com/blog/v3/settings', { method: 'GET', headers });
+      if (sRes.status === 404 && !('wix-site-id' in headers) && instanceId) {
+        const retryHeaders = { ...headers, 'wix-site-id': instanceId } as Record<string,string>;
+        sRes = await fetch('https://www.wixapis.com/blog/v3/settings', { method: 'GET', headers: retryHeaders });
+        if (sRes.ok) {
+          headers['wix-site-id'] = instanceId;
+        }
+      }
+      settingsOk = sRes.ok;
+      if (!settingsOk) {
+        // Don't block here; creation may still succeed if headers are fine
+        const txt = await sRes.text();
+        console.warn('[wix-blog-publish] settings check failed', { status: sRes.status, txt: txt.slice(0, 400) });
+      }
+    } catch (e) {
+      console.warn('[wix-blog-publish] settings check error', String(e));
     }
 
     // Sanitize body and build RichContent
