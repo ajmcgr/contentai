@@ -871,10 +871,12 @@ async function publishToShopify(article: any, connection: any, options: any) {
         title: article.title,
         body_html: article.content,
         summary: article.meta_description,
-        published: options.published || false,
-        tags: article.keywords || ''
+        published: options.status === 'publish' || options.published === true,
+        tags: Array.isArray(article.keywords) ? article.keywords.join(', ') : (article.keywords || '')
       }
     };
+
+    console.log(`Shopify publish - Blog ID: ${blogId}, Published: ${articleData.article.published}, Options:`, options);
 
     const response = await fetch(endpoint, {
       method: 'POST',
