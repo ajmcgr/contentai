@@ -9,6 +9,13 @@ async function getStatus(uid:string){
   return r.json();
 }
 
+async function disconnect(uid: string) {
+  const u = new URL(`${SUPABASE_URL}/functions/v1/wix-disconnect`);
+  u.searchParams.set('uid', uid);
+  const r = await fetch(u.toString(), { method: 'DELETE' });
+  return r.json();
+}
+
 export default function WixConnectSection({ userId }: { userId: string }) {
   const [connecting, setConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -60,12 +67,28 @@ export default function WixConnectSection({ userId }: { userId: string }) {
     }
   };
 
+  const onDisconnect = async () => {
+    try {
+      await disconnect(userId);
+      setConnected(false);
+      setInstanceId(null);
+    } catch (e) {
+      alert('Failed to disconnect: ' + String(e));
+    }
+  };
+
   return (
     <div className="flex items-center gap-3">
       <button onClick={onConnect} disabled={connecting}
         className="px-4 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 disabled:opacity-60">
         {connecting ? 'Redirecting…' : connected ? 'Re-connect Wix' : 'Connect Wix'}
       </button>
+      {connected && (
+        <button onClick={onDisconnect}
+          className="px-4 py-2 bg-red-600 text-white rounded-md shadow hover:bg-red-700">
+          Disconnect
+        </button>
+      )}
       <span className={`text-sm ${connected ? 'text-green-600' : 'text-gray-500'}`}>
         {connected ? `Connected ${instanceId ? `(${instanceId.slice(0,6)}…)` : ''}` : 'Disconnected'}
       </span>
