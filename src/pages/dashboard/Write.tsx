@@ -16,9 +16,9 @@ import { WysiwygEditor, formatForWordPress, stripHtml } from "@/components/Wysiw
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingDialog } from "@/components/LoadingDialog";
 import { safeJson } from "@/lib/safeJson";
+import { callFx } from "@/lib/supaFx";
 
-// Safe publishing function for Wix
-async function publishToWix(params: {
+export async function publishToWix(params: {
   userId: string;
   title: string;
   html: string;
@@ -28,9 +28,8 @@ async function publishToWix(params: {
   memberId?: string;
   wixSiteId?: string;
 }) {
-  const res = await fetch('https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-blog-publish', {
+  const { ok, status, json } = await callFx('wix-blog-publish', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       userId: params.userId,
       title: params.title,
@@ -42,11 +41,10 @@ async function publishToWix(params: {
       wixSiteId: params.wixSiteId,
     })
   });
-  const j = await res.json();
-  if (!res.ok || !j?.ok) {
-    throw new Error(`Wix publish failed: ${res.status} ${res.statusText} - ${JSON.stringify(j)}`);
+  if (!ok || !json?.ok) {
+    throw new Error(`Wix publish failed: ${status} - ${JSON.stringify(json)}`);
   }
-  return j;
+  return json;
 }
 
 export default function Write() {
