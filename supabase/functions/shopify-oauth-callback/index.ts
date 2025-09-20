@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
     console.log('Shopify installation successful for user:', stateRecord.user_id, 'shop:', shop)
  
     // Redirect to app UI as required by Shopify (embedded App URL)
-    const redirectTo = `${appUrl}?shop=${encodeURIComponent(shop)}&installed=true`
+    const redirectTo = `https://${shop}/admin/apps/${apiKey}`
     
     // Create an HTML response that immediately redirects to the embedded app UI
     const redirectHtml = `
