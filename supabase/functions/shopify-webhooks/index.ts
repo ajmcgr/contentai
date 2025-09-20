@@ -11,15 +11,19 @@ async function getShopifySecret() {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   )
 
-  const { data, error } = await supabaseServiceRole
-    .from("app_secrets")
-    .select("value")
-    .eq("namespace", "cms_integrations")
-    .eq("key", "SHOPIFY_WEBHOOK_SECRET")
-    .single();
+  // Try dedicated webhook secret first
+  const { data: wh, error: whErr } = await supabaseServiceRole
+    .from('app_secrets')
+    .select('key,value')
+    .eq('namespace', 'cms_integrations')
+    .in('key', ['SHOPIFY_WEBHOOK_SECRET','SHOPIFY_API_SECRET'])
 
-  if (error || !data) throw new Error("Missing Shopify webhook secret");
-  return String(data.value).trim();
+  if (whErr) throw new Error('Failed to fetch Shopify secret: ' + whErr.message)
+  const map = Object.fromEntries((wh || []).map(r => [r.key, String(r.value).trim()]))
+
+  const secret = map['SHOPIFY_WEBHOOK_SECRET'] || map['SHOPIFY_API_SECRET']
+  if (!secret) throw new Error('Missing Shopify webhook/API secret')
+  return secret
 }
 
 async function verifyWebhookHmac(body: string, hmacHeader: string, secret: string): Promise<boolean> {

@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
 
     // Register mandatory GDPR + uninstall webhooks (idempotent)
     try {
-      const webhookAddress = 'https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/shopify-webhooks'
+      const webhookAddress = 'https://hmrzmafwvhifjhsoizil.functions.supabase.co/shopify-webhooks'
       const topics = ['customers/data_request','customers/redact','shop/redact','app/uninstalled']
       for (const topic of topics) {
         try {
