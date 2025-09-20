@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     const shop = url.searchParams.get('shop')
     
     if (!shop || !shop.endsWith('.myshopify.com')) {
-      const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || window?.location?.origin || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
+      const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
       return new Response(null, {
         status: 302,
         headers: { 
