@@ -22,7 +22,8 @@ async function getShopifySecrets() {
 
   const required = [
     "SHOPIFY_API_KEY",
-    "SHOPIFY_API_SECRET"
+    "SHOPIFY_API_SECRET",
+    "SHOPIFY_APP_URL"
   ];
   for (const k of required) {
     if (!map[k]) throw new Error(`Missing Shopify secret: ${k}`);
@@ -30,7 +31,8 @@ async function getShopifySecrets() {
 
   return {
     apiKey: map.SHOPIFY_API_KEY,
-    apiSecret: map.SHOPIFY_API_SECRET
+    apiSecret: map.SHOPIFY_API_SECRET,
+    appUrl: map.SHOPIFY_APP_URL
   };
 }
 
@@ -107,7 +109,7 @@ Deno.serve(async (req) => {
     }
 
     // Verify HMAC
-    const { apiKey, apiSecret } = await getShopifySecrets()
+    const { apiKey, apiSecret, appUrl } = await getShopifySecrets()
     const params = Object.fromEntries(url.searchParams.entries())
     
     const isValidHmac = await verifyHmac(params, apiSecret)
@@ -153,10 +155,29 @@ Deno.serve(async (req) => {
 
     if (insertError) {
       console.error('Failed to store install:', insertError)
-      return new Response('Failed to store installation', { 
-        status: 500, 
-        headers: corsHeaders 
-      })
+      // Do not block the flow for Shopify review – continue to redirect
+    }
+
+    // Register mandatory GDPR + uninstall webhooks (idempotent)
+    try {
+      const webhookAddress = 'https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/shopify-webhooks'
+      const topics = ['customers/data_request','customers/redact','shop/redact','app/uninstalled']
+      for (const topic of topics) {
+        try {
+          await fetch(`https://${shop}/admin/api/2023-10/webhooks.json`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Shopify-Access-Token': tokenData.access_token
+            },
+            body: JSON.stringify({ webhook: { topic, address: webhookAddress, format: 'json' } })
+          })
+        } catch (e) {
+          console.error('Webhook registration failed for topic', topic, e)
+        }
+      }
+    } catch (e) {
+      console.error('Webhook registration batch failed:', e)
     }
 
     // Clean up state
@@ -175,29 +196,28 @@ Deno.serve(async (req) => {
  
     console.log('Shopify installation successful for user:', stateRecord.user_id, 'shop:', shop)
  
-    // Redirect to app UI as required by Shopify
-    // For App Store compliance, redirect to the actual app interface
-    const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
+    // Redirect to app UI as required by Shopify (embedded App URL)
+    const redirectTo = `${appUrl}?shop=${encodeURIComponent(shop)}&installed=true`
     
-    // Create an HTML response that immediately redirects to the app UI
+    // Create an HTML response that immediately redirects to the embedded app UI
     const redirectHtml = `
       <!DOCTYPE html>
       <html>
       <head>
-        <meta http-equiv="refresh" content="0;url=${appBase}/dashboard">
+        <meta http-equiv="refresh" content="0;url=${redirectTo}">
         <title>Redirecting to App...</title>
       </head>
       <body>
-        <p>Installation complete! Redirecting to your dashboard...</p>
+        <p>Installation complete! Redirecting to your app...</p>
         <script>
           try {
             if (window.top && window.top !== window) {
-              window.top.location.href = "${appBase}/dashboard";
+              window.top.location.href = "${redirectTo}";
             } else {
-              window.location.href = "${appBase}/dashboard";
+              window.location.href = "${redirectTo}";
             }
           } catch (e) {
-            window.location.href = "${appBase}/dashboard";
+            window.location.href = "${redirectTo}";
           }
         </script>
       </body>

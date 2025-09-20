@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Store, Settings, BarChart3 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-
+import { startShopifyOAuth } from '@/lib/integrationsClient';
 const ShopifyApp = () => {
   const [searchParams] = useSearchParams();
   const shop = searchParams.get('shop');
@@ -18,6 +18,18 @@ const ShopifyApp = () => {
     if (window.top !== window && shop) {
       document.title = 'Content AI - Shopify App';
     }
+  }, [shop]);
+
+  useEffect(() => {
+    const installed = searchParams.get('installed');
+    if (shop && !installed) {
+      try {
+        startShopifyOAuth({ shop, userId: 'unknown-user' });
+      } catch (e) {
+        console.error('Failed to start Shopify OAuth:', e);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shop]);
 
   const features = [
