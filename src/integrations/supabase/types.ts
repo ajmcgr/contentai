@@ -499,6 +499,51 @@ export type Database = {
         }
         Relationships: []
       }
+      shopify_connections: {
+        Row: {
+          access_token: string
+          scope: string | null
+          shop_domain: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          scope?: string | null
+          shop_domain: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          scope?: string | null
+          shop_domain?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shopify_webhook_logs: {
+        Row: {
+          body: Json | null
+          created_at: string
+          id: string
+          shop_domain: string | null
+          topic: string | null
+        }
+        Insert: {
+          body?: Json | null
+          created_at?: string
+          id?: string
+          shop_domain?: string | null
+          topic?: string | null
+        }
+        Update: {
+          body?: Json | null
+          created_at?: string
+          id?: string
+          shop_domain?: string | null
+          topic?: string | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string

@@ -74,6 +74,18 @@ verify_jwt = false
 [functions.shopify-oauth-callback]
 verify_jwt = false
 
+[functions.shopify-install]
+verify_jwt = false
+
+[functions.shopify-webhook-customers-data-request]
+verify_jwt = false
+
+[functions.shopify-webhook-customers-redact]
+verify_jwt = false
+
+[functions.shopify-webhook-shop-redact]
+verify_jwt = false
+
 [functions.wix-oauth-start]
 verify_jwt = false
 
