@@ -176,12 +176,39 @@ Deno.serve(async (req) => {
     console.log('Shopify installation successful for user:', stateRecord.user_id, 'shop:', shop)
  
     // Redirect to app UI as required by Shopify
+    // For App Store compliance, redirect to the actual app interface
     const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
-    return new Response(null, {
-      status: 302,
+    
+    // Create an HTML response that immediately redirects to the app UI
+    const redirectHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta http-equiv="refresh" content="0;url=${appBase}/dashboard">
+        <title>Redirecting to App...</title>
+      </head>
+      <body>
+        <p>Installation complete! Redirecting to your dashboard...</p>
+        <script>
+          try {
+            if (window.top && window.top !== window) {
+              window.top.location.href = "${appBase}/dashboard";
+            } else {
+              window.location.href = "${appBase}/dashboard";
+            }
+          } catch (e) {
+            window.location.href = "${appBase}/dashboard";
+          }
+        </script>
+      </body>
+      </html>
+    `;
+    
+    return new Response(redirectHtml, {
+      status: 200,
       headers: {
         ...corsHeaders,
-        Location: `${appBase}/shopify-app?shop=${encodeURIComponent(shop)}&installed=true`
+        'Content-Type': 'text/html'
       }
     })
 
