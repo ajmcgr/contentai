@@ -809,6 +809,16 @@ export default function Settings() {
                   '';
               }
 
+              // Final fallback to host returned by edge function
+              if (!siteUrl) {
+                siteUrl = info?.siteUrl || (info?.wixHost ? `https://${info.wixHost}` : '');
+              }
+
+              // As a last resort, link to Wix dashboard for this site
+              if (!siteUrl && info?.wixSiteId) {
+                siteUrl = `https://manage.wix.com/dashboard/${info.wixSiteId}`;
+              }
+
               if (siteUrl) {
                 const display = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
                 setIntegrations(prev => ({

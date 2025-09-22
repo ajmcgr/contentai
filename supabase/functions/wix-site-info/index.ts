@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     // tokens + instance/site ids saved during OAuth
     const { data: conn, error } = await supabase
       .from("wix_connections")
-      .select("access_token, instance_id, wix_site_id")
+      .select("access_token, instance_id, wix_site_id, wix_host")
       .eq("user_id", uid)
       .maybeSingle();
     if (error) return J(500, { error: "db_error", details: error });
@@ -60,8 +60,10 @@ Deno.serve(async (req) => {
       ok: true,
       instanceId: conn.instance_id || null,
       wixSiteId: siteId || null,
+      wixHost: (conn as any).wix_host || null,
       blogSettings: settings,
       siteQuery: site,
+      siteUrl: ((conn as any).wix_host ? `https://${(conn as any).wix_host}` : null),
     });
   } catch (e) {
     return J(500, { error: "internal_error", message: String(e) });
