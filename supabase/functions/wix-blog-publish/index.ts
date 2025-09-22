@@ -26,33 +26,117 @@ function J(status: number, data: unknown) {
   });
 }
 
-// Minimal, valid RichContent payload (Ricos schema)
-function toRichContentSafe(title: string, text: string) {
+// Convert HTML to Wix Rich Content format
+function htmlToRichContent(htmlContent: string, title: string) {
   const safeTitle = (title || 'Untitled').slice(0, 200);
-  const safeText = (text || '').slice(0, 40000);
-  return {
+  let content = (htmlContent || '').slice(0, 40000);
+  
+  // Basic HTML to Rich Content conversion
+  const nodes: any[] = [];
+  
+  // Add title as first heading
+  nodes.push({
+    type: 'HEADING',
+    headingData: { level: 1 },
     nodes: [
-      {
-        type: 'HEADING',
-        headingData: { level: 1 },
-        nodes: [
-          { type: 'TEXT', textData: { text: safeTitle, decorations: [] } },
-        ],
-      },
-      {
-        type: 'PARAGRAPH',
-        nodes: [
-          { type: 'TEXT', textData: { text: safeText, decorations: [] } },
-        ],
-      },
+      { type: 'TEXT', textData: { text: safeTitle, decorations: [] } },
     ],
+  });
+  
+  // Parse HTML content into Rich Content nodes
+  const htmlLines = content.split(/\n+/).filter(line => line.trim());
+  
+  for (const line of htmlLines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    
+    // Handle headings
+    if (trimmed.match(/^<h([1-6])[^>]*>(.*?)<\/h[1-6]>$/i)) {
+      const match = trimmed.match(/^<h([1-6])[^>]*>(.*?)<\/h[1-6]>$/i);
+      const level = parseInt(match![1]);
+      const text = stripHtml(match![2]).trim();
+      if (text) {
+        nodes.push({
+          type: 'HEADING',
+          headingData: { level: Math.min(level + 1, 6) }, // Offset by 1 since title is H1
+          nodes: [
+            { type: 'TEXT', textData: { text, decorations: [] } },
+          ],
+        });
+      }
+      continue;
+    }
+    
+    // Handle lists
+    if (trimmed.match(/^<(ul|ol)[^>]*>/i) || trimmed.includes('<li>')) {
+      const listItems = trimmed.match(/<li[^>]*>(.*?)<\/li>/gi) || [];
+      if (listItems.length > 0) {
+        const isOrdered = trimmed.includes('<ol');
+        for (const item of listItems) {
+          const text = stripHtml(item).trim();
+          if (text) {
+            nodes.push({
+              type: 'BULLETED_LIST',
+              bulletedListData: {
+                value: isOrdered ? 'NUMBERED' : 'BULLET'
+              },
+              nodes: [
+                { type: 'TEXT', textData: { text, decorations: [] } },
+              ],
+            });
+          }
+        }
+      }
+      continue;
+    }
+    
+    // Handle paragraphs and other content
+    const text = stripHtml(trimmed).trim();
+    if (text) {
+      // Split long paragraphs
+      const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim());
+      const paragraph = sentences.join(' ');
+      
+      if (paragraph) {
+        nodes.push({
+          type: 'PARAGRAPH',
+          nodes: [
+            { type: 'TEXT', textData: { text: paragraph, decorations: [] } },
+          ],
+        });
+      }
+    }
+  }
+  
+  // Fallback if no content was parsed
+  if (nodes.length <= 1) {
+    const plainText = stripHtml(content).trim() || 'Content could not be formatted.';
+    nodes.push({
+      type: 'PARAGRAPH',
+      nodes: [
+        { type: 'TEXT', textData: { text: plainText, decorations: [] } },
+      ],
+    });
+  }
+  
+  return {
+    nodes,
     metadata: { version: 1 },
     documentStyle: {},
   } as const;
 }
 
 function stripHtml(html: string) {
-  try { return (html || '').replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); } catch { return ''; }
+  try { 
+    return (html || '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim(); 
+  } catch { 
+    return ''; 
+  }
 }
 
 async function resolveValidMemberId(headers: Record<string, string>, candidate?: string | null) {
@@ -228,11 +312,8 @@ Deno.serve(async (req) => {
       console.warn('[wix-blog-publish] settings check error', String(e));
     }
 
-    // Sanitize body and build RichContent
-    const text = (body.plainText && body.plainText.trim().length > 0)
-      ? body.plainText
-      : stripHtml(body.contentHtml || '');
-    const richContent = toRichContentSafe(body.title || 'Untitled', text);
+    // Build RichContent from HTML
+    const richContent = htmlToRichContent(body.contentHtml || '', body.title || 'Untitled');
 
     // Create draft with minimal, valid payload
     const createRes = await fetch('https://www.wixapis.com/blog/v3/draft-posts', {
