@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Sparkles, RefreshCw, Eye, Code } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { WysiwygEditor, formatForWordPress, stripHtml } from "@/components/WysiwygEditor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingDialog } from "@/components/LoadingDialog";
@@ -57,7 +58,8 @@ export default function Write() {
   const { toast } = useToast();
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [connections, setConnections] = useState<any[]>([]);
-  const [selectedConnection, setSelectedConnection] = useState<string>("");
+  const [selectedConnections, setSelectedConnections] = useState<string[]>([]);
+  const [publishToAll, setPublishToAll] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [editorMode, setEditorMode] = useState<"wysiwyg" | "markdown">("wysiwyg");
 
@@ -278,7 +280,7 @@ export default function Write() {
           const list = data.connections || [];
           if (list.length > 0) {
             setConnections(list);
-            if (list.length === 1) setSelectedConnection((list[0] as any).id);
+            if (list.length === 1) setSelectedConnections([(list[0] as any).id]);
             return;
           }
         }
@@ -322,7 +324,7 @@ export default function Write() {
           if (afterSync?.success) {
             const list2 = afterSync.connections || [];
             setConnections(list2);
-            if (list2.length === 1) setSelectedConnection((list2[0] as any).id);
+            if (list2.length === 1) setSelectedConnections([(list2[0] as any).id]);
           }
         }
       } catch (e) {
@@ -331,12 +333,33 @@ export default function Write() {
     })();
   }, [isPublishOpen]);
 
+  const toggleConnection = (connectionId: string) => {
+    setSelectedConnections(prev => 
+      prev.includes(connectionId) 
+        ? prev.filter(id => id !== connectionId)
+        : [...prev, connectionId]
+    );
+  };
+
+  const handlePublishToAll = () => {
+    if (publishToAll) {
+      setSelectedConnections([]);
+      setPublishToAll(false);
+    } else {
+      setSelectedConnections(connections.map(c => c.id));
+      setPublishToAll(true);
+    }
+  };
+
   const handlePublish = async () => {
     try {
-      if (!selectedConnection) {
-        toast({ title: 'Select a platform', description: 'Choose a connected platform to publish.', variant: 'destructive' });
+      const connectionsToPublish = publishToAll ? connections.map(c => c.id) : selectedConnections;
+      
+      if (connectionsToPublish.length === 0) {
+        toast({ title: 'Select platforms', description: 'Choose at least one platform to publish to.', variant: 'destructive' });
         return;
       }
+      
       setPublishing(true);
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -345,28 +368,6 @@ export default function Write() {
       const formattedContent = editorMode === "wysiwyg" ? formatForWordPress(content) : content;
       let articleId = editingId;
 
-      // Use new Wix function for better error handling
-      if (selectedConnection && connections.find(c => c.id === selectedConnection)?.platform === 'wix') {
-        await publishToWix({
-          userId: user.id,
-          title: title.trim(),
-          html: formattedContent,
-          excerpt: '',
-          tags: [],
-          categoryIds: [],
-          memberId: undefined,
-          wixSiteId: undefined
-        });
-        
-        toast({
-          title: "Published successfully!",
-          description: "Article published to Wix."
-        });
-        setIsPublishOpen(false);
-        return;
-      }
-
-      // For other platforms, continue with existing logic
       // Check if user can create article (monthly limit check)  
       const { data: canCreate, error: limitError } = await supabase.rpc('can_create_article', {
         user_uuid: user.id
@@ -392,21 +393,63 @@ export default function Write() {
         });
       }
 
-      const { data, error } = await supabase.functions.invoke('cms-integration', {
-        body: {
-          action: 'publish',
-          articleId,
-          connectionId: selectedConnection,
-          publishOptions: { status: 'publish' }
+      const publishPromises = connectionsToPublish.map(async (connectionId) => {
+        const connection = connections.find(c => c.id === connectionId);
+        
+        // Use specific Wix function for Wix platforms
+        if (connection?.platform === 'wix') {
+          return publishToWix({
+            userId: user.id,
+            title: title.trim(),
+            html: formattedContent,
+            excerpt: '',
+            tags: [],
+            categoryIds: [],
+            memberId: undefined,
+            wixSiteId: undefined
+          });
         }
+
+        // For other platforms, use cms-integration
+        const { data, error } = await supabase.functions.invoke('cms-integration', {
+          body: {
+            action: 'publish',
+            articleId,
+            connectionId,
+            publishOptions: { status: 'publish' }
+          }
+        });
+
+        if (error || !data?.success) {
+          throw new Error(`${connection?.platform || 'Platform'}: ${data?.error || 'Publish failed'}`);
+        }
+
+        return { platform: connection?.platform, success: true };
       });
 
-      if (error || !data?.success) {
-        throw new Error(data?.error || 'Publish failed');
+      const results = await Promise.allSettled(publishPromises);
+      
+      const successes = results.filter(r => r.status === 'fulfilled').length;
+      const failures = results.filter(r => r.status === 'rejected');
+      
+      if (successes > 0) {
+        const message = successes === connectionsToPublish.length 
+          ? `Article published to all ${successes} platforms successfully!`
+          : `Article published to ${successes} out of ${connectionsToPublish.length} platforms.`;
+        
+        toast({ title: 'Published!', description: message });
+        setIsPublishOpen(false);
       }
-
-      toast({ title: 'Published!', description: data.message || 'Article published successfully.' });
-      setIsPublishOpen(false);
+      
+      if (failures.length > 0) {
+        const errorMessage = failures.map((f: any) => f.reason?.message || 'Unknown error').join('; ');
+        toast({ 
+          title: successes > 0 ? 'Partial success' : 'Publish failed', 
+          description: errorMessage, 
+          variant: successes > 0 ? 'default' : 'destructive' 
+        });
+      }
+      
     } catch (err: any) {
       console.error('Publish error:', err);
       toast({ title: 'Publish failed', description: err.message || 'Please try again.', variant: 'destructive' });
@@ -555,7 +598,13 @@ export default function Write() {
               </CardContent>
             </Card>
 
-            <Dialog open={isPublishOpen} onOpenChange={setIsPublishOpen}>
+            <Dialog open={isPublishOpen} onOpenChange={(open) => {
+              setIsPublishOpen(open);
+              if (!open) {
+                setSelectedConnections([]);
+                setPublishToAll(false);
+              }
+            }}>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Publish article</DialogTitle>
@@ -571,20 +620,35 @@ export default function Write() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Choose a platform</label>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Choose platforms</label>
+                        <Button
+                          variant={publishToAll ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={handlePublishToAll}
+                        >
+                          {publishToAll ? 'Deselect All' : 'Publish to All'}
+                        </Button>
+                      </div>
                       <div className="grid gap-2">
                         {connections.map((c: any) => (
                           <Button
                             key={c.id}
-                            variant={selectedConnection === c.id ? 'default' : 'outline'}
+                            variant={selectedConnections.includes(c.id) ? 'default' : 'outline'}
                             className="justify-start"
-                            onClick={() => setSelectedConnection(c.id)}
+                            onClick={() => toggleConnection(c.id)}
                           >
                             {c.platform} • {c.site_url}
                           </Button>
                         ))}
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedConnections.length > 0 
+                          ? `Publishing to ${selectedConnections.length} platform${selectedConnections.length > 1 ? 's' : ''}`
+                          : 'Select at least one platform to publish'
+                        }
+                      </p>
                     </div>
                   </div>
                 )}
@@ -592,7 +656,7 @@ export default function Write() {
                   <Button variant="outline" onClick={() => setIsPublishOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handlePublish} disabled={publishing || !selectedConnection}>
+                  <Button onClick={handlePublish} disabled={publishing || (selectedConnections.length === 0 && !publishToAll)}>
                     {publishing ? 'Publishing…' : 'Publish now'}
                   </Button>
                 </DialogFooter>
