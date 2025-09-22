@@ -239,6 +239,7 @@ if (SB_URL && SB_SVC) {
           scope,
           default_member_id: memberId,
           wix_site_id: siteId,
+          wix_site_url: null, // Will be updated below after fetching from Wix API
           expires_at: new Date(Date.now() + Number(expires_in ?? 3600) * 1000).toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -287,7 +288,7 @@ if (SB_URL && SB_SVC) {
       console.warn('[Wix OAuth] Failed to set default author member', String(e));
     }
 
-    // Detect which site/blog this token is bound to and store its host
+    // Detect which site/blog this token is bound to and store its host and full URL
     try {
       const headers: Record<string,string> = {
         authorization: `Bearer ${access_token}`,
@@ -306,6 +307,7 @@ if (SB_URL && SB_SVC) {
         .from("wix_connections")
         .update({
           wix_host,
+          wix_site_url: rawUrl || null,
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", userId);
