@@ -63,15 +63,47 @@ async function resolveValidMemberId(headers: Record<string, string>, candidate?:
       if (r.ok) return candidate;
     } catch {}
   }
-  // Fallback: pick first approved (or just first) member
-  try {
-    const res = await fetch('https://www.wixapis.com/members/v1/members?limit=1&fieldsets=FULL', { headers });
-    const js: any = await res.json().catch(() => ({}));
-    const m = js?.members?.[0];
-    return m?.id || null;
-  } catch {
-    return null;
+  
+  // Try different approaches to find members
+  const attempts = [
+    // 1. Full member list with different filters
+    () => fetch('https://www.wixapis.com/members/v1/members?limit=50&fieldsets=FULL', { headers }),
+    // 2. Try with minimal query
+    () => fetch('https://www.wixapis.com/members/v1/members?limit=50', { headers }),
+    // 3. Try approved members only
+    () => fetch('https://www.wixapis.com/members/v1/members?limit=50&fieldsets=FULL&filter={"status":"APPROVED"}', { headers }),
+    // 4. Current user as member (if site owner is also a member)
+    () => fetch('https://www.wixapis.com/oauth2/token-info', { 
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: headers.authorization?.replace('Bearer ', '') })
+    }),
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const res = await attempt();
+      if (!res.ok) continue;
+      
+      const data: any = await res.json().catch(() => ({}));
+      
+      // For member list responses
+      if (data?.members?.length > 0) {
+        const member = data.members.find((m: any) => m.status === 'APPROVED') || data.members[0];
+        if (member?.id) return member.id;
+      }
+      
+      // For token info response - try to use the token owner as member
+      if (data?.userId) {
+        try {
+          const userCheck = await fetch(`https://www.wixapis.com/members/v1/members/${encodeURIComponent(data.userId)}`, { headers });
+          if (userCheck.ok) return data.userId;
+        } catch {}
+      }
+    } catch {}
   }
+  
+  return null;
 }
 
 Deno.serve(async (req) => {
