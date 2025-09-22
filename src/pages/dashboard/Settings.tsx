@@ -747,7 +747,6 @@ export default function Settings() {
     });
   };
 
-  // Fetch existing connections and handle OAuth return
   const fetchConnections = async () => {
     try {
       const status = await getIntegrationStatus();
@@ -779,6 +778,53 @@ export default function Settings() {
 
           return next;
         });
+
+        // Try to resolve a real Wix site URL for display
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const res = await fetch(`${EDGE_BASE}/wix-site-info?uid=${encodeURIComponent(user.id)}`);
+            if (res.ok) {
+              const info = await res.json();
+              let siteUrl = '';
+
+              const sites = info?.siteQuery?.sites || info?.siteQuery?.data?.sites || [];
+              const s0 = Array.isArray(sites) ? sites[0] : null;
+              siteUrl =
+                s0?.url ||
+                s0?.siteUrl ||
+                s0?.homepageUrl ||
+                s0?.primaryDomainUrl ||
+                s0?.mainDomain?.url ||
+                (Array.isArray(s0?.publishedDomains) ? s0.publishedDomains[0]?.url : '') ||
+                s0?.domain ||
+                '';
+
+              if (!siteUrl) {
+                const bs = info?.blogSettings;
+                siteUrl =
+                  bs?.blog?.url ||
+                  bs?.blog?.page?.url ||
+                  bs?.settings?.blogUrl ||
+                  '';
+              }
+
+              if (siteUrl) {
+                const display = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+                setIntegrations(prev => ({
+                  ...prev,
+                  wix: {
+                    ...prev.wix,
+                    siteUrl: display,
+                    name: display,
+                  } as any,
+                }));
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Wix site URL resolution failed:', e);
+        }
       }
     } catch (error) {
       console.error('Error fetching connections:', error);
@@ -1895,7 +1941,19 @@ export default function Settings() {
                                 <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
                                   <div className="font-medium text-green-800">Connected Site</div>
                                   <div className="text-sm text-green-700">
-                                    Instance ID: {integrations.wix.siteUrl || 'Unknown'}
+                                    {integrations.wix.siteUrl && integrations.wix.siteUrl.includes('.') ? (
+                                      <a
+                                        href={integrations.wix.siteUrl.startsWith('http') ? integrations.wix.siteUrl : `https://${integrations.wix.siteUrl}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-green-700 hover:underline inline-flex items-center gap-1"
+                                      >
+                                        {integrations.wix.siteUrl.replace(/^https?:\/\//, '')}
+                                        <ExternalLink className="h-3 w-3" />
+                                      </a>
+                                    ) : (
+                                      <>Instance ID: {integrations.wix.name || integrations.wix.siteUrl || 'Unknown'}</>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
