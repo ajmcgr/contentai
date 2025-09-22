@@ -1891,14 +1891,22 @@ export default function Settings() {
                               </div>
                             </div>
                             {integrations.wix?.connected ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-green-600 font-medium">Connected</span>
-                                <Button 
-                                  variant="outline"
-                                  onClick={() => handleDisconnect('wix')}
-                                >
-                                  Disconnect
-                                </Button>
+                              <div className="space-y-3">
+                                <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                                  <div className="font-medium text-green-800">Connected Site</div>
+                                  <div className="text-sm text-green-700">
+                                    Instance ID: {integrations.wix.siteUrl || 'Unknown'}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-green-600 font-medium">Connected</span>
+                                  <Button 
+                                    variant="outline"
+                                    onClick={() => handleDisconnect('wix')}
+                                  >
+                                    Disconnect
+                                  </Button>
+                                </div>
                               </div>
                             ) : (
                               <Button
@@ -1932,14 +1940,30 @@ export default function Settings() {
                               </div>
                             </div>
                             {integrations.shopify?.connected ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-green-600 font-medium">Connected</span>
-                                <Button 
-                                  variant="outline"
-                                  onClick={() => handleDisconnect('shopify')}
-                                >
-                                  Disconnect
-                                </Button>
+                              <div className="space-y-3">
+                                <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                                  <div className="font-medium text-green-800">Connected Store</div>
+                                  <div className="flex items-center gap-2">
+                                    <a
+                                      href={`https://${integrations.shopify.siteUrl}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-green-700 hover:underline flex items-center gap-1"
+                                    >
+                                      {integrations.shopify.siteUrl}
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-green-600 font-medium">Connected</span>
+                                  <Button 
+                                    variant="outline"
+                                    onClick={() => handleDisconnect('shopify')}
+                                  >
+                                    Disconnect
+                                  </Button>
+                                </div>
                               </div>
                             ) : (
                               <div className="space-y-3">
