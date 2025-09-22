@@ -515,11 +515,52 @@ export default function Settings() {
       fetchWixConnection();
     }, []);
 
+    const handleUrlSave = async (e: React.FormEvent) => {
+      e.preventDefault();
+      const form = e.currentTarget as HTMLFormElement;
+      const input = form.elements.namedItem('url') as HTMLInputElement;
+      const url = input.value.trim();
+      
+      if (!/^https?:\/\//i.test(url)) {
+        toast({
+          title: 'Invalid URL',
+          description: 'Please enter a full https:// URL',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { error } = await supabase
+          .from('wix_connections')
+          .update({ wix_site_url: url })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        setWixConnection(prev => prev ? { ...prev, wix_site_url: url } : { wix_site_url: url });
+        toast({
+          title: 'Site URL saved',
+          description: 'Your Wix site URL has been updated successfully.'
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Error saving URL',
+          description: error.message || 'Failed to save site URL',
+          variant: 'destructive'
+        });
+      }
+    };
+
     return (
       <div className="space-y-3">
         <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="text-sm text-muted-foreground">Connected Site</div>
+
             {wixConnection?.wix_site_url ? (
               <a
                 href={wixConnection.wix_site_url}
@@ -530,8 +571,23 @@ export default function Settings() {
                 {wixConnection.wix_site_url}
               </a>
             ) : (
-              <div className="text-sm break-all">
-                Instance ID: {wixConnection?.instance_id || '—'}
+              <div className="space-y-2">
+                <div className="text-sm break-all">Instance ID: {wixConnection?.instance_id || "—"}</div>
+                {/* One-time manual set, only if auto-discovery failed */}
+                <form className="flex items-center gap-2" onSubmit={handleUrlSave}>
+                  <input
+                    name="url"
+                    placeholder="https://yoursite.wixstudio.com/"
+                    className="border rounded px-2 py-1 w-full text-sm"
+                    autoComplete="off"
+                  />
+                  <button 
+                    className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm" 
+                    type="submit"
+                  >
+                    Save URL
+                  </button>
+                </form>
               </div>
             )}
           </div>

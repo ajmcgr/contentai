@@ -23,9 +23,17 @@ Deno.serve(async (req) => {
       { status: 400, headers: { ...cors, "content-type": "application/json" } });
   }
 
+  // Add required scopes for site reading
+  const scopes = [
+    "wix-site.read",
+    "wix-blog.read",
+    "wix-blog.manage" // Keep existing scope for blog management
+  ].join(' ');
+
   const u = new URL("https://www.wix.com/installer/install");
   u.searchParams.set("appId", appId);
   u.searchParams.set("redirectUrl", redirectUri);
+  u.searchParams.set("scope", scopes);
   u.searchParams.set("state", `uid:${uid}`); // ✅ embed user id
 
   return new Response(JSON.stringify({

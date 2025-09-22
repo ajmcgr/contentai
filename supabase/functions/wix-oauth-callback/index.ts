@@ -123,37 +123,50 @@ if (!instance_id) {
   }
 }
 
-// Fetch site URL immediately after token exchange
-let wix_site_url: string | null = null;
-let connectedHost: string | null = null;
-try {
+// Auto-discover site URL with new scopes and multiple fallbacks
+async function getSiteUrl(access_token: string, instance_id?: string | null) {
   const headers: Record<string,string> = {
     authorization: `Bearer ${access_token}`,
     "content-type": "application/json",
   };
   if (instance_id) headers["wix-instance-id"] = instance_id;
 
-  const siteRes = await fetch("https://www.wixapis.com/blog/v3/settings", { 
-    method: "GET", 
-    headers 
-  });
-  
-  if (siteRes.ok) {
-    const siteData = await siteRes.json().catch(() => ({}));
-    wix_site_url = siteData?.blogUrl?.url || siteData?.siteUrl || null;
-  }
-  
-  // Extract host for display purposes
-  if (wix_site_url) {
-    try { 
-      connectedHost = new URL(wix_site_url).host; 
-    } catch { 
-      connectedHost = null; 
+  // Prefer Sites API (requires wix-site.read)
+  try {
+    const r = await fetch("https://www.wixapis.com/site/v4/sites/current", { headers });
+    if (r.ok) {
+      const j = await r.json().catch(()=> ({}));
+      const url =
+        j?.siteUrl || j?.viewerUrl || j?.primaryDomain?.url || j?.domain?.url || null;
+      if (url) return url;
     }
-  }
-} catch (e) { 
-  console.warn('[Wix OAuth] Site URL fetch failed:', String(e));
+  } catch {}
+
+  // Fallback: Blog settings (requires wix-blog.read)
+  try {
+    const r = await fetch("https://www.wixapis.com/blog/v3/settings", { headers });
+    if (r.ok) {
+      const j = await r.json().catch(()=> ({}));
+      return j?.blogUrl?.url || j?.siteUrl || null;
+    }
+  } catch {}
+
+  return null;
 }
+
+const wix_site_url = await getSiteUrl(access_token, instance_id ?? null);
+let connectedHost: string | null = null;
+
+// Extract host for display purposes
+if (wix_site_url) {
+  try { 
+    connectedHost = new URL(wix_site_url).host; 
+  } catch { 
+    connectedHost = null; 
+  }
+}
+
+console.log('[Wix OAuth] Site URL discovery result', { wix_site_url, connectedHost });
 
 // Attempt to resolve the Wix memberId and siteId associated with this access token (required by Blog API)
 let memberId: string | null = null;
