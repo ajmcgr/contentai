@@ -125,5 +125,8 @@ verify_jwt = false
 [functions.wix-site-info]
 verify_jwt = false
 
+[functions.wix-get-site-url]
+verify_jwt = false
+
 [functions.shopify-webhooks]
 verify_jwt = false

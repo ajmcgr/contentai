@@ -486,6 +486,130 @@ export default function Settings() {
     timezone: "UTC"
   });
 
+  // Component for Wix connected state
+  const WixConnectedSection = ({ onDisconnect, onRefresh }: { onDisconnect: () => void; onRefresh: () => void }) => {
+    const [isFixing, setIsFixing] = useState(false);
+
+    const handleFixLink = async () => {
+      setIsFixing(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast({
+            title: "Authentication required",
+            description: "Please sign in to fix the link.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const response = await fetch('https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/wix-get-site-url', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ userId: user.id }),
+        });
+
+        if (response.ok) {
+          toast({
+            title: "Link fixed!",
+            description: "Wix site URL has been updated.",
+          });
+          onRefresh(); // Refresh the connections
+        } else {
+          throw new Error('Failed to fix link');
+        }
+      } catch (error) {
+        console.error('Error fixing Wix link:', error);
+        toast({
+          title: "Error fixing link",
+          description: "Failed to update Wix site URL. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsFixing(false);
+      }
+    };
+
+    const [wixConnection, setWixConnection] = useState<{
+      wix_host?: string;
+      wix_site_url?: string;
+      instance_id?: string;
+    } | null>(null);
+
+    // Fetch wix connection details
+    useEffect(() => {
+      const fetchWixConnection = async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+
+          const { data: conn } = await supabase
+            .from('wix_connections')
+            .select('instance_id, wix_host, wix_site_url')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          setWixConnection(conn);
+        } catch (error) {
+          console.error('Error fetching Wix connection:', error);
+        }
+      };
+
+      fetchWixConnection();
+    }, []);
+
+    const siteHref = 
+      wixConnection?.wix_site_url ||
+      (wixConnection?.wix_host ? `https://${wixConnection.wix_host}` : null);
+
+    return (
+      <div className="space-y-3">
+        <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
+          <div className="font-medium text-green-800">Connected Site</div>
+          <div className="text-sm text-green-700">
+            {siteHref ? (
+              <a 
+                href={siteHref} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-green-700 hover:underline inline-flex items-center gap-1 break-all"
+              >
+                {siteHref.replace(/^https?:\/\//, '')}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            ) : (
+              <div className="text-sm break-all">
+                Instance ID: {wixConnection?.instance_id || '—'}
+              </div>
+            )}
+          </div>
+          
+          {/* One-click fix if link is missing */}
+          {!siteHref && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleFixLink}
+              disabled={isFixing}
+              className="mt-2"
+            >
+              {isFixing ? 'Fixing...' : 'Fix link'}
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-green-600 font-medium">Connected</span>
+          <Button 
+            variant="outline"
+            onClick={onDisconnect}
+          >
+            Disconnect
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   const [integrations, setIntegrations] = useState({
     wordpress: { connected: false, siteUrl: "", apiKey: "", name: "" },
     shopify: { connected: false, siteUrl: "", accessToken: "", name: "" },
@@ -1947,35 +2071,10 @@ export default function Settings() {
                               </div>
                             </div>
                             {integrations.wix?.connected ? (
-                              <div className="space-y-3">
-                                <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
-                                  <div className="font-medium text-green-800">Connected Site</div>
-                                  <div className="text-sm text-green-700">
-                                    {integrations.wix.siteUrl && integrations.wix.siteUrl.includes('.') ? (
-                                      <a
-                                        href={integrations.wix.siteUrl.startsWith('http') ? integrations.wix.siteUrl : `https://${integrations.wix.siteUrl}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-green-700 hover:underline inline-flex items-center gap-1"
-                                      >
-                                        {integrations.wix.siteUrl.replace(/^https?:\/\//, '')}
-                                        <ExternalLink className="h-3 w-3" />
-                                      </a>
-                                    ) : (
-                                      <>Instance ID: {integrations.wix.name || integrations.wix.siteUrl || 'Unknown'}</>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-green-600 font-medium">Connected</span>
-                                  <Button 
-                                    variant="outline"
-                                    onClick={() => handleDisconnect('wix')}
-                                  >
-                                    Disconnect
-                                  </Button>
-                                </div>
-                              </div>
+                              <WixConnectedSection 
+                                onDisconnect={() => handleDisconnect('wix')}
+                                onRefresh={fetchConnections}
+                              />
                             ) : (
                               <Button
                                 onClick={onConnectWix}

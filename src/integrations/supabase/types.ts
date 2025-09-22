@@ -693,6 +693,7 @@ export type Database = {
           wix_author_member_id: string | null
           wix_host: string | null
           wix_site_id: string | null
+          wix_site_url: string | null
         }
         Insert: {
           access_token: string
@@ -707,6 +708,7 @@ export type Database = {
           wix_author_member_id?: string | null
           wix_host?: string | null
           wix_site_id?: string | null
+          wix_site_url?: string | null
         }
         Update: {
           access_token?: string
@@ -721,6 +723,7 @@ export type Database = {
           wix_author_member_id?: string | null
           wix_host?: string | null
           wix_site_id?: string | null
+          wix_site_url?: string | null
         }
         Relationships: []
       }
