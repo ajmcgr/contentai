@@ -123,9 +123,13 @@ const Integrations = () => {
     try {
       setStatusLoading(true);
       const status = await getIntegrationStatus();
+      console.log('Integration status response:', status);
+      console.log('Shopify install:', status.installs.shopify);
+      console.log('Wix install:', status.installs.wix);
       setShopifyInstall(status.installs.shopify);
       setWixInstall(status.installs.wix);
     } catch (error: any) {
+      console.error('Status load error:', error);
       setToast(`Status error: ${error?.message || error}`);
     } finally {
       setStatusLoading(false);
@@ -430,9 +434,16 @@ const Integrations = () => {
             <div className="font-medium text-green-800">Connected Site:</div>
             <div className="flex items-center gap-2">
               <span className="text-green-700">
-                {wixInstall.external_id}
+                Instance ID: {wixInstall.external_id}
               </span>
             </div>
+            {wixSiteIdInput && (
+              <div className="flex items-center gap-2">
+                <span className="text-green-700 text-sm">
+                  Site ID: {wixSiteIdInput}
+                </span>
+              </div>
+            )}
             <div className="text-sm text-green-600">
               Connected on: {wixInstall.updated_at ? new Date(wixInstall.updated_at).toLocaleDateString() : 'Recently'}
             </div>
