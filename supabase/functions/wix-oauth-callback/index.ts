@@ -123,7 +123,8 @@ if (!instance_id) {
   }
 }
 
-// Try to detect the connected site's host
+// Fetch site URL immediately after token exchange
+let wix_site_url: string | null = null;
 let connectedHost: string | null = null;
 try {
   const headers: Record<string,string> = {
@@ -132,12 +133,27 @@ try {
   };
   if (instance_id) headers["wix-instance-id"] = instance_id;
 
-  const sRes = await fetch("https://www.wixapis.com/blog/v3/settings", { method: "GET", headers });
-  const sTxt = await sRes.text();
-  let s: any = sTxt; try { s = JSON.parse(sTxt); } catch {}
-  const url = s?.blogUrl?.url || s?.siteUrl || "";
-  connectedHost = (() => { try { return new URL(url).host; } catch { return null; } })();
-} catch { /* ignore; we'll show 'unknown' */ }
+  const siteRes = await fetch("https://www.wixapis.com/blog/v3/settings", { 
+    method: "GET", 
+    headers 
+  });
+  
+  if (siteRes.ok) {
+    const siteData = await siteRes.json().catch(() => ({}));
+    wix_site_url = siteData?.blogUrl?.url || siteData?.siteUrl || null;
+  }
+  
+  // Extract host for display purposes
+  if (wix_site_url) {
+    try { 
+      connectedHost = new URL(wix_site_url).host; 
+    } catch { 
+      connectedHost = null; 
+    }
+  }
+} catch (e) { 
+  console.warn('[Wix OAuth] Site URL fetch failed:', String(e));
+}
 
 // Attempt to resolve the Wix memberId and siteId associated with this access token (required by Blog API)
 let memberId: string | null = null;
@@ -239,7 +255,7 @@ if (SB_URL && SB_SVC) {
           scope,
           default_member_id: memberId,
           wix_site_id: siteId,
-          wix_site_url: null, // Will be updated below after fetching from Wix API
+          wix_site_url, // Fetched from Wix API above
           expires_at: new Date(Date.now() + Number(expires_in ?? 3600) * 1000).toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -288,31 +304,19 @@ if (SB_URL && SB_SVC) {
       console.warn('[Wix OAuth] Failed to set default author member', String(e));
     }
 
-    // Detect which site/blog this token is bound to and store its host and full URL
-    try {
-      const headers: Record<string,string> = {
-        authorization: `Bearer ${access_token}`,
-        "content-type": "application/json",
-      };
-      if (instance_id) headers["wix-instance-id"] = instance_id;
-
-      // Blog settings usually has a canonical URL
-      const sRes = await fetch("https://www.wixapis.com/blog/v3/settings", { method: "GET", headers });
-      const sTxt = await sRes.text();
-      let s: any = sTxt; try { s = JSON.parse(sTxt); } catch {}
-      const rawUrl = s?.blogUrl?.url || s?.siteUrl || "";
-      const wix_host = (() => { try { return new URL(rawUrl).host; } catch { return null; } })();
-
-      await supabase
-        .from("wix_connections")
-        .update({
-          wix_host,
-          wix_site_url: rawUrl || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
-    } catch (e) {
-      console.log("[Wix OAuth] host-detect skipped", String(e));
+    // Update wix_host based on the already fetched site URL
+    if (wix_site_url && connectedHost) {
+      try {
+        await supabase
+          .from("wix_connections")
+          .update({
+            wix_host: connectedHost,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", userId);
+      } catch (e) {
+        console.log("[Wix OAuth] host update skipped", String(e));
+      }
     }
 
     // 🔹 Store (or update) a cms_installs record with memberId for easy retrieval later
