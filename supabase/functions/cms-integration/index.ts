@@ -347,7 +347,14 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
   }
 
   if (!connection) {
-    throw new Error('CMS connection not found');
+    console.error(`CMS connection not found for connectionId: ${connectionId}, platform: ${platform}, userId: ${user.id}`);
+    
+    // For WordPress.com, provide specific guidance
+    if (platform === 'wordpress' && connectionId?.includes('wp-')) {
+      throw new Error('WordPress.com connection not found. Please reconnect in Settings → Integrations to restore publishing.');
+    }
+    
+    throw new Error(`CMS connection not found for ${platform}. Please check your integration settings.`);
   }
 
   let publishResult;
@@ -1013,6 +1020,13 @@ async function publishToWix(article: any, connection: any, options: any) {
     throw new Error('Wix publish failed: missing instanceId. Please reconnect your Wix integration.');
   }
 
+  // Validate content length (Wix has limits on content size)
+  const contentLength = article.content?.length || 0;
+  if (contentLength > 100000) { // 100KB limit
+    console.warn(`Wix content length warning: ${contentLength} chars, truncating to 100KB`);
+    article.content = article.content.substring(0, 100000) + '...';
+  }
+
   const draftPostData = {
     draftPost: {
       title: article.title,
@@ -1046,32 +1060,67 @@ async function publishToWix(article: any, connection: any, options: any) {
     'wix-instance-id': instanceId // Required for Wix Blog API authentication
   };
 
-  console.log('Wix API request:', {
-    endpoint,
-    instanceId,
-    memberId,
-    data: JSON.stringify(draftPostData, null, 2),
-    headers
-  });
+  // Retry logic with exponential backoff
+  const maxRetries = 3;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Wix API request (attempt ${attempt}):`, {
+        endpoint,
+        instanceId,
+        memberId,
+        contentLength: article.content?.length || 0
+      });
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(draftPostData)
-  });
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(draftPostData)
+      });
 
-  const responseText = await response.text();
-  console.log('Wix API response:', {
-    status: response.status,
-    statusText: response.statusText,
-    body: responseText
-  });
+      const responseText = await response.text();
+      console.log('Wix API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: responseText.substring(0, 500) // Truncate log
+      });
 
-  if (!response.ok) {
-    throw new Error(`Wix publish failed: ${response.status} ${response.statusText} - ${responseText}`);
+      if (response.ok) {
+        return JSON.parse(responseText);
+      }
+
+      // Handle specific error cases
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(`Wix authentication failed. Please reconnect your Wix integration.`);
+      }
+
+      if (response.status === 429) {
+        // Rate limited, wait longer before retry
+        if (attempt < maxRetries) {
+          const waitTime = Math.pow(2, attempt) * 2000; // 4s, 8s
+          console.log(`Wix rate limited, waiting ${waitTime}ms before retry`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+      }
+
+      // For 500 errors or other server errors, retry with backoff
+      if (response.status >= 500 && attempt < maxRetries) {
+        const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s
+        console.log(`Wix server error ${response.status}, retrying in ${waitTime}ms`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+
+      // Final attempt or non-retryable error
+      throw new Error(`Wix publish failed: ${response.status} ${response.statusText} - ${responseText}`);
+
+    } catch (error: any) {
+      if (attempt === maxRetries || error.message.includes('authentication failed')) {
+        throw error;
+      }
+      console.log(`Wix attempt ${attempt} failed:`, error.message);
+    }
   }
-
-  return JSON.parse(responseText);
 }
 
 async function publishToNotion(article: any, connection: any, options: any) {
