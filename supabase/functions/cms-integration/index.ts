@@ -1473,6 +1473,29 @@ async function handleOAuthCallback(req: Request, supabaseClient: any, user: any)
     });
   }
 
+// Internal server-only function to get WordPress-Supabase secrets from database
+async function getWpSupabaseSecrets() {
+  const supabaseServiceRole = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  const { data: config, error } = await supabaseServiceRole
+    .from('config_integrations')
+    .select('wp_client_id, wp_client_secret')
+    .eq('id', 'global')
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    clientId: config?.wp_client_id || null,
+    clientSecret: config?.wp_client_secret || null
+  };
+}
+
   try {
     const { clientId, clientSecret } = await getWpSupabaseSecrets();
     

@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     console.error('Diag logs error:', error)
     return new Response(JSON.stringify({
       error: 'Diagnostic logs failed',
-      details: error.message
+      details: error instanceof Error ? error.message : 'Unknown error occurred'
     }), { 
       status: 500, 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

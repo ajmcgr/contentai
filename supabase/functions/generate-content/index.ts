@@ -440,7 +440,7 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
     console.log('Improving image relevance from title/keywords...');
     let selectedImages = allImages.slice(0, 2);
     try {
-      const h2Matches = Array.from(markdownBody.matchAll(/^##\s+(.+)$/gim)).map(m => m[1]).slice(0, 2);
+      const h2Matches = Array.from(markdownBody.matchAll(/^##\s+(.+)$/gim) as IterableIterator<RegExpMatchArray>).map(m => m[1]).slice(0, 2);
       const primaryKeywords = Array.isArray(keywords) ? keywords.filter(Boolean) : (keywords ? [String(keywords)] : []);
       const imageQueries = [...primaryKeywords.slice(0, 2), title, ...h2Matches]
         .filter(Boolean)
@@ -514,7 +514,7 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
     console.log('Final HTML content length:', htmlContent.length);
     
     // Calculate word count from markdown (excluding images and links)
-    const wordCountActual = markdownBody.replace(/!\[.*?\]\(.*?\)/g, '').replace(/\[.*?\]\(.*?\)/g, '').split(/\s+/).filter(word => word.length > 0).length;
+    const wordCountActual = markdownBody.replace(/!\[.*?\]\(.*?\)/g, '').replace(/\[.*?\]\(.*?\)/g, '').split(/\s+/).filter((word: string) => word.length > 0).length;
 
     // Set featured image from first image
     const featuredImageUrl = selectedImages[0]?.url || null;
@@ -575,7 +575,7 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
   } catch (error) {
     console.error('Error in generate-content function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
       success: false
     }), {
       status: 500,

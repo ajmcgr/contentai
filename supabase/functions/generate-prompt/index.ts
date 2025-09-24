@@ -425,7 +425,7 @@ Title: [Compelling SEO title under 60 chars]
       } catch (_) {}
 
       // Build exactly 2 images using Unsplash, leveraging title + top H2s for relevance, then insert at 25% and ~65%
-      const h2Matches = Array.from(clean.matchAll(/^##\s+(.+)$/gim)).map(m => m[1]).slice(0, 2);
+      const h2Matches = Array.from(clean.matchAll(/^##\s+(.+)$/gim) as IterableIterator<RegExpMatchArray>).map(m => m[1]).slice(0, 2);
       const queries = [title, topicHint || industry, `${industry} strategy`, ...h2Matches.map(h => `${h} ${industry}`)];
       const imgs: {url:string,alt:string}[] = [];
       for (const q of queries) {
@@ -580,7 +580,7 @@ Title: [Compelling SEO title under 60 chars]
           } catch (_) {}
 
           // Build exactly 2 images via Unsplash (title + top H2s) and insert
-          const h2Matches2 = Array.from(clean.matchAll(/^##\s+(.+)$/gim)).map(m => m[1]).slice(0, 2);
+          const h2Matches2 = Array.from(clean.matchAll(/^##\s+(.+)$/gim) as IterableIterator<RegExpMatchArray>).map(m => m[1]).slice(0, 2);
           const q2 = [title, industry, ...h2Matches2.map(h => `${h} ${industry}`)];
           const imgs2: {url:string,alt:string}[] = [];
           for (const q of q2) {
@@ -694,7 +694,7 @@ Title: [Compelling SEO title under 60 chars]
   } catch (error) {
     console.error('Error in generate-prompt function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
       success: false
     }), {
       status: 500,

@@ -106,7 +106,7 @@ Format as JSON:
   } catch (error) {
     console.error('Error in keyword research function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
       primary_keywords: [],
       long_tail_keywords: [],
       related_keywords: [],

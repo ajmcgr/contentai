@@ -200,7 +200,7 @@ Be concise and accurate. If information isn't clearly available, use your best j
   } catch (error) {
     console.error('Error in scan-website function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
       success: false
     }), {
       status: 500,
