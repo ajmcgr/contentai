@@ -22,6 +22,7 @@ import { WordPressConnect } from "@/components/WordPressConnect";
 import { ArticleScheduler } from "@/components/ArticleScheduler";
 import { startShopifyOAuth, getIntegrationStatus } from "@/lib/integrationsClient";
 import { startWixFromSettings } from "@/lib/wixConnect";
+import wordpressLogo from "@/assets/wordpress-logo.png";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -1867,7 +1868,7 @@ export default function Settings() {
                             </div>
                             <div className="flex items-center gap-3 mb-4">
                               <img 
-                                src="/lovable-uploads/4b4f96dd-5e2a-47a3-9efd-d3161bc128bf.png"
+                                src={wordpressLogo}
                                 alt="WordPress logo"
                                 className="w-12 h-12 object-contain"
                               />
