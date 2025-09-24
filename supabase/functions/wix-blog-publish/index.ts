@@ -56,20 +56,49 @@ function stripHtml(html: string) {
 }
 
 async function resolveValidMemberId(headers: Record<string, string>, candidate?: string | null) {
+  console.log('[wix-blog-publish] Resolving member ID, candidate:', candidate);
+  
   // If we have a candidate, verify it exists
   if (candidate) {
     try {
       const r = await fetch(`https://www.wixapis.com/members/v1/members/${encodeURIComponent(candidate)}`, { headers });
+      console.log('[wix-blog-publish] Candidate validation response:', r.status);
       if (r.ok) return candidate;
-    } catch {}
+    } catch (e) {
+      console.warn('[wix-blog-publish] Candidate validation error:', e);
+    }
   }
+  
   // Fallback: pick first approved (or just first) member
   try {
-    const res = await fetch('https://www.wixapis.com/members/v1/members?limit=1&fieldsets=FULL', { headers });
-    const js: any = await res.json().catch(() => ({}));
-    const m = js?.members?.[0];
-    return m?.id || null;
-  } catch {
+    const res = await fetch('https://www.wixapis.com/members/v1/members?limit=50&fieldsets=FULL', { headers });
+    const resText = await res.text();
+    console.log('[wix-blog-publish] Members API response:', res.status, resText.slice(0, 500));
+    
+    if (!res.ok) {
+      // Try without fieldsets parameter as fallback
+      const simpleRes = await fetch('https://www.wixapis.com/members/v1/members?limit=50', { headers });
+      const simpleText = await simpleRes.text();
+      console.log('[wix-blog-publish] Simple members API response:', simpleRes.status, simpleText.slice(0, 500));
+      
+      if (simpleRes.ok) {
+        const simpleJs: any = JSON.parse(simpleText);
+        const member = simpleJs?.members?.find((m: any) => m.status === 'APPROVED') || simpleJs?.members?.[0];
+        if (member?.id) {
+          console.log('[wix-blog-publish] Found member via simple API:', member.id);
+          return member.id;
+        }
+      }
+      return null;
+    }
+    
+    const js: any = JSON.parse(resText);
+    // Prefer approved members, but fall back to any member
+    const member = js?.members?.find((m: any) => m.status === 'APPROVED') || js?.members?.[0];
+    console.log('[wix-blog-publish] Found members count:', js?.members?.length || 0, 'selected:', member?.id);
+    return member?.id || null;
+  } catch (e) {
+    console.error('[wix-blog-publish] Members fetch error:', e);
     return null;
   }
 }
@@ -164,7 +193,16 @@ Deno.serve(async (req) => {
     // Ensure we have a VALID memberId
     const resolvedMemberId = await resolveValidMemberId(headers, conn.wix_author_member_id || body.memberId || null);
     if (!resolvedMemberId) {
-      return J(400, { error: 'missing_member_id', message: 'No valid member found. Reconnect Wix or ensure the site has at least one member.' });
+      console.error('[wix-blog-publish] No valid member found. Site may need Members app or members.');
+      return J(400, { 
+        error: 'missing_member_id', 
+        message: 'No valid member found. This site needs at least one approved member to publish blog posts. Please ensure the Wix site has the Members app installed and at least one member.',
+        debug: {
+          candidateMemberId: conn.wix_author_member_id || body.memberId,
+          siteId: wixSiteId,
+          hasInstanceId: !!instanceId
+        }
+      });
     }
     if (resolvedMemberId !== conn.wix_author_member_id) {
       try {
