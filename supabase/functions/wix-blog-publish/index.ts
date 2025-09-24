@@ -138,36 +138,75 @@ Deno.serve(async (req) => {
     };
     if (wixSiteId) headers['wix-site-id'] = wixSiteId;
 
-    // Best-effort discovery of wixSiteId
+    // Best-effort discovery of wixSiteId with improved logic
     if (!wixSiteId) {
-      // 1) token-info
-      try {
-        const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', 'accept': 'application/json' },
-          body: JSON.stringify({ token: accessToken })
-        });
-        if (tri.ok) {
-          const ti: any = await tri.json().catch(() => ({}));
-          wixSiteId = ti?.siteId || null;
+      console.log('[wix-blog-publish] Attempting site ID discovery...');
+      
+      // 1) Try instance_id as site_id first (common case)
+      if (instanceId) {
+        console.log('[wix-blog-publish] Trying instanceId as siteId:', instanceId);
+        try {
+          const testHeaders = { ...headers, 'wix-site-id': instanceId };
+          const testRes = await fetch('https://www.wixapis.com/blog/v3/settings', { 
+            method: 'GET', 
+            headers: testHeaders 
+          });
+          if (testRes.ok) {
+            wixSiteId = instanceId;
+            headers['wix-site-id'] = wixSiteId;
+            console.log('[wix-blog-publish] Successfully used instanceId as siteId');
+          }
+        } catch (e) {
+          console.warn('[wix-blog-publish] instanceId test failed:', e);
         }
-      } catch {}
-      // 2) site-properties (requires instance header)
+      }
+
+      // 2) token-info approach
       if (!wixSiteId) {
         try {
+          console.log('[wix-blog-publish] Trying token-info approach...');
+          const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+            body: JSON.stringify({ token: accessToken })
+          });
+          if (tri.ok) {
+            const ti: any = await tri.json().catch(() => ({}));
+            wixSiteId = ti?.siteId || ti?.metaSiteId || null;
+            console.log('[wix-blog-publish] Token-info result:', { siteId: wixSiteId });
+          }
+        } catch (e) {
+          console.warn('[wix-blog-publish] token-info failed:', e);
+        }
+      }
+      
+      // 3) site-properties (requires instance header)
+      if (!wixSiteId && instanceId) {
+        try {
+          console.log('[wix-blog-publish] Trying site-properties...');
+          const propHeaders = { ...headers };
+          if (!propHeaders['wix-site-id']) {
+            propHeaders['wix-site-id'] = instanceId;
+          }
+          
           const pr = await fetch('https://www.wixapis.com/site-properties/v4/properties', {
             method: 'GET',
-            headers,
+            headers: propHeaders,
           });
           if (pr.ok) {
             const props: any = await pr.json().catch(() => ({}));
             wixSiteId = props?.properties?.siteId || props?.properties?.metaSiteId || props?.siteId || props?.site?.id || null;
+            console.log('[wix-blog-publish] Site-properties result:', { siteId: wixSiteId });
           }
-        } catch {}
+        } catch (e) {
+          console.warn('[wix-blog-publish] site-properties failed:', e);
+        }
       }
-      // 3) site-list query
+      
+      // 4) site-list query as last resort
       if (!wixSiteId) {
         try {
+          console.log('[wix-blog-publish] Trying site-list query...');
           const q = await fetch('https://www.wixapis.com/site-list/v2/sites/query', {
             method: 'POST',
             headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
@@ -176,34 +215,69 @@ Deno.serve(async (req) => {
           if (q.ok) {
             const qj: any = await q.json().catch(() => ({}));
             wixSiteId = qj?.sites?.[0]?.id || null;
+            console.log('[wix-blog-publish] Site-list result:', { siteId: wixSiteId });
           }
-        } catch {}
+        } catch (e) {
+          console.warn('[wix-blog-publish] site-list failed:', e);
+        }
       }
+      
       if (wixSiteId) {
         headers['wix-site-id'] = wixSiteId;
+        console.log('[wix-blog-publish] Site ID resolved:', wixSiteId);
         try {
           await supabase
             .from('wix_connections')
             .update({ wix_site_id: wixSiteId, updated_at: new Date().toISOString() })
             .eq('user_id', body.userId);
-        } catch {}
+        } catch (e) {
+          console.warn('[wix-blog-publish] Failed to save site ID:', e);
+        }
+      } else {
+        console.error('[wix-blog-publish] Failed to resolve site ID');
+        return J(400, { 
+          error: 'site_id_resolution_failed',
+          message: 'Unable to determine Wix site ID. Please reconnect your Wix integration.',
+          debug: { instanceId, hasAccessToken: !!accessToken }
+        });
       }
     }
 
-    // Ensure we have a VALID memberId
+    // Ensure we have a VALID memberId with better error handling
+    console.log('[wix-blog-publish] Resolving member ID...', { 
+      candidateId: conn.wix_author_member_id || body.memberId,
+      siteId: wixSiteId 
+    });
+    
     const resolvedMemberId = await resolveValidMemberId(headers, conn.wix_author_member_id || body.memberId || null);
+    
     if (!resolvedMemberId) {
-      console.error('[wix-blog-publish] No valid member found. Site may need Members app or members.');
+      console.error('[wix-blog-publish] No valid member found.');
+      
+      // Try to get more diagnostic info
+      let diagnosticInfo = '';
+      try {
+        const membersTestRes = await fetch('https://www.wixapis.com/members/v1/members?limit=1', { headers });
+        const membersTestText = await membersTestRes.text();
+        diagnosticInfo = `Members API test: ${membersTestRes.status} - ${membersTestText.slice(0, 200)}`;
+      } catch (e) {
+        diagnosticInfo = `Members API test failed: ${String(e)}`;
+      }
+      
       return J(400, { 
         error: 'missing_member_id', 
         message: 'No valid member found. This site needs at least one approved member to publish blog posts. Please ensure the Wix site has the Members app installed and at least one member.',
         debug: {
           candidateMemberId: conn.wix_author_member_id || body.memberId,
           siteId: wixSiteId,
-          hasInstanceId: !!instanceId
-        }
+          hasInstanceId: !!instanceId,
+          diagnosticInfo
+        },
+        solution: 'Please go to your Wix site, install the Members app if not already installed, and ensure you have at least one approved member. Then reconnect your Wix integration.'
       });
     }
+    
+    console.log('[wix-blog-publish] Using member ID:', resolvedMemberId);
     if (resolvedMemberId !== conn.wix_author_member_id) {
       try {
         await supabase
@@ -213,25 +287,46 @@ Deno.serve(async (req) => {
       } catch {}
     }
 
-    // Preflight: ensure Blog app exists (non-blocking)
-    let settingsOk = true;
+    // Preflight: ensure Blog app exists and Members app is available
+    let blogAppInstalled = true;
+    let membersAppAvailable = true;
+    
     try {
+      console.log('[wix-blog-publish] Checking Blog app installation...');
       let sRes = await fetch('https://www.wixapis.com/blog/v3/settings', { method: 'GET', headers });
-      if (sRes.status === 404 && !('wix-site-id' in headers) && instanceId) {
-        const retryHeaders = { ...headers, 'wix-site-id': instanceId } as Record<string,string>;
-        sRes = await fetch('https://www.wixapis.com/blog/v3/settings', { method: 'GET', headers: retryHeaders });
-        if (sRes.ok) {
-          headers['wix-site-id'] = instanceId;
+      
+      if (sRes.status === 404) {
+        console.log('[wix-blog-publish] Blog app not found, checking with different headers...');
+        if (instanceId && !headers['wix-site-id']) {
+          const retryHeaders = { ...headers, 'wix-site-id': instanceId };
+          sRes = await fetch('https://www.wixapis.com/blog/v3/settings', { method: 'GET', headers: retryHeaders });
+          if (sRes.ok) {
+            headers['wix-site-id'] = instanceId;
+            wixSiteId = instanceId;
+          }
         }
       }
-      settingsOk = sRes.ok;
-      if (!settingsOk) {
-        // Don't block here; creation may still succeed if headers are fine
-        const txt = await sRes.text();
-        console.warn('[wix-blog-publish] settings check failed', { status: sRes.status, txt: txt.slice(0, 400) });
+      
+      blogAppInstalled = sRes.ok;
+      if (!blogAppInstalled) {
+        const errorText = await sRes.text();
+        console.error('[wix-blog-publish] Blog app check failed:', { status: sRes.status, error: errorText.slice(0, 400) });
+        
+        return J(400, {
+          error: 'blog_app_missing',
+          message: 'The Wix Blog app is not installed on this site. Please install the Blog app from the Wix App Market.',
+          debug: { status: sRes.status, siteId: wixSiteId, instanceId }
+        });
       }
+      
+      console.log('[wix-blog-publish] Blog app confirmed installed');
     } catch (e) {
-      console.warn('[wix-blog-publish] settings check error', String(e));
+      console.error('[wix-blog-publish] Blog app check error:', String(e));
+      return J(500, {
+        error: 'blog_app_check_failed',
+        message: 'Unable to verify Blog app installation. Please try reconnecting Wix.',
+        debug: { error: String(e) }
+      });
     }
 
     // Sanitize body and build RichContent
