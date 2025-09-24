@@ -573,21 +573,6 @@ export default function Settings() {
             ) : (
               <div className="space-y-2">
                 <div className="text-sm break-all">Instance ID: {wixConnection?.instance_id || "—"}</div>
-                {/* One-time manual set, only if auto-discovery failed */}
-                <form className="flex items-center gap-2" onSubmit={handleUrlSave}>
-                  <input
-                    name="url"
-                    placeholder="https://yoursite.wixstudio.com/"
-                    className="border rounded px-2 py-1 w-full text-sm"
-                    autoComplete="off"
-                  />
-                  <button 
-                    className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm" 
-                    type="submit"
-                  >
-                    Save URL
-                  </button>
-                </form>
               </div>
             )}
           </div>
