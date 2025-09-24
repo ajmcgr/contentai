@@ -1859,15 +1859,26 @@ export default function Settings() {
                         
                         <div className="grid gap-4">
                           {/* WordPress Integration - Featured */}
-                          <div className="relative">
-                            <div className="absolute top-4 right-4 z-10">
+                          <div className="relative border border-green-200 bg-green-50/50 rounded-lg p-4">
+                            <div className="absolute top-4 right-4">
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 Live
                               </span>
                             </div>
-                            <div className="border border-green-200 bg-green-50/50 rounded-lg">
-                              <WordPressConnect />
+                            <div className="flex items-center gap-3 mb-4">
+                              <img 
+                                src="/lovable-uploads/4b4f96dd-5e2a-47a3-9efd-d3161bc128bf.png"
+                                alt="WordPress logo"
+                                className="w-12 h-12 object-contain"
+                              />
+                              <div className="flex-1 pr-16">
+                                <h4 className="font-semibold text-lg">WordPress.com</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Connect your WordPress.com account to publish articles directly to your blog.
+                                </p>
+                              </div>
                             </div>
+                            <WordPressConnect />
                           </div>
 
                           {/* Wix Integration - Featured */}
