@@ -486,110 +486,6 @@ export default function Settings() {
     timezone: "UTC"
   });
 
-  // Component for Wix connected state
-  const WixConnectedSection = ({ onDisconnect, onRefresh }: { onDisconnect: () => void; onRefresh: () => void }) => {
-    const [wixConnection, setWixConnection] = useState<{
-      wix_site_url?: string;
-      instance_id?: string;
-    } | null>(null);
-
-    // Fetch wix connection details
-    useEffect(() => {
-      const fetchWixConnection = async () => {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) return;
-
-          const { data: conn } = await supabase
-            .from('wix_connections')
-            .select('instance_id, wix_site_url')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          setWixConnection(conn);
-        } catch (error) {
-          console.error('Error fetching Wix connection:', error);
-        }
-      };
-
-      fetchWixConnection();
-    }, []);
-
-    const handleUrlSave = async (e: React.FormEvent) => {
-      e.preventDefault();
-      const form = e.currentTarget as HTMLFormElement;
-      const input = form.elements.namedItem('url') as HTMLInputElement;
-      const url = input.value.trim();
-      
-      if (!/^https?:\/\//i.test(url)) {
-        toast({
-          title: 'Invalid URL',
-          description: 'Please enter a full https:// URL',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { error } = await supabase
-          .from('wix_connections')
-          .update({ wix_site_url: url })
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-
-        setWixConnection(prev => prev ? { ...prev, wix_site_url: url } : { wix_site_url: url });
-        toast({
-          title: 'Site URL saved',
-          description: 'Your Wix site URL has been updated successfully.'
-        });
-      } catch (error: any) {
-        toast({
-          title: 'Error saving URL',
-          description: error.message || 'Failed to save site URL',
-          variant: 'destructive'
-        });
-      }
-    };
-
-    return (
-      <div className="space-y-3">
-        <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
-          <div className="space-y-2">
-            <div className="text-sm text-muted-foreground">Connected Site</div>
-
-            {wixConnection?.wix_site_url ? (
-              <a
-                href={wixConnection.wix_site_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 underline break-all"
-              >
-                {wixConnection.wix_site_url}
-              </a>
-            ) : (
-              <div className="space-y-2">
-                <div className="text-sm break-all">Instance ID: {wixConnection?.instance_id || "—"}</div>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-green-600 font-medium">Connected</span>
-          <Button 
-            variant="outline"
-            onClick={onDisconnect}
-          >
-            Disconnect
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
   const [integrations, setIntegrations] = useState({
     wordpress: { connected: false, siteUrl: "", apiKey: "", name: "" },
     shopify: { connected: false, siteUrl: "", accessToken: "", name: "" },
@@ -851,6 +747,7 @@ export default function Settings() {
     });
   };
 
+  // Fetch existing connections and handle OAuth return
   const fetchConnections = async () => {
     try {
       const status = await getIntegrationStatus();
@@ -882,63 +779,6 @@ export default function Settings() {
 
           return next;
         });
-
-        // Try to resolve a real Wix site URL for display
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const res = await fetch(`${EDGE_BASE}/wix-site-info?uid=${encodeURIComponent(user.id)}`);
-            if (res.ok) {
-              const info = await res.json();
-              let siteUrl = '';
-
-              const sites = info?.siteQuery?.sites || info?.siteQuery?.data?.sites || [];
-              const s0 = Array.isArray(sites) ? sites[0] : null;
-              siteUrl =
-                s0?.url ||
-                s0?.siteUrl ||
-                s0?.homepageUrl ||
-                s0?.primaryDomainUrl ||
-                s0?.mainDomain?.url ||
-                (Array.isArray(s0?.publishedDomains) ? s0.publishedDomains[0]?.url : '') ||
-                s0?.domain ||
-                '';
-
-              if (!siteUrl) {
-                const bs = info?.blogSettings;
-                siteUrl =
-                  bs?.blog?.url ||
-                  bs?.blog?.page?.url ||
-                  bs?.settings?.blogUrl ||
-                  '';
-              }
-
-              // Final fallback to host returned by edge function
-              if (!siteUrl) {
-                siteUrl = info?.siteUrl || (info?.wixHost ? `https://${info.wixHost}` : '');
-              }
-
-              // As a last resort, link to Wix dashboard for this site
-              if (!siteUrl && info?.wixSiteId) {
-                siteUrl = `https://manage.wix.com/dashboard/${info.wixSiteId}`;
-              }
-
-              if (siteUrl) {
-                const display = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
-                setIntegrations(prev => ({
-                  ...prev,
-                  wix: {
-                    ...prev.wix,
-                    siteUrl: display,
-                    name: display,
-                  } as any,
-                }));
-              }
-            }
-          }
-        } catch (e) {
-          console.warn('Wix site URL resolution failed:', e);
-        }
       }
     } catch (error) {
       console.error('Error fetching connections:', error);
@@ -2051,10 +1891,15 @@ export default function Settings() {
                               </div>
                             </div>
                             {integrations.wix?.connected ? (
-                              <WixConnectedSection 
-                                onDisconnect={() => handleDisconnect('wix')}
-                                onRefresh={fetchConnections}
-                              />
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-green-600 font-medium">Connected</span>
+                                <Button 
+                                  variant="outline"
+                                  onClick={() => handleDisconnect('wix')}
+                                >
+                                  Disconnect
+                                </Button>
+                              </div>
                             ) : (
                               <Button
                                 onClick={onConnectWix}
@@ -2087,30 +1932,14 @@ export default function Settings() {
                               </div>
                             </div>
                             {integrations.shopify?.connected ? (
-                              <div className="space-y-3">
-                                <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
-                                  <div className="font-medium text-green-800">Connected Store</div>
-                                  <div className="flex items-center gap-2">
-                                    <a
-                                      href={`https://${integrations.shopify.siteUrl}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-green-700 hover:underline flex items-center gap-1"
-                                    >
-                                      {integrations.shopify.siteUrl}
-                                      <ExternalLink className="h-3 w-3" />
-                                    </a>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-green-600 font-medium">Connected</span>
-                                  <Button 
-                                    variant="outline"
-                                    onClick={() => handleDisconnect('shopify')}
-                                  >
-                                    Disconnect
-                                  </Button>
-                                </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-green-600 font-medium">Connected</span>
+                                <Button 
+                                  variant="outline"
+                                  onClick={() => handleDisconnect('shopify')}
+                                >
+                                  Disconnect
+                                </Button>
                               </div>
                             ) : (
                               <div className="space-y-3">

@@ -435,62 +435,12 @@ Title: [Compelling SEO title under 60 chars]
       // If auto-publish is enabled, also publish to connected CMS platforms
       if (shouldAutoPublish) {
         try {
-          // Get all types of CMS connections for this user
-          const connections: any[] = [];
-          
-          // Get CMS connections (regular integrations)
-          const { data: cmsConnections } = await admin
+          // Get active CMS connections for this user
+          const { data: connections } = await admin
             .from('cms_connections')
             .select('id, platform, site_url')
             .eq('user_id', userId)
             .eq('is_active', true);
-          
-          if (cmsConnections) {
-            connections.push(...cmsConnections);
-          }
-          
-          // Get Wix connections
-          const { data: wixConnections } = await admin
-            .from('wix_connections')
-            .select('id, instance_id, access_token')
-            .eq('user_id', userId);
-          
-          if (wixConnections && wixConnections.length > 0) {
-            connections.push(...wixConnections.map(wix => ({
-              id: wix.id,
-              platform: 'wix',
-              site_url: `wix-site-${wix.instance_id}`
-            })));
-          }
-          
-          // Get WordPress.com connections
-          const { data: wpConnections } = await admin
-            .from('wp_tokens')
-            .select('blog_id, blog_url')
-            .eq('user_id', userId);
-          
-          if (wpConnections && wpConnections.length > 0) {
-            connections.push(...wpConnections.map(wp => ({
-              id: `wp-${wp.blog_id}`,
-              platform: 'wordpress',
-              site_url: wp.blog_url
-            })));
-          }
-          
-          // Get Shopify connections
-          const { data: shopifyConnections } = await admin
-            .from('cms_installs')
-            .select('id, external_id')
-            .eq('user_id', userId)
-            .eq('provider', 'shopify');
-          
-          if (shopifyConnections && shopifyConnections.length > 0) {
-            connections.push(...shopifyConnections.map(shopify => ({
-              id: shopify.id,
-              platform: 'shopify',
-              site_url: shopify.external_id
-            })));
-          }
 
           if (connections && connections.length > 0) {
             console.log(`Auto-publishing article ${article.id} to ${connections.length} connected platforms for user ${userId}`);

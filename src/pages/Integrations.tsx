@@ -123,13 +123,9 @@ const Integrations = () => {
     try {
       setStatusLoading(true);
       const status = await getIntegrationStatus();
-      console.log('Integration status response:', status);
-      console.log('Shopify install:', status.installs.shopify);
-      console.log('Wix install:', status.installs.wix);
       setShopifyInstall(status.installs.shopify);
       setWixInstall(status.installs.wix);
     } catch (error: any) {
-      console.error('Status load error:', error);
       setToast(`Status error: ${error?.message || error}`);
     } finally {
       setStatusLoading(false);
@@ -397,28 +393,9 @@ const Integrations = () => {
             {connecting === 'shopify' ? 'Redirecting…' : (shopifyInstall ? 'Re-connect' : 'Connect')}
           </Button>
         </div>
-        {shopifyInstall && (
-          <div className="mt-3 space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
-            <div className="font-medium text-green-800">Connected Store:</div>
-            <div className="flex items-center gap-2">
-              <a 
-                href={`https://${shopifyInstall.external_id}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-green-700 hover:underline flex items-center gap-1"
-              >
-                {shopifyInstall.external_id}
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-            <div className="text-sm text-green-600">
-              Connected on: {shopifyInstall.updated_at ? new Date(shopifyInstall.updated_at).toLocaleDateString() : 'Recently'}
-            </div>
-          </div>
-        )}
         <div className="mt-2 text-sm">
           {statusLoading ? 'Loading status…' : shopifyInstall
-            ? <span className="text-green-700">Connected</span>
+            ? <span className="text-green-700">Connected: {shopifyInstall.external_id}</span>
             : <span className="text-red-700">Not connected</span>}
         </div>
       </section>
@@ -429,26 +406,6 @@ const Integrations = () => {
         <div className="mt-3">
           <WixConnectSection userId={currentUserId} />
         </div>
-        {wixInstall && (
-          <div className="mt-3 space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
-            <div className="font-medium text-green-800">Connected Site:</div>
-            <div className="flex items-center gap-2">
-              <span className="text-green-700">
-                Instance ID: {wixInstall.external_id}
-              </span>
-            </div>
-            {wixSiteIdInput && (
-              <div className="flex items-center gap-2">
-                <span className="text-green-700 text-sm">
-                  Site ID: {wixSiteIdInput}
-                </span>
-              </div>
-            )}
-            <div className="text-sm text-green-600">
-              Connected on: {wixInstall.updated_at ? new Date(wixInstall.updated_at).toLocaleDateString() : 'Recently'}
-            </div>
-          </div>
-        )}
         <div className="mt-4 space-y-2">
           <label className="text-sm font-medium">Wix Site ID (required for Blog API)</label>
           <div className="flex gap-2">

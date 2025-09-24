@@ -123,50 +123,21 @@ if (!instance_id) {
   }
 }
 
-// Auto-discover site URL with new scopes and multiple fallbacks
-async function getSiteUrl(access_token: string, instance_id?: string | null) {
+// Try to detect the connected site's host
+let connectedHost: string | null = null;
+try {
   const headers: Record<string,string> = {
     authorization: `Bearer ${access_token}`,
     "content-type": "application/json",
   };
   if (instance_id) headers["wix-instance-id"] = instance_id;
 
-  // Prefer Sites API (requires wix-site.read)
-  try {
-    const r = await fetch("https://www.wixapis.com/site/v4/sites/current", { headers });
-    if (r.ok) {
-      const j = await r.json().catch(()=> ({}));
-      const url =
-        j?.siteUrl || j?.viewerUrl || j?.primaryDomain?.url || j?.domain?.url || null;
-      if (url) return url;
-    }
-  } catch {}
-
-  // Fallback: Blog settings (requires wix-blog.read)
-  try {
-    const r = await fetch("https://www.wixapis.com/blog/v3/settings", { headers });
-    if (r.ok) {
-      const j = await r.json().catch(()=> ({}));
-      return j?.blogUrl?.url || j?.siteUrl || null;
-    }
-  } catch {}
-
-  return null;
-}
-
-const wix_site_url = await getSiteUrl(access_token, instance_id ?? null);
-let connectedHost: string | null = null;
-
-// Extract host for display purposes
-if (wix_site_url) {
-  try { 
-    connectedHost = new URL(wix_site_url).host; 
-  } catch { 
-    connectedHost = null; 
-  }
-}
-
-console.log('[Wix OAuth] Site URL discovery result', { wix_site_url, connectedHost });
+  const sRes = await fetch("https://www.wixapis.com/blog/v3/settings", { method: "GET", headers });
+  const sTxt = await sRes.text();
+  let s: any = sTxt; try { s = JSON.parse(sTxt); } catch {}
+  const url = s?.blogUrl?.url || s?.siteUrl || "";
+  connectedHost = (() => { try { return new URL(url).host; } catch { return null; } })();
+} catch { /* ignore; we'll show 'unknown' */ }
 
 // Attempt to resolve the Wix memberId and siteId associated with this access token (required by Blog API)
 let memberId: string | null = null;
@@ -268,7 +239,6 @@ if (SB_URL && SB_SVC) {
           scope,
           default_member_id: memberId,
           wix_site_id: siteId,
-          wix_site_url, // Fetched from Wix API above
           expires_at: new Date(Date.now() + Number(expires_in ?? 3600) * 1000).toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -317,19 +287,30 @@ if (SB_URL && SB_SVC) {
       console.warn('[Wix OAuth] Failed to set default author member', String(e));
     }
 
-    // Update wix_host based on the already fetched site URL
-    if (wix_site_url && connectedHost) {
-      try {
-        await supabase
-          .from("wix_connections")
-          .update({
-            wix_host: connectedHost,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", userId);
-      } catch (e) {
-        console.log("[Wix OAuth] host update skipped", String(e));
-      }
+    // Detect which site/blog this token is bound to and store its host
+    try {
+      const headers: Record<string,string> = {
+        authorization: `Bearer ${access_token}`,
+        "content-type": "application/json",
+      };
+      if (instance_id) headers["wix-instance-id"] = instance_id;
+
+      // Blog settings usually has a canonical URL
+      const sRes = await fetch("https://www.wixapis.com/blog/v3/settings", { method: "GET", headers });
+      const sTxt = await sRes.text();
+      let s: any = sTxt; try { s = JSON.parse(sTxt); } catch {}
+      const rawUrl = s?.blogUrl?.url || s?.siteUrl || "";
+      const wix_host = (() => { try { return new URL(rawUrl).host; } catch { return null; } })();
+
+      await supabase
+        .from("wix_connections")
+        .update({
+          wix_host,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
+    } catch (e) {
+      console.log("[Wix OAuth] host-detect skipped", String(e));
     }
 
     // 🔹 Store (or update) a cms_installs record with memberId for easy retrieval later

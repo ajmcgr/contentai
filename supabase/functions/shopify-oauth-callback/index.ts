@@ -1,74 +1,211 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-function htmlRedirect(target: string, msg = "Redirecting…", status = 200) {
-  const h = `<!doctype html><meta charset="utf-8"><body style="font-family:system-ui">
-  <p>${msg}</p><script>(function(u){try{if(window.top)window.top.location.href=u;else location.href=u;}catch(e){location.href=u;}})(${JSON.stringify(target)})</script></body>`;
-  return new Response(h, { status, headers: { "content-type": "text/html; charset=utf-8" } });
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+async function getShopifySecrets() {
+  const supabaseServiceRole = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  )
+
+  const { data, error } = await supabaseServiceRole
+    .from("app_secrets")
+    .select("key,value")
+    .eq("namespace", "cms_integrations");
+
+  if (error) throw new Error("Failed to fetch Shopify secrets: " + error.message);
+
+  const map = Object.fromEntries((data || []).map(r => [r.key, String(r.value).trim()]));
+
+  const required = [
+    "SHOPIFY_API_KEY",
+    "SHOPIFY_API_SECRET"
+  ];
+  for (const k of required) {
+    if (!map[k]) throw new Error(`Missing Shopify secret: ${k}`);
+  }
+
+  return {
+    apiKey: map.SHOPIFY_API_KEY,
+    apiSecret: map.SHOPIFY_API_SECRET
+  };
+}
+
+async function verifyHmac(params: Record<string, string>, secret: string): Promise<boolean> {
+  const { hmac, signature, ...otherParams } = params
+  const message = Object.keys(otherParams)
+    .sort()
+    .map(key => `${key}=${otherParams[key]}`)
+    .join('&')
+  
+  const encoder = new TextEncoder()
+  const keyData = encoder.encode(secret)
+  const messageData = encoder.encode(message)
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  
+  const signature_bytes = await crypto.subtle.sign('HMAC', cryptoKey, messageData)
+  const digest = Array.from(new Uint8Array(signature_bytes))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+  
+  return digest === hmac
 }
 
 Deno.serve(async (req) => {
-  const url = new URL(req.url);
-  const shop = (url.searchParams.get("shop") || "").toLowerCase();
-  const code = url.searchParams.get("code") || "";
-  
-  if (!shop || !code) { 
-    console.error("[CB] missing params", url.search); 
-    return htmlRedirect(Deno.env.get("APP_DASH_URL")! + "?auth=error", "OAuth failed", 400); 
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
   }
 
-  const key = Deno.env.get("SHOPIFY_API_KEY")!, sec = Deno.env.get("SHOPIFY_API_SECRET")!;
-  
-  const r = await fetch(`https://${shop}/admin/oauth/access_token`, {
-    method: "POST", 
-    headers: { "content-type": "application/json", "accept": "application/json" },
-    body: JSON.stringify({ client_id: key, client_secret: sec, code })
-  });
-  
-  const t = await r.text(); 
-  let js: any = t; 
-  try { js = JSON.parse(t); } catch {}
-  
-  if (!r.ok || !js?.access_token) { 
-    console.error("[CB] token failed", { shop, status: r.status, js }); 
-    return htmlRedirect(Deno.env.get("APP_DASH_URL")! + "?auth=error", "Auth failed", 400); 
-  }
+  try {
+    const supabaseServiceRole = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-  const token = js.access_token as string;
-  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-  
-  await sb.from("shopify_connections").upsert({ 
-    shop_domain: shop, 
-    access_token: token, 
-    scope: js.scope || null, 
-    updated_at: new Date().toISOString() 
-  }, { onConflict: "shop_domain" });
-  
-  console.log("[CB] connected", { shop, scope: js.scope });
+    const url = new URL(req.url)
+    const shop = url.searchParams.get('shop')
+    const state = url.searchParams.get('state')
+    const hmac = url.searchParams.get('hmac')
+    const code = url.searchParams.get('code')
 
-  // Register mandatory GDPR webhooks (idempotent)
-  const hooks = ["customers/data_request", "customers/redact", "shop/redact"];
-  const list = await fetch(`https://${shop}/admin/api/2024-10/webhooks.json`, { 
-    headers: { "x-shopify-access-token": token, "accept": "application/json" } 
-  }).then(r => r.json()).catch(() => ({ webhooks: [] }));
-  
-  const existing = new Set((list?.webhooks || []).map((w: any) => w.topic));
-  
-  for (const topic of hooks) {
-    if (existing.has(topic)) continue;
-    
-    const addr = `https://hmrzmafwvhifjhsoizil.supabase.co/functions/v1/shopify-webhook-${topic.replace("/", "-")}`;
-    const wr = await fetch(`https://${shop}/admin/api/2024-10/webhooks.json`, {
-      method: "POST",
-      headers: { "x-shopify-access-token": token, "content-type": "application/json" },
-      body: JSON.stringify({ webhook: { topic, address: addr, format: "json" } })
-    });
-    
-    if (!wr.ok) { 
-      const p = await wr.text(); 
-      console.error("[CB] webhook reg failed", { shop, topic, status: wr.status, p }); 
+    if (!shop || !state || !hmac || !code) {
+      return new Response('Missing required parameters', { 
+        status: 400, 
+        headers: corsHeaders 
+      })
     }
-  }
 
-  const dash = Deno.env.get("APP_DASH_URL")!;
-  return htmlRedirect(`${dash}?shop=${encodeURIComponent(shop)}`, "Authenticated — redirecting…", 200);
-});
+    // Verify state
+    const { data: stateRecord, error: stateError } = await supabaseServiceRole
+      .from('oauth_states')
+      .select('user_id, expires_at')
+      .eq('state', state)
+      .single()
+
+    if (stateError || !stateRecord) {
+      return new Response('Invalid state', { 
+        status: 401, 
+        headers: corsHeaders 
+      })
+    }
+
+    if (new Date(stateRecord.expires_at) < new Date()) {
+      return new Response('Expired state', { 
+        status: 401, 
+        headers: corsHeaders 
+      })
+    }
+
+    // Verify HMAC
+    const { apiKey, apiSecret } = await getShopifySecrets()
+    const params = Object.fromEntries(url.searchParams.entries())
+    
+    const isValidHmac = await verifyHmac(params, apiSecret)
+    if (!isValidHmac) {
+      return new Response('Invalid HMAC', { 
+        status: 401, 
+        headers: corsHeaders 
+      })
+    }
+
+    // Exchange code for access token
+    const tokenResponse = await fetch(`https://${shop}/admin/oauth/access_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: apiKey,
+        client_secret: apiSecret,
+        code
+      })
+    })
+
+    const tokenData = await tokenResponse.json()
+    if (!tokenResponse.ok || !tokenData.access_token) {
+      console.error('Shopify token exchange failed:', tokenData)
+      return new Response('Token exchange failed', { 
+        status: 401, 
+        headers: corsHeaders 
+      })
+    }
+
+    // Store the install
+    const { error: insertError } = await supabaseServiceRole
+      .from('cms_installs')
+      .upsert({
+        user_id: stateRecord.user_id,
+        provider: 'shopify',
+        external_id: shop,
+        access_token: tokenData.access_token,
+        scope: tokenData.scope
+      }, {
+        onConflict: 'user_id,provider,external_id'
+      })
+
+    if (insertError) {
+      console.error('Failed to store install:', insertError)
+      return new Response('Failed to store installation', { 
+        status: 500, 
+        headers: corsHeaders 
+      })
+    }
+
+    // Clean up state
+    await supabaseServiceRole
+      .from('oauth_states')
+      .delete()
+      .eq('state', state)
+
+    // Log success to app_logs
+    await supabaseServiceRole.from('app_logs').insert({
+      provider: 'shopify',
+      stage: 'oauth.callback.success',
+      user_id: stateRecord.user_id,
+      detail: JSON.stringify({ shop })
+    });
+ 
+    console.log('Shopify installation successful for user:', stateRecord.user_id, 'shop:', shop)
+ 
+    // Redirect to app UI as required by Shopify
+    const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
+    return new Response(null, {
+      status: 302,
+      headers: {
+        ...corsHeaders,
+        Location: `${appBase}/shopify-app?shop=${encodeURIComponent(shop)}&installed=true`
+      }
+    })
+
+  } catch (error) {
+    console.error('Shopify OAuth callback error:', error)
+    try {
+      const supabaseServiceRole = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
+      await supabaseServiceRole.from('app_logs').insert({
+        provider: 'shopify',
+        stage: 'oauth.callback.error',
+        level: 'error',
+        detail: String(error && (error as any).message || error)
+      });
+    } catch (_) {}
+    const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
+    return new Response(null, { 
+      status: 302, 
+      headers: {
+        ...corsHeaders,
+        Location: `${appBase}/integrations?error=shopify_failed`
+      }
+    })
+  }
+})

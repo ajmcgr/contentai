@@ -26,117 +26,33 @@ function J(status: number, data: unknown) {
   });
 }
 
-// Convert HTML to Wix Rich Content format
-function htmlToRichContent(htmlContent: string, title: string) {
+// Minimal, valid RichContent payload (Ricos schema)
+function toRichContentSafe(title: string, text: string) {
   const safeTitle = (title || 'Untitled').slice(0, 200);
-  let content = (htmlContent || '').slice(0, 40000);
-  
-  // Basic HTML to Rich Content conversion
-  const nodes: any[] = [];
-  
-  // Add title as first heading
-  nodes.push({
-    type: 'HEADING',
-    headingData: { level: 1 },
-    nodes: [
-      { type: 'TEXT', textData: { text: safeTitle, decorations: [] } },
-    ],
-  });
-  
-  // Parse HTML content into Rich Content nodes
-  const htmlLines = content.split(/\n+/).filter(line => line.trim());
-  
-  for (const line of htmlLines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    
-    // Handle headings
-    if (trimmed.match(/^<h([1-6])[^>]*>(.*?)<\/h[1-6]>$/i)) {
-      const match = trimmed.match(/^<h([1-6])[^>]*>(.*?)<\/h[1-6]>$/i);
-      const level = parseInt(match![1]);
-      const text = stripHtml(match![2]).trim();
-      if (text) {
-        nodes.push({
-          type: 'HEADING',
-          headingData: { level: Math.min(level + 1, 6) }, // Offset by 1 since title is H1
-          nodes: [
-            { type: 'TEXT', textData: { text, decorations: [] } },
-          ],
-        });
-      }
-      continue;
-    }
-    
-    // Handle lists
-    if (trimmed.match(/^<(ul|ol)[^>]*>/i) || trimmed.includes('<li>')) {
-      const listItems = trimmed.match(/<li[^>]*>(.*?)<\/li>/gi) || [];
-      if (listItems.length > 0) {
-        const isOrdered = trimmed.includes('<ol');
-        for (const item of listItems) {
-          const text = stripHtml(item).trim();
-          if (text) {
-            nodes.push({
-              type: 'BULLETED_LIST',
-              bulletedListData: {
-                value: isOrdered ? 'NUMBERED' : 'BULLET'
-              },
-              nodes: [
-                { type: 'TEXT', textData: { text, decorations: [] } },
-              ],
-            });
-          }
-        }
-      }
-      continue;
-    }
-    
-    // Handle paragraphs and other content
-    const text = stripHtml(trimmed).trim();
-    if (text) {
-      // Split long paragraphs
-      const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim());
-      const paragraph = sentences.join(' ');
-      
-      if (paragraph) {
-        nodes.push({
-          type: 'PARAGRAPH',
-          nodes: [
-            { type: 'TEXT', textData: { text: paragraph, decorations: [] } },
-          ],
-        });
-      }
-    }
-  }
-  
-  // Fallback if no content was parsed
-  if (nodes.length <= 1) {
-    const plainText = stripHtml(content).trim() || 'Content could not be formatted.';
-    nodes.push({
-      type: 'PARAGRAPH',
-      nodes: [
-        { type: 'TEXT', textData: { text: plainText, decorations: [] } },
-      ],
-    });
-  }
-  
+  const safeText = (text || '').slice(0, 40000);
   return {
-    nodes,
+    nodes: [
+      {
+        type: 'HEADING',
+        headingData: { level: 1 },
+        nodes: [
+          { type: 'TEXT', textData: { text: safeTitle, decorations: [] } },
+        ],
+      },
+      {
+        type: 'PARAGRAPH',
+        nodes: [
+          { type: 'TEXT', textData: { text: safeText, decorations: [] } },
+        ],
+      },
+    ],
     metadata: { version: 1 },
     documentStyle: {},
   } as const;
 }
 
 function stripHtml(html: string) {
-  try { 
-    return (html || '')
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[\s\S]*?<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim(); 
-  } catch { 
-    return ''; 
-  }
+  try { return (html || '').replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); } catch { return ''; }
 }
 
 async function resolveValidMemberId(headers: Record<string, string>, candidate?: string | null) {
@@ -147,47 +63,15 @@ async function resolveValidMemberId(headers: Record<string, string>, candidate?:
       if (r.ok) return candidate;
     } catch {}
   }
-  
-  // Try different approaches to find members
-  const attempts = [
-    // 1. Full member list with different filters
-    () => fetch('https://www.wixapis.com/members/v1/members?limit=50&fieldsets=FULL', { headers }),
-    // 2. Try with minimal query
-    () => fetch('https://www.wixapis.com/members/v1/members?limit=50', { headers }),
-    // 3. Try approved members only
-    () => fetch('https://www.wixapis.com/members/v1/members?limit=50&fieldsets=FULL&filter={"status":"APPROVED"}', { headers }),
-    // 4. Current user as member (if site owner is also a member)
-    () => fetch('https://www.wixapis.com/oauth2/token-info', { 
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ token: headers.authorization?.replace('Bearer ', '') })
-    }),
-  ];
-
-  for (const attempt of attempts) {
-    try {
-      const res = await attempt();
-      if (!res.ok) continue;
-      
-      const data: any = await res.json().catch(() => ({}));
-      
-      // For member list responses
-      if (data?.members?.length > 0) {
-        const member = data.members.find((m: any) => m.status === 'APPROVED') || data.members[0];
-        if (member?.id) return member.id;
-      }
-      
-      // For token info response - try to use the token owner as member
-      if (data?.userId) {
-        try {
-          const userCheck = await fetch(`https://www.wixapis.com/members/v1/members/${encodeURIComponent(data.userId)}`, { headers });
-          if (userCheck.ok) return data.userId;
-        } catch {}
-      }
-    } catch {}
+  // Fallback: pick first approved (or just first) member
+  try {
+    const res = await fetch('https://www.wixapis.com/members/v1/members?limit=1&fieldsets=FULL', { headers });
+    const js: any = await res.json().catch(() => ({}));
+    const m = js?.members?.[0];
+    return m?.id || null;
+  } catch {
+    return null;
   }
-  
-  return null;
 }
 
 Deno.serve(async (req) => {
@@ -312,8 +196,11 @@ Deno.serve(async (req) => {
       console.warn('[wix-blog-publish] settings check error', String(e));
     }
 
-    // Build RichContent from HTML
-    const richContent = htmlToRichContent(body.contentHtml || '', body.title || 'Untitled');
+    // Sanitize body and build RichContent
+    const text = (body.plainText && body.plainText.trim().length > 0)
+      ? body.plainText
+      : stripHtml(body.contentHtml || '');
+    const richContent = toRichContentSafe(body.title || 'Untitled', text);
 
     // Create draft with minimal, valid payload
     const createRes = await fetch('https://www.wixapis.com/blog/v3/draft-posts', {

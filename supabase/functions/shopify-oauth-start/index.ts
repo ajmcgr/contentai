@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url)
     const authHeader = req.headers.get('Authorization')
-    let userId: string | null = null
+    let userId = 'unknown-user'
 
     // Try to get user from auth header if present
     if (authHeader) {
@@ -104,25 +104,22 @@ Deno.serve(async (req) => {
         if (user && !authError) {
           userId = user.id
         } else {
-          console.warn('Shopify OAuth start - invalid auth, checking query userId')
-          const qUid = url.searchParams.get('userId')
-          if (qUid && /^[0-9a-fA-F-]{36}$/.test(qUid)) userId = qUid
+          console.warn('Shopify OAuth start - invalid auth, using query userId')
+          userId = url.searchParams.get('userId') || 'unknown-user'
         }
       } catch (e) {
-        console.warn('Auth check failed, checking query userId:', e)
-        const qUid = url.searchParams.get('userId')
-        if (qUid && /^[0-9a-fA-F-]{36}$/.test(qUid)) userId = qUid
+        console.warn('Auth check failed, using query userId:', e)
+        userId = url.searchParams.get('userId') || 'unknown-user'
       }
     } else {
-      // No auth header, try query param
-      const qUid = url.searchParams.get('userId')
-      if (qUid && /^[0-9a-fA-F-]{36}$/.test(qUid)) userId = qUid
+      // No auth header, use query param
+      userId = url.searchParams.get('userId') || 'unknown-user'
     }
 
     const shop = url.searchParams.get('shop')
     
     if (!shop || !shop.endsWith('.myshopify.com')) {
-      const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
+      const appBase = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('') || window?.location?.origin || 'https://id-preview--0d84bc4c-60bd-4402-8799-74365f8b638e.lovable.app';
       return new Response(null, {
         status: 302,
         headers: { 

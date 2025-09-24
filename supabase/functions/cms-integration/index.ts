@@ -347,14 +347,7 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
   }
 
   if (!connection) {
-    console.error(`CMS connection not found for connectionId: ${connectionId}, platform: ${platform}, userId: ${user.id}`);
-    
-    // For WordPress.com, provide specific guidance
-    if (platform === 'wordpress' && connectionId?.includes('wp-')) {
-      throw new Error('WordPress.com connection not found. Please reconnect in Settings → Integrations to restore publishing.');
-    }
-    
-    throw new Error(`CMS connection not found for ${platform}. Please check your integration settings.`);
+    throw new Error('CMS connection not found');
   }
 
   let publishResult;
@@ -372,7 +365,6 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
     case 'wix': {
       // Ensure Wix memberId is provided (required for 3rd-party apps)
       let memberId = (connection.config && connection.config.memberId) || undefined;
-      let wixSiteId: string | undefined;
       let installRec: any = null;
       if (!memberId) {
         const { data: install } = await supabaseClient
@@ -395,8 +387,7 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
             const triJson: any = await tri.json().catch(() => ({}));
             if (tri.ok) {
               memberId = triJson?.subjectId || undefined;
-              wixSiteId = triJson?.siteId || wixSiteId;
-              console.log('[CMS Integration][Wix] token-info', { subjectType: triJson?.subjectType, subjectId: memberId, siteId: wixSiteId });
+              console.log('[CMS Integration][Wix] token-info', { subjectType: triJson?.subjectType, subjectId: memberId, siteId: triJson?.siteId });
             } else {
               console.warn('[CMS Integration][Wix] token-info failed', { status: tri.status, body: triJson });
             }
@@ -450,7 +441,7 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
         throw new Error('Wix publish failed: missing required memberId for third-party app. Please reconnect Wix and ensure "Read Members and Contacts" and "Manage Blog" permissions.');
       }
 
-      publishResult = await publishToWix(article, connection, { ...publishOptions, memberId, siteId: wixSiteId });
+      publishResult = await publishToWix(article, connection, { ...publishOptions, memberId });
       break;
     }
     case 'notion':
@@ -934,7 +925,7 @@ async function publishToShopify(article: any, connection: any, options: any) {
     const articleData = {
       article: {
         title: article.title,
-        body_html: ensureHtml(article.content),
+        body_html: article.content,
         summary: article.meta_description,
         published: options.status === 'publish' || options.published === true,
         tags: Array.isArray(article.keywords) ? article.keywords.join(', ') : (article.keywords || '')
@@ -1008,121 +999,6 @@ async function publishToWebflow(article: any, connection: any, options: any) {
   }
 }
 
-// Content helpers to normalize and convert markup to platform formats
-function isHtmlLike(input: string | undefined): boolean {
-  if (!input) return false;
-  return /<\s*(p|h1|h2|h3|h4|h5|h6|ul|ol|li|div|span|br|strong|em)\b/i.test(input);
-}
-
-function markdownToHtml(md: string): string {
-  try {
-    let html = md;
-    // Headings
-    html = html.replace(/^###### (.*)$/gm, '<h6>$1<\/h6>');
-    html = html.replace(/^##### (.*)$/gm, '<h5>$1<\/h5>');
-    html = html.replace(/^#### (.*)$/gm, '<h4>$1<\/h4>');
-    html = html.replace(/^### (.*)$/gm, '<h3>$1<\/h3>');
-    html = html.replace(/^## (.*)$/gm, '<h2>$1<\/h2>');
-    html = html.replace(/^# (.*)$/gm, '<h1>$1<\/h1>');
-    // Bold and italics
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1<\/strong>');
-    html = html.replace(/(^|[^\*])\*(?!\s)([^*\n]+)\*(?!\*)/g, '$1<em>$2<\/em>');
-    // Lists
-    html = html.replace(/(?:^|\n)([-*] .+(?:\n[-*] .+)*)/g, (m) => {
-      const items = m.trim().split('\n').map(li => li.replace(/^[-*]\s+/, '').trim());
-      return '<ul>' + items.map(i => `<li>${i}<\/li>`).join('') + '<\/ul>';
-    });
-    // Paragraphs: wrap loose lines that are not already block-level
-    html = html.split('\n\n').map(block => {
-      if (/^\s*<(h[1-6]|ul|ol|li|p|blockquote|pre|table|img)\b/i.test(block.trim())) return block;
-      const lines = block.split('\n').map(l => l.trim()).filter(Boolean).join(' ');
-      return lines ? `<p>${lines}<\/p>` : '';
-    }).join('\n');
-    return html;
-  } catch {
-    return md;
-  }
-}
-
-function ensureHtml(input: string | undefined): string {
-  if (!input) return '';
-  if (isHtmlLike(input)) return input;
-  return markdownToHtml(input);
-}
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-}
-
-function htmlToWixRichContent(html: string, title?: string): any {
-  const nodes: any[] = [];
-  // Very basic parsing for headings and paragraphs
-  const headingRegex = /<(h[1-6])>(.*?)<\/\1>/gim;
-  let remaining = html;
-
-  // Extract headings one by one
-  let match: RegExpExecArray | null;
-  while ((match = headingRegex.exec(html)) !== null) {
-    const [full, tag, inner] = match;
-    const level = Number(tag.substring(1));
-    const before = remaining.substring(0, remaining.indexOf(full));
-    if (stripHtml(before)) {
-      nodes.push({
-        type: 'PARAGRAPH',
-        id: '',
-        nodes: [{
-          type: 'TEXT',
-          id: '',
-          nodes: [],
-          textData: { text: stripHtml(before), decorations: [] }
-        }],
-        paragraphData: { textStyle: { textAlignment: 'AUTO' }, indentation: 0 }
-      });
-    }
-    nodes.push({
-      type: 'HEADING',
-      id: '',
-      nodes: [{
-        type: 'TEXT',
-        id: '',
-        nodes: [],
-        textData: { text: stripHtml(inner), decorations: [] }
-      }],
-      headingData: { level }
-    });
-    remaining = remaining.substring(remaining.indexOf(full) + full.length);
-  }
-  if (stripHtml(remaining)) {
-    nodes.push({
-      type: 'PARAGRAPH',
-      id: '',
-      nodes: [{
-        type: 'TEXT',
-        id: '',
-        nodes: [],
-        textData: { text: stripHtml(remaining), decorations: [] }
-      }],
-      paragraphData: { textStyle: { textAlignment: 'AUTO' }, indentation: 0 }
-    });
-  }
-
-  if (nodes.length === 0 && title) {
-    nodes.push({
-      type: 'PARAGRAPH',
-      id: '',
-      nodes: [{
-        type: 'TEXT',
-        id: '',
-        nodes: [],
-        textData: { text: stripHtml(title), decorations: [] }
-      }],
-      paragraphData: { textStyle: { textAlignment: 'AUTO' }, indentation: 0 }
-    });
-  }
-
-  return { nodes };
-}
-
 async function publishToWix(article: any, connection: any, options: any) {
   const endpoint = `https://www.wixapis.com/blog/v3/draft-posts`;
   
@@ -1137,96 +1013,65 @@ async function publishToWix(article: any, connection: any, options: any) {
     throw new Error('Wix publish failed: missing instanceId. Please reconnect your Wix integration.');
   }
 
-  // Validate content length (Wix has limits on content size)
-  const contentLength = article.content?.length || 0;
-  if (contentLength > 100000) { // 100KB limit
-    console.warn(`Wix content length warning: ${contentLength} chars, truncating to 100KB`);
-    article.content = article.content.substring(0, 100000) + '...';
-  }
-
-  const htmlContent = ensureHtml(article.content || '');
-  const richContent = htmlToWixRichContent(htmlContent, article.title);
-
   const draftPostData = {
     draftPost: {
       title: article.title,
       excerpt: article.meta_description || '',
       memberId,
-      richContent: richContent
+      richContent: {
+        nodes: [{
+          type: 'PARAGRAPH',
+          id: '',
+          nodes: [{
+            type: 'TEXT',
+            id: '',
+            nodes: [],
+            textData: {
+              text: article.content,
+              decorations: []
+            }
+          }],
+          paragraphData: {
+            textStyle: { textAlignment: 'AUTO' },
+            indentation: 0
+          }
+        }]
+      }
     }
   };
 
-  const headers: Record<string, string> = {
+  const headers = {
     'Authorization': `Bearer ${connection.access_token}`,
     'Content-Type': 'application/json',
     'wix-instance-id': instanceId // Required for Wix Blog API authentication
   };
-  if (options?.siteId) {
-    headers['wix-site-id'] = options.siteId;
+
+  console.log('Wix API request:', {
+    endpoint,
+    instanceId,
+    memberId,
+    data: JSON.stringify(draftPostData, null, 2),
+    headers
+  });
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(draftPostData)
+  });
+
+  const responseText = await response.text();
+  console.log('Wix API response:', {
+    status: response.status,
+    statusText: response.statusText,
+    body: responseText
+  });
+
+  if (!response.ok) {
+    throw new Error(`Wix publish failed: ${response.status} ${response.statusText} - ${responseText}`);
   }
 
-  // Retry logic with exponential backoff
-  const maxRetries = 3;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`Wix API request (attempt ${attempt}):`, {
-        endpoint,
-        instanceId,
-        memberId,
-        siteId: options?.siteId,
-        contentLength: article.content?.length || 0
-      });
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(draftPostData)
-      });
-
-      const responseText = await response.text();
-      console.log('Wix API response:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: responseText.substring(0, 500) // Truncate log
-      });
-
-      if (response.ok) {
-        return JSON.parse(responseText);
-      }
-
-      // Handle specific error cases
-      if (response.status === 401 || response.status === 403) {
-        throw new Error(`Wix authentication failed. Please reconnect your Wix integration.`);
-      }
-
-      if (response.status === 429) {
-        // Rate limited, wait longer before retry
-        if (attempt < maxRetries) {
-          const waitTime = Math.pow(2, attempt) * 2000; // 4s, 8s
-          console.log(`Wix rate limited, waiting ${waitTime}ms before retry`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-      }
-
-      // For 500 errors or other server errors, retry with backoff
-      if (response.status >= 500 && attempt < maxRetries) {
-        const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s
-        console.log(`Wix server error ${response.status}, retrying in ${waitTime}ms`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-        continue;
-      }
-
-      // Final attempt or non-retryable error
-      throw new Error(`Wix publish failed: ${response.status} ${response.statusText} - ${responseText}`);
-
-    } catch (error: any) {
-      if (attempt === maxRetries || error.message.includes('authentication failed')) {
-        throw error;
-      }
-      console.log(`Wix attempt ${attempt} failed:`, error.message);
-    }
-  }
+  return JSON.parse(responseText);
 }
 
 async function publishToNotion(article: any, connection: any, options: any) {
