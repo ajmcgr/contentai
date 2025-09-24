@@ -159,35 +159,26 @@ export const WordPressConnect = () => {
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
       {!token ? (
         <Button 
           onClick={handleConnect} 
           disabled={connecting}
           variant="default"
         >
-          {connecting ? 'Connecting...' : 'Connect WordPress.com'}
+          {connecting ? 'Connecting...' : 'Connect'}
         </Button>
       ) : (
-        <div className="flex items-center gap-3">
+        <>
+          <span className="text-sm text-green-600 font-medium">Connected</span>
           <Button 
-            onClick={handleConnect} 
-            disabled={connecting}
             variant="outline"
-          >
-            {connecting ? 'Connecting...' : 'Re-connect'}
-          </Button>
-          <Button 
             onClick={handleDisconnect}
-            variant="destructive"
           >
             Disconnect
           </Button>
-        </div>
+        </>
       )}
-      <span className={`text-sm ${token ? 'text-green-600' : 'text-gray-500'}`}>
-        {token ? 'Connected' : 'Not connected'}
-      </span>
     </div>
   );
 };
