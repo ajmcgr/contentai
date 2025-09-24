@@ -227,7 +227,17 @@ console.log('[Wix OAuth] Saving connection data', {
 if (SB_URL && SB_SVC) {
   try {
     const supabase = createClient(SB_URL, SB_SVC, { auth: { persistSession: false } });
-    // ✅ Upsert by user_id (one connection row per user)
+    // ✅ Handle both user_id and instance_id conflicts properly
+    // First, delete any existing records with this instance_id from other users
+    if (instance_id) {
+      await supabase
+        .from("wix_connections")
+        .delete()
+        .eq("instance_id", instance_id)
+        .neq("user_id", userId);
+    }
+    
+    // Now upsert by user_id 
     const { error: connErr } = await supabase
       .from("wix_connections")
       .upsert(

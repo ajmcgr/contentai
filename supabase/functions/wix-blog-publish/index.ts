@@ -124,7 +124,14 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (selErr) return J(500, { error: 'db_error', details: selErr });
-    if (!conn?.access_token || !conn?.instance_id) return J(401, { error: 'not_connected' });
+    if (!conn?.access_token || !conn?.instance_id) {
+      console.log('[wix-blog-publish] No valid connection found', { 
+        hasConnection: !!conn, 
+        hasAccessToken: !!conn?.access_token, 
+        hasInstanceId: !!conn?.instance_id 
+      });
+      return J(401, { error: 'not_connected', message: 'Please reconnect your Wix integration.' });
+    }
 
     // Build required headers and resolve site id if needed
     const accessToken = conn.access_token as string;
@@ -142,7 +149,7 @@ Deno.serve(async (req) => {
     if (!wixSiteId) {
       console.log('[wix-blog-publish] Attempting site ID discovery...');
       
-      // 1) Try instance_id as site_id first (common case)
+      // 1) Try instance_id as site_id first (most common case)
       if (instanceId) {
         console.log('[wix-blog-publish] Trying instanceId as siteId:', instanceId);
         try {
@@ -151,10 +158,14 @@ Deno.serve(async (req) => {
             method: 'GET', 
             headers: testHeaders 
           });
+          console.log('[wix-blog-publish] instanceId test response:', testRes.status);
           if (testRes.ok) {
             wixSiteId = instanceId;
             headers['wix-site-id'] = wixSiteId;
             console.log('[wix-blog-publish] Successfully used instanceId as siteId');
+          } else {
+            const errorText = await testRes.text();
+            console.log('[wix-blog-publish] instanceId test failed:', errorText.slice(0, 200));
           }
         } catch (e) {
           console.warn('[wix-blog-publish] instanceId test failed:', e);
@@ -174,6 +185,9 @@ Deno.serve(async (req) => {
             const ti: any = await tri.json().catch(() => ({}));
             wixSiteId = ti?.siteId || ti?.metaSiteId || null;
             console.log('[wix-blog-publish] Token-info result:', { siteId: wixSiteId });
+            if (wixSiteId) headers['wix-site-id'] = wixSiteId;
+          } else {
+            console.log('[wix-blog-publish] Token-info failed with status:', tri.status);
           }
         } catch (e) {
           console.warn('[wix-blog-publish] token-info failed:', e);
@@ -184,10 +198,11 @@ Deno.serve(async (req) => {
       if (!wixSiteId && instanceId) {
         try {
           console.log('[wix-blog-publish] Trying site-properties...');
-          const propHeaders = { ...headers };
-          if (!propHeaders['wix-site-id']) {
-            propHeaders['wix-site-id'] = instanceId;
-          }
+          const propHeaders = { 
+            authorization: `Bearer ${accessToken}`,
+            'content-type': 'application/json',
+            'wix-instance-id': instanceId
+          };
           
           const pr = await fetch('https://www.wixapis.com/site-properties/v4/properties', {
             method: 'GET',
@@ -197,6 +212,9 @@ Deno.serve(async (req) => {
             const props: any = await pr.json().catch(() => ({}));
             wixSiteId = props?.properties?.siteId || props?.properties?.metaSiteId || props?.siteId || props?.site?.id || null;
             console.log('[wix-blog-publish] Site-properties result:', { siteId: wixSiteId });
+            if (wixSiteId) headers['wix-site-id'] = wixSiteId;
+          } else {
+            console.log('[wix-blog-publish] Site-properties failed with status:', pr.status);
           }
         } catch (e) {
           console.warn('[wix-blog-publish] site-properties failed:', e);
@@ -216,6 +234,9 @@ Deno.serve(async (req) => {
             const qj: any = await q.json().catch(() => ({}));
             wixSiteId = qj?.sites?.[0]?.id || null;
             console.log('[wix-blog-publish] Site-list result:', { siteId: wixSiteId });
+            if (wixSiteId) headers['wix-site-id'] = wixSiteId;
+          } else {
+            console.log('[wix-blog-publish] Site-list failed with status:', q.status);
           }
         } catch (e) {
           console.warn('[wix-blog-publish] site-list failed:', e);
@@ -223,13 +244,13 @@ Deno.serve(async (req) => {
       }
       
       if (wixSiteId) {
-        headers['wix-site-id'] = wixSiteId;
         console.log('[wix-blog-publish] Site ID resolved:', wixSiteId);
         try {
           await supabase
             .from('wix_connections')
             .update({ wix_site_id: wixSiteId, updated_at: new Date().toISOString() })
             .eq('user_id', body.userId);
+          console.log('[wix-blog-publish] Site ID saved to database');
         } catch (e) {
           console.warn('[wix-blog-publish] Failed to save site ID:', e);
         }
@@ -238,7 +259,12 @@ Deno.serve(async (req) => {
         return J(400, { 
           error: 'site_id_resolution_failed',
           message: 'Unable to determine Wix site ID. Please reconnect your Wix integration.',
-          debug: { instanceId, hasAccessToken: !!accessToken }
+          debug: { 
+            instanceId, 
+            hasAccessToken: !!accessToken,
+            attempts: ['instanceId_as_siteId', 'token_info', 'site_properties', 'site_list']
+          },
+          solution: 'Try disconnecting and reconnecting your Wix integration from the Settings page.'
         });
       }
     }
