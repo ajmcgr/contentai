@@ -204,28 +204,6 @@ export const WordPressConnect = () => {
           </span>
         </div>
 
-        {token && (
-          <div className="space-y-2 p-4 bg-green-50 rounded-lg border border-green-200">
-            <div className="font-medium text-green-800">Connected Site:</div>
-            {token.blog_url && (
-              <div className="flex items-center gap-2">
-                <a 
-                  href={token.blog_url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-green-700 hover:underline flex items-center gap-1"
-                >
-                  {token.blog_url}
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-            )}
-            <div className="text-sm text-green-600">
-              Connected on: {new Date(token.created_at).toLocaleDateString()}
-            </div>
-          </div>
-        )}
-
         <div className="flex gap-2">
           {token ? (
             <Button 
