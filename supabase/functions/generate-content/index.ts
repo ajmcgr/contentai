@@ -437,32 +437,94 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
     console.log('Original markdown body length:', markdownBody.length);
 
     // STEP 1: Improve image relevance using title, keywords and top H2s, then insert exactly 2 images
-    console.log('Improving image relevance from title/keywords...');
+    console.log('Generating AI images...');
     let selectedImages = allImages.slice(0, 2);
+    
     try {
+      // Generate AI images for the article
       const h2Matches = Array.from(markdownBody.matchAll(/^##\s+(.+)$/gim) as IterableIterator<RegExpMatchArray>).map(m => m[1]).slice(0, 2);
       const primaryKeywords = Array.isArray(keywords) ? keywords.filter(Boolean) : (keywords ? [String(keywords)] : []);
-      const imageQueries = [...primaryKeywords.slice(0, 2), title, ...h2Matches]
+      const imagePrompts = [...primaryKeywords.slice(0, 1), title]
         .filter(Boolean)
-        .map(q => `${q} ${industry || ''}`.trim());
-      const seen = new Set<string>();
-      const refetch: {url: string, alt: string}[] = [];
-      for (const q of imageQueries) {
-        const imgs = await fetchUnsplashImages(q, 6);
-        for (const img of imgs) {
-          if (!seen.has(img.url)) {
-            seen.add(img.url);
-            refetch.push({ url: img.url, alt: img.alt || `${title} - ${q}` });
-            if (refetch.length >= 2) break;
+        .map(q => `${q} ${industry || ''}`.trim())
+        .slice(0, 2);
+        
+      const generatedImages: {url: string, alt: string}[] = [];
+      
+      // Generate images using the AI image generation function
+      for (const prompt of imagePrompts) {
+        try {
+          console.log(`Generating AI image for prompt: ${prompt}`);
+          
+          const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+          if (!openaiApiKey) {
+            console.warn('OpenAI API key not found, skipping AI image generation');
+            continue;
           }
+          
+          const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openaiApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'dall-e-3',
+              prompt: prompt,
+              n: 1,
+              size: '1024x1024',
+              quality: 'hd',
+              style: 'natural'
+            })
+          });
+          
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json();
+            if (imageData.data && imageData.data.length > 0) {
+              generatedImages.push({
+                url: imageData.data[0].url,
+                alt: `${title} - ${prompt}`
+              });
+            }
+          } else {
+            console.warn(`Failed to generate AI image for prompt: ${prompt}`, await imageResponse.text());
+          }
+        } catch (e) {
+          console.warn(`Error generating AI image for prompt "${prompt}":`, e);
         }
-        if (refetch.length >= 2) break;
+        
+        if (generatedImages.length >= 2) break;
       }
-      if (refetch.length) {
-        selectedImages = refetch.slice(0, 2);
+      
+      // If we generated AI images, use them; otherwise fallback to Unsplash
+      if (generatedImages.length > 0) {
+        selectedImages = generatedImages;
+        console.log(`Using ${generatedImages.length} AI-generated images`);
+      } else {
+        console.log('AI image generation failed, falling back to Unsplash images...');
+        // Fallback to Unsplash images
+        const imageQueries = [...primaryKeywords.slice(0, 2), title, ...h2Matches]
+          .filter(Boolean)
+          .map(q => `${q} ${industry || ''}`.trim());
+        const seen = new Set<string>();
+        const refetch: {url: string, alt: string}[] = [];
+        for (const q of imageQueries) {
+          const imgs = await fetchUnsplashImages(q, 6);
+          for (const img of imgs) {
+            if (!seen.has(img.url)) {
+              seen.add(img.url);
+              refetch.push({ url: img.url, alt: img.alt || `${title} - ${q}` });
+              if (refetch.length >= 2) break;
+            }
+          }
+          if (refetch.length >= 2) break;
+        }
+        if (refetch.length) {
+          selectedImages = refetch.slice(0, 2);
+        }
       }
     } catch (e) {
-      console.warn('Improved image search failed, using fallback images', e);
+      console.warn('AI image generation failed, using fallback images', e);
     }
 
     console.log('Inserting images...');

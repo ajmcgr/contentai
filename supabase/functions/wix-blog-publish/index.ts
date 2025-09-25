@@ -26,26 +26,147 @@ function J(status: number, data: unknown) {
   });
 }
 
-// Minimal, valid RichContent payload (Ricos schema)
-function toRichContentSafe(title: string, text: string) {
+// Convert HTML to Wix RichContent format
+function htmlToRichContent(title: string, htmlContent: string) {
   const safeTitle = (title || 'Untitled').slice(0, 200);
-  const safeText = (text || '').slice(0, 40000);
-  return {
+  const safeHtml = (htmlContent || '').slice(0, 40000);
+  
+  const nodes = [];
+  
+  // Add title as heading
+  nodes.push({
+    type: 'HEADING',
+    headingData: { level: 1 },
     nodes: [
-      {
-        type: 'HEADING',
-        headingData: { level: 1 },
-        nodes: [
-          { type: 'TEXT', textData: { text: safeTitle, decorations: [] } },
-        ],
-      },
-      {
-        type: 'PARAGRAPH',
-        nodes: [
-          { type: 'TEXT', textData: { text: safeText, decorations: [] } },
-        ],
-      },
+      { type: 'TEXT', textData: { text: safeTitle, decorations: [] } },
     ],
+  });
+  
+  // Parse HTML content and convert to RichContent nodes
+  const htmlLines = safeHtml.split('<br>').filter(line => line.trim());
+  
+  for (const line of htmlLines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) continue;
+    
+    // Handle headings
+    if (trimmedLine.match(/^<h[1-6]>/i)) {
+      const headingMatch = trimmedLine.match(/^<h([1-6])>(.*?)<\/h[1-6]>/i);
+      if (headingMatch) {
+        const level = parseInt(headingMatch[1]);
+        const text = headingMatch[2].replace(/<[^>]+>/g, '').trim();
+        nodes.push({
+          type: 'HEADING',
+          headingData: { level: Math.min(level, 6) },
+          nodes: [
+            { type: 'TEXT', textData: { text, decorations: [] } },
+          ],
+        });
+        continue;
+      }
+    }
+    
+    // Handle images
+    if (trimmedLine.includes('<img')) {
+      const imgMatch = trimmedLine.match(/<img[^>]+src="([^"]+)"[^>]*alt="([^"]*)"[^>]*>/i);
+      if (imgMatch) {
+        nodes.push({
+          type: 'IMAGE',
+          imageData: {
+            containerData: {
+              width: { size: 'CONTENT' },
+              alignment: 'CENTER',
+            },
+            image: {
+              src: {
+                url: imgMatch[1],
+              },
+              alt: imgMatch[2] || '',
+            },
+          },
+        });
+        continue;
+      }
+    }
+    
+    // Handle regular paragraphs with formatting
+    let processedLine = trimmedLine;
+    const textNodes = [];
+    
+    // Split by formatting tags and create text nodes
+    const parts = processedLine.split(/(<\/?(?:strong|em|a)[^>]*>)/i);
+    let currentDecorations: any[] = [];
+    let isLink = false;
+    let linkUrl = '';
+    
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      
+      if (part.match(/^<strong>/i)) {
+        currentDecorations.push({ type: 'BOLD' });
+      } else if (part.match(/^<\/strong>/i)) {
+        currentDecorations = currentDecorations.filter(d => d.type !== 'BOLD');
+      } else if (part.match(/^<em>/i)) {
+        currentDecorations.push({ type: 'ITALIC' });
+      } else if (part.match(/^<\/em>/i)) {
+        currentDecorations = currentDecorations.filter(d => d.type !== 'ITALIC');
+      } else if (part.match(/^<a\s+href="([^"]+)"/i)) {
+        const linkMatch = part.match(/^<a\s+href="([^"]+)"/i);
+        if (linkMatch) {
+          isLink = true;
+          linkUrl = linkMatch[1];
+          currentDecorations.push({ type: 'LINK', linkData: { url: linkUrl } });
+        }
+      } else if (part.match(/^<\/a>/i)) {
+        isLink = false;
+        currentDecorations = currentDecorations.filter(d => d.type !== 'LINK');
+        linkUrl = '';
+      } else if (part && !part.match(/^<[^>]+>$/)) {
+        // This is actual text content
+        const cleanText = part.replace(/<[^>]+>/g, '').trim();
+        if (cleanText) {
+          textNodes.push({
+            type: 'TEXT',
+            textData: { 
+              text: cleanText, 
+              decorations: [...currentDecorations] 
+            }
+          });
+        }
+      }
+    }
+    
+    // If no formatted text nodes were created, create a simple text node
+    if (textNodes.length === 0) {
+      const cleanText = processedLine.replace(/<[^>]+>/g, '').trim();
+      if (cleanText) {
+        textNodes.push({
+          type: 'TEXT',
+          textData: { text: cleanText, decorations: [] }
+        });
+      }
+    }
+    
+    if (textNodes.length > 0) {
+      nodes.push({
+        type: 'PARAGRAPH',
+        nodes: textNodes,
+      });
+    }
+  }
+  
+  // Ensure we have at least one content node
+  if (nodes.length <= 1) {
+    nodes.push({
+      type: 'PARAGRAPH',
+      nodes: [
+        { type: 'TEXT', textData: { text: safeHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() || 'Article content', decorations: [] } },
+      ],
+    });
+  }
+  
+  return {
+    nodes,
     metadata: { version: 1 },
     documentStyle: {},
   } as const;
@@ -477,11 +598,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Sanitize body and build RichContent
-    const text = (body.plainText && body.plainText.trim().length > 0)
-      ? body.plainText
-      : stripHtml(body.contentHtml || '');
-    const richContent = toRichContentSafe(body.title || 'Untitled', text);
+    // Convert HTML content to Wix RichContent format
+    const htmlContent = body.contentHtml || '';
+    const richContent = htmlToRichContent(body.title || 'Untitled', htmlContent);
 
     // Create draft with minimal, valid payload
     const createRes = await fetch('https://www.wixapis.com/blog/v3/draft-posts', {
