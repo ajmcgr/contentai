@@ -4,7 +4,8 @@
 /* Register Reckless from Lovable Assets */
 @font-face{
   font-family:"Reckless";
-  src: url('/Reckless-Regular.woff2') format('woff2'),
+  src: url('/fonts/Reckless-Regular.otf') format('opentype'),
+       url('/Reckless-Regular.woff2') format('woff2'),
        url('/Reckless-Regular.woff') format('woff'),
        url('/fonts/reckless/Reckless-Regular.woff2') format('woff2'),
        url('/fonts/reckless/Reckless-Regular.woff') format('woff'),
@@ -14,7 +15,8 @@
 }
 @font-face{
   font-family:"Reckless";
-  src: url('/Reckless-Medium.woff2') format('woff2'),
+  src: url('/fonts/Reckless-Medium.otf') format('opentype'),
+       url('/Reckless-Medium.woff2') format('woff2'),
        url('/Reckless-Medium.woff') format('woff'),
        url('/fonts/reckless/Reckless-Medium.woff2') format('woff2'),
        url('/fonts/reckless/Reckless-Medium.woff') format('woff'),
@@ -23,7 +25,8 @@
 }
 @font-face{
   font-family:"Reckless";
-  src: url('/Reckless-Bold.woff2') format('woff2'),
+  src: url('/fonts/Reckless-Bold.otf') format('opentype'),
+       url('/Reckless-Bold.woff2') format('woff2'),
        url('/Reckless-Bold.woff') format('woff'),
        url('/fonts/reckless/Reckless-Bold.woff2') format('woff2'),
        url('/fonts/reckless/Reckless-Bold.woff') format('woff'),
@@ -69,7 +72,7 @@
     --radius: 0.5rem;
 
     /* Global heading defaults */
-    --heading-font: "Inter";
+    --heading-font: "Reckless";
     --heading-weight: 500;
     --heading-lh: 1.15;
     --heading-track: -0.01em;
@@ -152,7 +155,7 @@
 
   /* Font utility classes */
   .font-reckless {
-    font-family: 'Inter', sans-serif !important;
+    font-family: 'Reckless', serif !important;
   }
 
 }
