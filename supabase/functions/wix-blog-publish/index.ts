@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     // Load connection
     const { data: conn, error: selErr } = await supabase
       .from('wix_connections')
-      .select('access_token, instance_id, wix_site_id, wix_author_member_id')
+      .select('access_token, refresh_token, instance_id, wix_site_id, wix_author_member_id')
       .eq('user_id', body.userId)
       .maybeSingle();
 
@@ -134,8 +134,61 @@ Deno.serve(async (req) => {
     }
 
     // Build required headers and resolve site id if needed
-    const accessToken = conn.access_token as string;
+    let accessToken = conn.access_token as string;
     const instanceId = conn.instance_id as string;
+    
+    // Check if token might be expired and try to refresh if we have a refresh token
+    if (conn.refresh_token) {
+      try {
+        console.log('[wix-blog-publish] Checking if token refresh is needed...');
+        
+        // Quick test of current token
+        const tokenTestRes = await fetch('https://www.wixapis.com/oauth2/token-info', {
+          method: 'POST',
+          headers: {
+            'authorization': `Bearer ${accessToken}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({ token: accessToken })
+        });
+        
+        if (tokenTestRes.status === 401 || tokenTestRes.status === 428) {
+          console.log('[wix-blog-publish] Token appears expired, attempting refresh...');
+          
+          const refreshRes = await fetch('https://www.wixapis.com/oauth2/token', {
+            method: 'POST',
+            headers: { 'content-type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              grant_type: 'refresh_token',
+              client_id: Deno.env.get('WIX_CLIENT_ID') || '',
+              client_secret: Deno.env.get('WIX_CLIENT_SECRET') || '',
+              refresh_token: conn.refresh_token
+            })
+          });
+          
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            accessToken = refreshData.access_token;
+            
+            // Update the token in database
+            await supabase
+              .from('wix_connections')
+              .update({ 
+                access_token: accessToken,
+                refresh_token: refreshData.refresh_token || conn.refresh_token,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', body.userId);
+              
+            console.log('[wix-blog-publish] Token refreshed successfully');
+          } else {
+            console.warn('[wix-blog-publish] Token refresh failed:', refreshRes.status);
+          }
+        }
+      } catch (e) {
+        console.warn('[wix-blog-publish] Token refresh attempt failed:', e);
+      }
+    }
     let wixSiteId: string | null = (conn.wix_site_id as string | null) || (body.wixSiteId || null);
 
     const headers: Record<string, string> = {
@@ -172,22 +225,32 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 2) token-info approach
+      // 2) token-info approach  
       if (!wixSiteId) {
         try {
           console.log('[wix-blog-publish] Trying token-info approach...');
+          const tokenInfoHeaders = {
+            'authorization': `Bearer ${accessToken}`,
+            'content-type': 'application/json',
+            'accept': 'application/json'
+          };
+          
           const tri = await fetch('https://www.wixapis.com/oauth2/token-info', {
             method: 'POST',
-            headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+            headers: tokenInfoHeaders,
             body: JSON.stringify({ token: accessToken })
           });
+          
+          const triText = await tri.text();
+          console.log('[wix-blog-publish] Token-info response:', tri.status, triText.slice(0, 500));
+          
           if (tri.ok) {
-            const ti: any = await tri.json().catch(() => ({}));
+            const ti: any = JSON.parse(triText);
             wixSiteId = ti?.siteId || ti?.metaSiteId || null;
-            console.log('[wix-blog-publish] Token-info result:', { siteId: wixSiteId });
+            console.log('[wix-blog-publish] Token-info result:', { siteId: wixSiteId, subjectType: ti?.subjectType, subjectId: ti?.subjectId });
             if (wixSiteId) headers['wix-site-id'] = wixSiteId;
           } else {
-            console.log('[wix-blog-publish] Token-info failed with status:', tri.status);
+            console.log('[wix-blog-publish] Token-info failed with status:', tri.status, 'Response:', triText.slice(0, 200));
           }
         } catch (e) {
           console.warn('[wix-blog-publish] token-info failed:', e);
