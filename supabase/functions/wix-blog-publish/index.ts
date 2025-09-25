@@ -318,17 +318,9 @@ Deno.serve(async (req) => {
           console.warn('[wix-blog-publish] Failed to save site ID:', e);
         }
       } else {
-        console.error('[wix-blog-publish] Failed to resolve site ID');
-        return J(400, { 
-          error: 'site_id_resolution_failed',
-          message: 'Unable to determine Wix site ID. Please reconnect your Wix integration.',
-          debug: { 
-            instanceId, 
-            hasAccessToken: !!accessToken,
-            attempts: ['instanceId_as_siteId', 'token_info', 'site_properties', 'site_list']
-          },
-          solution: 'Try disconnecting and reconnecting your Wix integration from the Settings page.'
-        });
+        console.warn('[wix-blog-publish] Failed to resolve site ID - proceeding without wix-site-id header');
+        // Fallback: continue using instance headers only; many Wix APIs accept this
+        // headers already contains 'wix-instance-id'; do not set 'wix-site-id'
       }
     }
 
