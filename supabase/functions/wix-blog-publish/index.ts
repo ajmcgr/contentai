@@ -202,8 +202,38 @@ Deno.serve(async (req) => {
     if (!wixSiteId) {
       console.log('[wix-blog-publish] Attempting site ID discovery...');
       
+      // 0) Apps Instance API - often returns siteId/metaSiteId reliably
+      try {
+        console.log('[wix-blog-publish] Trying apps/v1/instance...');
+        const instRes = await fetch('https://www.wixapis.com/apps/v1/instance', {
+          method: 'GET',
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+            accept: 'application/json'
+          }
+        });
+        const instTxt = await instRes.text();
+        console.log('[wix-blog-publish] apps/v1/instance response:', instRes.status, instTxt.slice(0, 500));
+        if (instRes.ok) {
+          let inst: any = instTxt; try { inst = JSON.parse(instTxt); } catch {}
+          const maybeId = inst?.instance?.siteId 
+            || inst?.instance?.metaSiteId 
+            || inst?.siteId 
+            || inst?.metaSiteId 
+            || inst?.instance?.site?.id 
+            || null;
+          if (maybeId) {
+            wixSiteId = String(maybeId);
+            headers['wix-site-id'] = wixSiteId;
+            console.log('[wix-blog-publish] apps/v1/instance provided siteId:', wixSiteId);
+          }
+        }
+      } catch (e) {
+        console.warn('[wix-blog-publish] apps/v1/instance failed:', e);
+      }
+      
       // 1) Try instance_id as site_id first (most common case)
-      if (instanceId) {
+      if (!wixSiteId && instanceId) {
         console.log('[wix-blog-publish] Trying instanceId as siteId:', instanceId);
         try {
           const testHeaders = { ...headers, 'wix-site-id': instanceId };
