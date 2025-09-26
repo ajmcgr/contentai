@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { marked } from 'https://esm.sh/marked@14.1.3';
 
 // Helper functions for the blog generation pipeline
 
@@ -562,16 +563,15 @@ ${externalSources.map((s, i) => `- [${i+1}] ${s.title || s.url} -> ${s.url}`).jo
     }
     console.log('After links insertion, markdown length:', markdownBody.length);
 
-    // Convert markdown to HTML using basic conversion
-    const htmlContent = markdownBody
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-      .replace(/\*(.*)\*/gim, '<em>$1</em>')
-      .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a href="$2">$1</a>')
-      .replace(/!\[([^\]]*)\]\(([^\)]*)\)/gim, '<img alt="$1" src="$2" style="max-width: 100%; height: auto;" />')
-      .replace(/\n/gim, '<br>');
+    // Convert markdown to HTML using proper markdown parser
+    console.log('Converting markdown to HTML...');
+    let htmlContent = await marked.parse(markdownBody);
+    
+    // Ensure images have proper styling
+    htmlContent = htmlContent.replace(
+      /<img([^>]*?)>/g, 
+      '<img$1 style="max-width: 100%; height: auto;" />'
+    );
     
     console.log('Final HTML content length:', htmlContent.length);
     
