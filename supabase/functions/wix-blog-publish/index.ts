@@ -179,6 +179,34 @@ function stripHtml(html: string) {
 async function resolveValidMemberId(headers: Record<string, string>, candidate?: string | null) {
   console.log('[wix-blog-publish] Resolving member ID, candidate:', candidate);
   
+  // First, try to find member by email alex@trymedia.ai
+  try {
+    const emailResponse = await fetch('https://www.wixapis.com/members/v1/members/query', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        filter: {
+          "loginEmail": {
+            "$eq": "alex@trymedia.ai"
+          }
+        }
+      })
+    });
+    
+    if (emailResponse.ok) {
+      const emailData = await emailResponse.json();
+      if (emailData.members && emailData.members.length > 0) {
+        const member = emailData.members[0];
+        console.log('[wix-blog-publish] Found member by email alex@trymedia.ai:', member.id);
+        return member.id;
+      }
+    } else {
+      console.log('[wix-blog-publish] Email query failed:', emailResponse.status, await emailResponse.text());
+    }
+  } catch (error) {
+    console.log('[wix-blog-publish] Email query failed:', error);
+  }
+  
   // If we have a candidate, verify it exists
   if (candidate) {
     try {
