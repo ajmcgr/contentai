@@ -443,6 +443,7 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
 
       console.log('[CMS Integration][Wix] Publishing with memberId:', memberId);
       publishResult = await publishToWix(article, connection, { ...publishOptions, memberId });
+      break;
     }
     case 'notion':
       publishResult = await publishToNotion(article, connection, publishOptions);
