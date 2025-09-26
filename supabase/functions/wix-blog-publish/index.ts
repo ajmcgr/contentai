@@ -43,32 +43,55 @@ function htmlToRichContent(title: string, htmlContent: string) {
   });
   
   // Parse HTML content and convert to RichContent nodes
-  const htmlLines = safeHtml.split('<br>').filter(line => line.trim());
+  // Split by common block elements first
+  const blockElements = safeHtml.split(/(<\/?(?:p|div|h[1-6]|br\s*\/?>)>)/i).filter(Boolean);
   
-  for (const line of htmlLines) {
-    const trimmedLine = line.trim();
-    if (!trimmedLine) continue;
+  let currentParagraphNodes: any[] = [];
+  
+  for (const element of blockElements) {
+    const trimmedElement = element.trim();
+    if (!trimmedElement) continue;
     
     // Handle headings
-    if (trimmedLine.match(/^<h[1-6]>/i)) {
-      const headingMatch = trimmedLine.match(/^<h([1-6])>(.*?)<\/h[1-6]>/i);
+    if (trimmedElement.match(/^<h[1-6]>/i)) {
+      // Push any current paragraph before starting heading
+      if (currentParagraphNodes.length > 0) {
+        nodes.push({
+          type: 'PARAGRAPH',
+          nodes: currentParagraphNodes,
+        });
+        currentParagraphNodes = [];
+      }
+      
+      const headingMatch = trimmedElement.match(/^<h([1-6])>(.*?)<\/h[1-6]>/i);
       if (headingMatch) {
         const level = parseInt(headingMatch[1]);
         const text = headingMatch[2].replace(/<[^>]+>/g, '').trim();
-        nodes.push({
-          type: 'HEADING',
-          headingData: { level: Math.min(level, 6) },
-          nodes: [
-            { type: 'TEXT', textData: { text, decorations: [] } },
-          ],
-        });
-        continue;
+        if (text) {
+          nodes.push({
+            type: 'HEADING',
+            headingData: { level: Math.min(level, 6) },
+            nodes: [
+              { type: 'TEXT', textData: { text, decorations: [] } },
+            ],
+          });
+        }
       }
+      continue;
     }
     
     // Handle images
-    if (trimmedLine.includes('<img')) {
-      const imgMatch = trimmedLine.match(/<img[^>]+src="([^"]+)"[^>]*alt="([^"]*)"[^>]*>/i);
+    if (trimmedElement.includes('<img')) {
+      // Push any current paragraph before image
+      if (currentParagraphNodes.length > 0) {
+        nodes.push({
+          type: 'PARAGRAPH',
+          nodes: currentParagraphNodes,
+        });
+        currentParagraphNodes = [];
+      }
+      
+      const imgMatch = trimmedElement.match(/<img[^>]+src="([^"]+)"[^>]*alt="([^"]*)"[^>]*>/i);
       if (imgMatch) {
         nodes.push({
           type: 'IMAGE',
@@ -85,74 +108,35 @@ function htmlToRichContent(title: string, htmlContent: string) {
             },
           },
         });
-        continue;
       }
+      continue;
     }
     
-    // Handle regular paragraphs with formatting
-    let processedLine = trimmedLine;
-    const textNodes = [];
-    
-    // Split by formatting tags and create text nodes
-    const parts = processedLine.split(/(<\/?(?:strong|em|a)[^>]*>)/i);
-    let currentDecorations: any[] = [];
-    let isLink = false;
-    let linkUrl = '';
-    
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      
-      if (part.match(/^<strong>/i)) {
-        currentDecorations.push({ type: 'BOLD' });
-      } else if (part.match(/^<\/strong>/i)) {
-        currentDecorations = currentDecorations.filter(d => d.type !== 'BOLD');
-      } else if (part.match(/^<em>/i)) {
-        currentDecorations.push({ type: 'ITALIC' });
-      } else if (part.match(/^<\/em>/i)) {
-        currentDecorations = currentDecorations.filter(d => d.type !== 'ITALIC');
-      } else if (part.match(/^<a\s+href="([^"]+)"/i)) {
-        const linkMatch = part.match(/^<a\s+href="([^"]+)"/i);
-        if (linkMatch) {
-          isLink = true;
-          linkUrl = linkMatch[1];
-          currentDecorations.push({ type: 'LINK', linkData: { url: linkUrl } });
-        }
-      } else if (part.match(/^<\/a>/i)) {
-        isLink = false;
-        currentDecorations = currentDecorations.filter(d => d.type !== 'LINK');
-        linkUrl = '';
-      } else if (part && !part.match(/^<[^>]+>$/)) {
-        // This is actual text content
-        const cleanText = part.replace(/<[^>]+>/g, '').trim();
-        if (cleanText) {
-          textNodes.push({
-            type: 'TEXT',
-            textData: { 
-              text: cleanText, 
-              decorations: [...currentDecorations] 
-            }
-          });
-        }
-      }
-    }
-    
-    // If no formatted text nodes were created, create a simple text node
-    if (textNodes.length === 0) {
-      const cleanText = processedLine.replace(/<[^>]+>/g, '').trim();
-      if (cleanText) {
-        textNodes.push({
-          type: 'TEXT',
-          textData: { text: cleanText, decorations: [] }
+    // Handle paragraph breaks and line breaks
+    if (trimmedElement.match(/^<\/?(?:p|div|br\s*\/?)>/i)) {
+      if (currentParagraphNodes.length > 0) {
+        nodes.push({
+          type: 'PARAGRAPH',
+          nodes: currentParagraphNodes,
         });
+        currentParagraphNodes = [];
       }
+      continue;
     }
     
-    if (textNodes.length > 0) {
-      nodes.push({
-        type: 'PARAGRAPH',
-        nodes: textNodes,
-      });
+    // Handle text content with inline formatting
+    if (!trimmedElement.match(/^<[^>]+>$/)) {
+      const textNodes = parseInlineContent(trimmedElement);
+      currentParagraphNodes.push(...textNodes);
     }
+  }
+  
+  // Add any remaining paragraph content
+  if (currentParagraphNodes.length > 0) {
+    nodes.push({
+      type: 'PARAGRAPH',
+      nodes: currentParagraphNodes,
+    });
   }
   
   // Ensure we have at least one content node
@@ -170,6 +154,53 @@ function htmlToRichContent(title: string, htmlContent: string) {
     metadata: { version: 1 },
     documentStyle: {},
   } as const;
+}
+
+// Helper function to parse inline formatting
+function parseInlineContent(content: string): any[] {
+  const textNodes = [];
+  
+  // Split by formatting tags and create text nodes
+  const parts = content.split(/(<\/?(?:strong|b|em|i|a)[^>]*>)/i);
+  let currentDecorations: any[] = [];
+  let linkUrl = '';
+  
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    
+    if (part.match(/^<(?:strong|b)>/i)) {
+      currentDecorations.push({ type: 'BOLD' });
+    } else if (part.match(/^<\/(?:strong|b)>/i)) {
+      currentDecorations = currentDecorations.filter(d => d.type !== 'BOLD');
+    } else if (part.match(/^<(?:em|i)>/i)) {
+      currentDecorations.push({ type: 'ITALIC' });
+    } else if (part.match(/^<\/(?:em|i)>/i)) {
+      currentDecorations = currentDecorations.filter(d => d.type !== 'ITALIC');
+    } else if (part.match(/^<a\s+href="([^"]+)"/i)) {
+      const linkMatch = part.match(/^<a\s+href="([^"]+)"/i);
+      if (linkMatch) {
+        linkUrl = linkMatch[1];
+        currentDecorations.push({ type: 'LINK', linkData: { url: linkUrl } });
+      }
+    } else if (part.match(/^<\/a>/i)) {
+      currentDecorations = currentDecorations.filter(d => d.type !== 'LINK');
+      linkUrl = '';
+    } else if (part && !part.match(/^<[^>]+>$/)) {
+      // This is actual text content
+      const cleanText = part.replace(/<[^>]+>/g, '').trim();
+      if (cleanText) {
+        textNodes.push({
+          type: 'TEXT',
+          textData: { 
+            text: cleanText, 
+            decorations: [...currentDecorations] 
+          }
+        });
+      }
+    }
+  }
+  
+  return textNodes;
 }
 
 function stripHtml(html: string) {
