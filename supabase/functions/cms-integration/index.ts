@@ -441,8 +441,8 @@ async function handlePublish(req: Request, supabaseClient: any, user: any) {
         throw new Error('Wix publish failed: missing required memberId for third-party app. Please reconnect Wix and ensure "Read Members and Contacts" and "Manage Blog" permissions.');
       }
 
+      console.log('[CMS Integration][Wix] Publishing with memberId:', memberId);
       publishResult = await publishToWix(article, connection, { ...publishOptions, memberId });
-      break;
     }
     case 'notion':
       publishResult = await publishToNotion(article, connection, publishOptions);
@@ -1000,7 +1000,7 @@ async function publishToWebflow(article: any, connection: any, options: any) {
 }
 
 async function publishToWix(article: any, connection: any, options: any) {
-  const endpoint = `https://www.wixapis.com/blog/v3/draft-posts`;
+  console.log('[CMS Integration][Wix] Using dedicated wix-blog-publish function');
   
   const memberId = options?.memberId;
   if (!memberId) {
@@ -1013,55 +1013,38 @@ async function publishToWix(article: any, connection: any, options: any) {
     throw new Error('Wix publish failed: missing instanceId. Please reconnect your Wix integration.');
   }
 
-  const draftPostData = {
-    draftPost: {
-      title: article.title,
-      excerpt: article.meta_description || '',
-      memberId,
-      richContent: {
-        nodes: [{
-          type: 'PARAGRAPH',
-          id: '',
-          nodes: [{
-            type: 'TEXT',
-            id: '',
-            nodes: [],
-            textData: {
-              text: article.content,
-              decorations: []
-            }
-          }],
-          paragraphData: {
-            textStyle: { textAlignment: 'AUTO' },
-            indentation: 0
-          }
-        }]
-      }
-    }
-  };
-
-  const headers = {
-    'Authorization': `Bearer ${connection.access_token}`,
-    'Content-Type': 'application/json',
-    'wix-instance-id': instanceId // Required for Wix Blog API authentication
-  };
-
-  console.log('Wix API request:', {
-    endpoint,
-    instanceId,
+  // Call the dedicated wix-blog-publish function
+  const publishUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/wix-blog-publish`;
+  
+  const publishData = {
+    userId: connection.user_id,
+    title: article.title,
+    html: article.content,
+    excerpt: article.meta_description || '',
+    tags: Array.isArray(article.keywords) ? article.keywords : [],
+    categoryIds: [],
     memberId,
-    data: JSON.stringify(draftPostData, null, 2),
-    headers
+    wixSiteId: undefined // Let the function auto-detect
+  };
+
+  console.log('[CMS Integration][Wix] Calling wix-blog-publish with:', {
+    publishUrl,
+    memberId,
+    instanceId,
+    title: article.title
   });
 
-  const response = await fetch(endpoint, {
+  const response = await fetch(publishUrl, {
     method: 'POST',
-    headers,
-    body: JSON.stringify(draftPostData)
+    headers: {
+      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(publishData)
   });
 
   const responseText = await response.text();
-  console.log('Wix API response:', {
+  console.log('[CMS Integration][Wix] wix-blog-publish response:', {
     status: response.status,
     statusText: response.statusText,
     body: responseText
