@@ -345,28 +345,6 @@ export default function Write() {
       const formattedContent = editorMode === "wysiwyg" ? formatForWordPress(content) : content;
       let articleId = editingId;
 
-      // Use new Wix function for better error handling
-      if (selectedConnection && connections.find(c => c.id === selectedConnection)?.platform === 'wix') {
-        await publishToWix({
-          userId: user.id,
-          title: title.trim(),
-          html: formattedContent,
-          excerpt: '',
-          tags: [],
-          categoryIds: [],
-          memberId: undefined,
-          wixSiteId: undefined
-        });
-        
-        toast({
-          title: "Published successfully!",
-          description: "Article published to Wix."
-        });
-        setIsPublishOpen(false);
-        return;
-      }
-
-      // For other platforms, continue with existing logic
       // Check if user can create article (monthly limit check)  
       const { data: canCreate, error: limitError } = await supabase.rpc('can_create_article', {
         user_uuid: user.id
@@ -392,6 +370,9 @@ export default function Write() {
         });
       }
 
+      console.log('Publishing to platform:', connections.find(c => c.id === selectedConnection)?.platform);
+      console.log('Article ID:', articleId, 'Connection ID:', selectedConnection);
+
       const { data, error } = await supabase.functions.invoke('cms-integration', {
         body: {
           action: 'publish',
@@ -401,7 +382,13 @@ export default function Write() {
         }
       });
 
-      if (error || !data?.success) {
+      console.log('Publish response:', { data, error });
+
+      if (error) {
+        throw new Error(error.message || 'Function invocation failed');
+      }
+
+      if (!data?.success) {
         throw new Error(data?.error || 'Publish failed');
       }
 
