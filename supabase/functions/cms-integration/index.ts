@@ -1019,7 +1019,7 @@ async function publishToWix(article: any, connection: any, options: any) {
   const publishData = {
     userId: connection.user_id,
     title: article.title,
-    html: article.content,
+    contentHtml: article.content,
     excerpt: article.meta_description || '',
     tags: Array.isArray(article.keywords) ? article.keywords : [],
     categoryIds: [],
