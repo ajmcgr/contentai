@@ -435,12 +435,34 @@ Title: [Compelling SEO title under 60 chars]
       // If auto-publish is enabled, also publish to connected CMS platforms
       if (shouldAutoPublish) {
         try {
-          // Get active CMS connections for this user
-          const { data: connections } = await admin
+          // Get active CMS connections for this user from all supported sources
+          const { data: connectionsGeneric } = await admin
             .from('cms_connections')
             .select('id, platform, site_url')
             .eq('user_id', userId)
             .eq('is_active', true);
+
+          // Also include Wix connections (stored in wix_connections)
+          const { data: wixConns } = await admin
+            .from('wix_connections')
+            .select('id, instance_id')
+            .eq('user_id', userId);
+
+          // Also include Shopify installs (stored in cms_installs)
+          const { data: shopifyInstalls } = await admin
+            .from('cms_installs')
+            .select('id, external_id, provider, access_token')
+            .eq('user_id', userId)
+            .eq('provider', 'shopify')
+            .not('access_token', 'is', null);
+
+          // Normalize connections into a single list
+          const normalized: any[] = [];
+          (connectionsGeneric || []).forEach((c: any) => normalized.push({ id: c.id, platform: c.platform, site_url: c.site_url }));
+          (wixConns || []).forEach((w: any) => normalized.push({ id: w.id, platform: 'wix', site_url: `wix-site-${w.instance_id || 'default'}` }));
+          (shopifyInstalls || []).forEach((s: any) => normalized.push({ id: s.id, platform: 'shopify', site_url: s.external_id }));
+
+          const connections = normalized;
 
           if (connections && connections.length > 0) {
             console.log(`Auto-publishing article ${article.id} to ${connections.length} connected platforms for user ${userId}`);
